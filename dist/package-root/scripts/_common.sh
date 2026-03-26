@@ -260,7 +260,7 @@ Current beta-shaped improvements:
 - host-aligned LDAP defaults for wm3v-style YunoHost LDAP
 
 Remaining operator tasks:
-- replace the placeholder LDAP bind password in /etc/mfa-sidecar/secrets/ldap_bind_password, then rerun `yunohost app upgrade mfa_sidecar --debug` or restart sidecar services
+- if you provided ldap_bind_password during install, no immediate LDAP secret surgery should be needed; otherwise set /etc/mfa-sidecar/secrets/ldap_bind_password and restart sidecar services or rerun `yunohost app upgrade mfa_sidecar --debug`
 - retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env to access /admin during alpha validation
 - validate live auth flow after install
 - add and tune managed site entries from the admin control plane
