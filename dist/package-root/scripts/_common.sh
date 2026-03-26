@@ -264,8 +264,9 @@ Current beta-shaped improvements:
 
 Remaining operator tasks:
 - if you provided ldap_bind_password during install, no immediate LDAP secret surgery should be needed; otherwise set /etc/mfa-sidecar/secrets/ldap_bind_password and restart sidecar services or rerun `yunohost app upgrade mfa_sidecar --debug`
-- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env to access /admin during alpha validation
+- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection
+- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation
 - validate live auth flow after install
-- add and tune managed site entries from the admin control plane
+- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls
 EOF
 }
