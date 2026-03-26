@@ -1,0 +1,2 @@
+Alpha admin gate: `/admin` requires header `X-MFA-Sidecar-Admin-Secret` matching `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env`.
+This is an interim hardening step, not the final operator auth model.
