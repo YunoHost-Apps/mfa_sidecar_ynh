@@ -9,12 +9,12 @@ grep -q '^ExecStart=/usr/local/bin/authelia --config /etc/mfa-sidecar/authelia/c
 grep -q '^ExecStartPre=/usr/bin/install -d -m 755 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /var/lib/mfa_sidecar$' "$AUTHELIA_SERVICE"
 grep -q '^EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env$' "$AUTHELIA_SERVICE"
 grep -q '^WorkingDirectory=/opt/yunohost/mfa_sidecar$' "$AUTHELIA_SERVICE"
-grep -q '^ReadWritePaths=/var/lib/mfa_sidecar /etc/mfa-sidecar$' "$AUTHELIA_SERVICE"
+! grep -q '^ReadWritePaths=' "$AUTHELIA_SERVICE"
 
 grep -q '^ExecStart=/usr/bin/python3 /opt/yunohost/mfa_sidecar/bin/admin_ui_app.py$' "$ADMIN_SERVICE"
 grep -q '^ExecStartPre=/usr/bin/install -d -m 755 /etc/mfa-sidecar /opt/yunohost/mfa_sidecar/config /opt/yunohost/mfa_sidecar/deploy/generated-alpha$' "$ADMIN_SERVICE"
 grep -q '^Environment=MFA_SIDECAR_ADMIN_PORT=9087$' "$ADMIN_SERVICE"
 grep -q '^EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env$' "$ADMIN_SERVICE"
-grep -q '^ReadWritePaths=/opt/yunohost/mfa_sidecar/config /opt/yunohost/mfa_sidecar/deploy/generated-alpha /etc/mfa-sidecar$' "$ADMIN_SERVICE"
+! grep -q '^ReadWritePaths=' "$ADMIN_SERVICE"
 
 echo "smoke_service_contract: ok"

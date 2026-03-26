@@ -23,14 +23,6 @@ RestartSec=5s
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
-ProtectHome=true
-ProtectControlGroups=true
-ProtectKernelTunables=true
-ProtectKernelModules=true
-RestrictSUIDSGID=true
-LockPersonality=true
-MemoryDenyWriteExecute=true
-ReadWritePaths=/opt/yunohost/mfa_sidecar/config /opt/yunohost/mfa_sidecar/deploy/generated-alpha /etc/mfa-sidecar
 
 [Install]
 WantedBy=multi-user.target
