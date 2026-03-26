@@ -83,7 +83,8 @@ Desired result: units not found, or at least no loaded stale unit content.
 
 ## Repo-level tasks still worth doing before next live attempt
 - Add docs explaining that `github-package` is the only installer-facing branch; `main` is development-only.
-- Consult authoritative YunoHost docs and existing package conventions for what a package really needs to look like, including icon/admin presentation and the correct admin page/settings model. Do not keep guessing from donor shape alone.
+- Continue authoritative YunoHost docs/convention review, starting from `docs/YUNOHOST-PACKAGING-NOTES.md`.
+- Consult real YunoHost apps using `config_panel.toml` and compare them to MFA Sidecar's current custom `/admin` approach.
 - Reconcile whether MFA Sidecar should keep a custom `/admin` page exactly as-is, or whether YunoHost expects a different admin/settings integration pattern.
 - Consider a script/check that compares exported `dist/package-root` service units against the live `github-package` branch to avoid branch drift.
 - Consider a shell-first install validation path against a disposable YunoHost VM so GUI/cache behavior is not the first live proof.
