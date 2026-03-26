@@ -1,10 +1,10 @@
 # 2026-03-26 install handoff
 
 ## Current good refs
-- development branch at handoff time: `main` (to be renamed/preserved as `dev` when publication cleanup is finished)
-- installer-facing branch at handoff time: `github-package` (temporary publication branch to be replaced by GitHub `main`)
-- current dev tip at handoff time: `d67da0f` — `Strip service units down for alpha host compatibility`
-- current installer-facing tip at handoff time: `35d7fec` — `Refresh published package root after unit simplification`
+- development branch: `dev`
+- installer-facing branch on GitHub: `main`
+- package mirror branch on GitLab: `github-package`
+- this handoff doc records earlier install-state lessons, but the branch model has since been normalized and the package has been further hardened beyond the original handoff snapshot
 
 ## What happened tonight
 The repo/package was substantially hardened, but the live wm3v install path still failed in ways that suggest **stale YunoHost package fetch state, stale systemd unit state, or both** during the install transaction.
@@ -35,10 +35,10 @@ In short: tonight stopped being a normal package bug and started smelling like *
 1. If wm3v remains weird in any way, **restore the Proxmox snapshot** taken before the install attempts.
 2. Avoid relying on repeated GUI fetch/install against a dirty host state.
 3. Do a disciplined fresh install attempt from a clean state, preferably one of:
-   - restored snapshot + GUI install from `github-package`
+   - restored snapshot + GUI install from GitHub `main`
    - restored snapshot + shell install from a freshly downloaded/exported local package tree
 4. If using the GUI again, use only:
-   - `https://github.com/wonko6x9/mfa_sidecar_ynh/tree/github-package`
+   - `https://github.com/wonko6x9/mfa_sidecar_ynh`
 
 ### Required host cleanup before another install attempt (if not restoring snapshot)
 Run these first on the target host:
@@ -81,13 +81,17 @@ Desired result: units not found, or at least no loaded stale unit content.
    - `journalctl -u mfa-sidecar-authelia -u mfa-sidecar-admin -n 120 --no-pager`
    - any `/var/cache/yunohost/app_tmp_work_dirs/*/manifest.toml` or package temp tree evidence if present
 
-## Repo-level tasks still worth doing before next live attempt
-- Add docs explaining that `github-package` is the only installer-facing branch; `main` is development-only.
-- Continue authoritative YunoHost docs/convention review, starting from `docs/YUNOHOST-PACKAGING-NOTES.md`.
-- Consult real YunoHost apps using `config_panel.toml` and compare them to MFA Sidecar's current custom `/admin` approach.
-- Reconcile whether MFA Sidecar should keep a custom `/admin` page exactly as-is, or whether YunoHost expects a different admin/settings integration pattern.
-- Consider a script/check that compares exported `dist/package-root` service units against the live `github-package` branch to avoid branch drift.
-- Consider a shell-first install validation path against a disposable YunoHost VM so GUI/cache behavior is not the first live proof.
+## Repo-level tasks that were still worth doing after the original handoff
+Most of these were subsequently addressed during the 2026-03-26 hardening push:
+- branch/publication model normalized (`dev` for source, GitHub `main` for installer-facing package root)
+- authoritative YunoHost docs/convention review performed
+- first `config_panel.toml` + `scripts/config` surface added
+- package/docs updated so `change_url` fails honestly instead of pretending relocation is supported
+- repeated export/publish discipline exercised to reduce branch drift risk
+
+Still remaining after those improvements:
+- continue deciding how much of `/admin` should migrate into YunoHost-native controls
+- consider a shell-first install validation path against a disposable YunoHost VM so GUI/cache behavior is not the first live proof
 
 ## Bottom line
 The repo is materially better than it was at the start of tonight, but **wm3v is no longer a trustworthy first-proof environment without cleanup or snapshot restore**.
