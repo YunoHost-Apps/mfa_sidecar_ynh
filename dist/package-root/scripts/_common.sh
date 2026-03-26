@@ -210,7 +210,9 @@ _mfa_sidecar_sync_runtime_assets() {
         "$install_dir/deploy/generated-alpha"
 
     python3 "$install_dir/bin/stage_alpha_runtime.py" \
-        "$install_dir/deploy/generated-alpha" /
+        "$install_dir/deploy/generated-alpha" / \
+        --owner "$app" \
+        --group "$app"
 }
 
 _mfa_sidecar_wait_for_local_http() {
