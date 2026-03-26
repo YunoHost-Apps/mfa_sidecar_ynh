@@ -22,6 +22,7 @@ fi
 POLICY_FILE="$APP_INSTALL_DIR/config/domain-policy.yaml"
 RUNTIME_METADATA_FILE="/etc/mfa-sidecar/runtime-metadata.json"
 ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
+USERS_FILE="/etc/mfa-sidecar/authelia/users.yml"
 
 compose_upstream_url() {
     echo "${1}://${2}:${3}"
@@ -37,19 +38,21 @@ EOF
 }
 
 get__runtime_summary() {
-    python3 - "$RUNTIME_METADATA_FILE" "$POLICY_FILE" <<'PY'
+    python3 - "$RUNTIME_METADATA_FILE" "$POLICY_FILE" "$USERS_FILE" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 runtime_path = Path(sys.argv[1])
 policy_path = Path(sys.argv[2])
+users_path = Path(sys.argv[3])
 
 portal_domain = "unknown"
 remember_me = "unknown"
 default_policy = "unknown"
 managed_count = 0
 enabled_count = 0
+users_state = "missing"
 
 if runtime_path.exists():
     try:
@@ -75,10 +78,13 @@ elif policy_path.exists():
     except Exception:
         pass
 
+if users_path.exists():
+    users_state = "present"
+
 print(f'''style: info
 ask:
-  en: "Portal: {portal_domain} | Remembered session: {remember_me} | Default policy: {default_policy} | Managed entries: {managed_count} total / {enabled_count} enabled"
-  fr: "Portail : {portal_domain} | Session mémorisée : {remember_me} | Politique par défaut : {default_policy} | Entrées gérées : {managed_count} total / {enabled_count} activées"''')
+  en: "Portal: {portal_domain} | Remembered session: {remember_me} | Default policy: {default_policy} | Managed entries: {managed_count} total / {enabled_count} enabled | Users file: {users_state}"
+  fr: "Portail : {portal_domain} | Session mémorisée : {remember_me} | Politique par défaut : {default_policy} | Entrées gérées : {managed_count} total / {enabled_count} activées | Fichier utilisateurs : {users_state}"''')
 PY
 }
 

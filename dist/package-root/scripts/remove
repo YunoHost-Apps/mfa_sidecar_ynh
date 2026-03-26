@@ -25,7 +25,6 @@ rm -f /etc/systemd/system/mfa-sidecar-admin.service
 #=================================================
 # REMOVE RUNTIME ARTIFACTS
 #=================================================
-_mfa_sidecar_remove_ldap_bind_account
 rm -rf /etc/mfa-sidecar
 rm -rf /var/lib/mfa_sidecar
 rm -f /usr/local/bin/authelia

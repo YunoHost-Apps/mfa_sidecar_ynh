@@ -1,5 +1,7 @@
 # MFA Sidecar
 
+<img src="https://raw.githubusercontent.com/YunoHost/apps/main/logos/mfa_sidecar.png" width="32px" alt="Logo of MFA Sidecar">
+
 Authelia-based MFA sidecar for selected YunoHost domains and paths.
 
 ## Status

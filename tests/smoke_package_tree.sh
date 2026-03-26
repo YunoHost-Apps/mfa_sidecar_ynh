@@ -36,24 +36,28 @@ session:
 storage:
   encryption_key_file: /etc/mfa-sidecar/secrets/storage_encryption_key
 identity:
-  display_name: YunoHost LDAP
-  ldap:
-    address: ldap://127.0.0.1:389
-    implementation: custom
-    start_tls: false
-    permit_referrals: false
-    permit_unauthenticated_bind: false
-    base_dn: dc=yunohost,dc=org
-    additional_users_dn: ou=users
-    additional_groups_dn: ou=groups
-    users_filter: (&({username_attribute}={input})(objectClass=inetOrgPerson))
-    groups_filter: (&(member={dn})(objectClass=groupOfNamesYnh))
-    group_search_mode: filter
-    username_attribute: uid
-    display_name_attribute: cn
-    mail_attribute: mail
-    user: uid=authelia,ou=users,dc=yunohost,dc=org
-    password_env: AUTHELIA_LDAP_PASSWORD
+  display_name: MFA Sidecar
+  local:
+    path: /etc/mfa-sidecar/authelia/users.yml
+    watch: false
+    search:
+      email: true
+      case_insensitive: true
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+  sync:
+    enabled: false
+    source: yunohost-ldap-readonly
+    fields:
+      - username
+      - email
 mfa:
   issuer: MFA Sidecar
   webauthn:
@@ -101,5 +105,8 @@ test -f "$OUT_DIR/etc/mfa-sidecar/authelia/configuration.yml"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/portal.conf"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/protected/root_site.conf"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/protected/nextcloud_exception.conf"
+grep -q 'authentication_backend:' "$OUT_DIR/etc/mfa-sidecar/authelia/configuration.yml"
+grep -q 'file:' "$OUT_DIR/etc/mfa-sidecar/authelia/configuration.yml"
+! grep -q 'ldap:' "$OUT_DIR/etc/mfa-sidecar/authelia/configuration.yml"
 
 echo "smoke_package_tree: ok"

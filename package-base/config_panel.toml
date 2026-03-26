@@ -129,6 +129,12 @@ services = ["nginx"]
         ask.en = "Show current admin gate secret"
         ask.fr = "Afficher le secret actuel de la passerelle admin"
 
+        [main.operations.users_file_note]
+        type = "alert"
+        style = "warning"
+        ask.en = "The sidecar now uses its own Authelia users file at /etc/mfa-sidecar/authelia/users.yml. Installation bootstraps a template, but you still need to replace the placeholder hash/email with a real first user before meaningful auth testing."
+        ask.fr = "Le sidecar utilise maintenant son propre fichier utilisateurs Authelia dans /etc/mfa-sidecar/authelia/users.yml. L’installation initialise un modèle, mais vous devez toujours remplacer le hash/e-mail fictifs par un vrai premier utilisateur avant des tests d’authentification utiles."
+
         [main.operations.admin_note]
         type = "alert"
         style = "info"

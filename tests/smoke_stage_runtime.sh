@@ -17,6 +17,7 @@ test -f "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/portal.conf"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/protected/root_site.conf"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/protected/nextcloud_exception.conf"
-grep -q '"bind_password_via": "env"' "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json"
+grep -q '"backend": "file"' "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json"
+grep -q '"user_database_path": "/etc/mfa-sidecar/authelia/users.yml"' "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json"
 
 echo "smoke_stage_runtime: ok"

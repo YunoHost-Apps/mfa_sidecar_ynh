@@ -16,6 +16,7 @@ install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alp
 install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
 install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
 install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
+install -D -m 755 ../sources/bootstrap_authelia_users.py "$install_dir/bin/bootstrap_authelia_users.py"
 install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
 install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
 install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
@@ -30,7 +31,7 @@ _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file session_secret)
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file storage_encryption_key)"
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file identity_validation_reset_secret)"
 _mfa_sidecar_write_env_file
-_mfa_sidecar_ensure_ldap_bind_account
+_mfa_sidecar_ensure_users_file_template
 _mfa_sidecar_write_policy_seed
 ynh_app_setting_set --key=portal_subdomain --value="$portal_subdomain"
 ynh_app_setting_set --key=default_policy --value="$default_policy"

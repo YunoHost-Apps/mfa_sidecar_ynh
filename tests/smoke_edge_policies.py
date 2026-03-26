@@ -29,24 +29,27 @@ BASE_POLICY = {
     },
     'storage': {'encryption_key_file': '/etc/mfa-sidecar/secrets/storage_encryption_key'},
     'identity': {
-        'display_name': 'YunoHost LDAP',
-        'ldap': {
-            'address': 'ldap://127.0.0.1:389',
-            'implementation': 'custom',
-            'start_tls': False,
-            'permit_referrals': False,
-            'permit_unauthenticated_bind': False,
-            'base_dn': 'dc=yunohost,dc=org',
-            'additional_users_dn': 'ou=users',
-            'additional_groups_dn': 'ou=groups',
-            'users_filter': '(&({username_attribute}={input})(objectClass=inetOrgPerson))',
-            'groups_filter': '(&(member={dn})(objectClass=groupOfNamesYnh))',
-            'group_search_mode': 'filter',
-            'username_attribute': 'uid',
-            'display_name_attribute': 'cn',
-            'mail_attribute': 'mail',
-            'user': 'uid=authelia,ou=users,dc=yunohost,dc=org',
-            'password_env': 'AUTHELIA_LDAP_PASSWORD',
+        'display_name': 'MFA Sidecar',
+        'local': {
+            'path': '/etc/mfa-sidecar/authelia/users.yml',
+            'watch': False,
+            'search': {'email': True, 'case_insensitive': True},
+            'password': {
+                'algorithm': 'argon2',
+                'argon2': {
+                    'variant': 'argon2id',
+                    'iterations': 3,
+                    'memory': 65536,
+                    'parallelism': 4,
+                    'key_length': 32,
+                    'salt_length': 16,
+                },
+            },
+        },
+        'sync': {
+            'enabled': False,
+            'source': 'yunohost-ldap-readonly',
+            'fields': ['username', 'email'],
         },
     },
     'mfa': {
@@ -106,6 +109,8 @@ def run_case(name: str, policy: dict) -> None:
     assert (rendered / 'nginx' / 'portal.generated.conf').exists()
     assert authelia['server']['address'].startswith('tcp://127.0.0.1:')
     assert metadata['portal_domain'].endswith('.tld')
+    assert metadata['identity']['backend'] == 'file'
+    assert metadata['identity']['user_database_path'] == '/etc/mfa-sidecar/authelia/users.yml'
 
     if name == 'reset-disabled':
         assert authelia['identity_validation']['reset_password']['disable'] is True

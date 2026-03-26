@@ -21,7 +21,7 @@ install_dir="$OUT_DIR/install"
 _mfa_sidecar_write_alpha_notes
 
 test -f "$OUT_DIR/install/README.alpha"
-grep -Fq '/etc/mfa-sidecar/secrets/ldap_bind_password' "$OUT_DIR/install/README.alpha"
+grep -Fq '/etc/mfa-sidecar/authelia/users.yml' "$OUT_DIR/install/README.alpha"
 grep -Fq 'when you need `/admin` access during alpha validation' "$OUT_DIR/install/README.alpha"
 grep -Fq 'the admin control plane (`/admin`)' "$OUT_DIR/install/README.alpha"
 

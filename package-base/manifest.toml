@@ -90,14 +90,6 @@ ram.runtime = "200M"
     help.en = "Plain numeric TCP port; validated during install"
     help.fr = "Port TCP numérique simple ; validé pendant l'installation"
 
-    [install.ldap_bind_password]
-    ask.en = "LDAP bind password for uid=authelia"
-    ask.fr = "Mot de passe LDAP de liaison pour uid=authelia"
-    type = "password"
-    optional = true
-    help.en = "Optional override. If left blank, MFA Sidecar will generate a strong local secret automatically and use it as the LDAP bind password."
-    help.fr = "Surcharge facultative. Si laissé vide, MFA Sidecar générera automatiquement un secret local fort et l'utilisera comme mot de passe de liaison LDAP."
-
     [install.init_main_permission]
     type = "group"
     default = "admins"
@@ -112,7 +104,7 @@ ram.runtime = "200M"
     dir = "/var/lib/$app"
 
     [resources.apt]
-    packages = ["python3", "python3-yaml", "openssl", "ldap-utils"]
+    packages = ["python3", "python3-yaml", "openssl"]
 
     [resources.permissions]
     main.url = "/"

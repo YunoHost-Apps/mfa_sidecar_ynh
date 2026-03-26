@@ -39,12 +39,6 @@ def rule_sort_key(rule: dict) -> tuple[int, int, str, str]:
     return (0 if rule.get("enabled", False) else 1, -len(path), host, path)
 
 
-def get_bind_password_expression(ldap_cfg: dict) -> str:
-    if ldap_cfg.get("password_file"):
-        return f"{{{{ secret {ldap_cfg['password_file']} }}}}"
-    return "${%s}" % ldap_cfg["password_env"]
-
-
 def get_storage_key_expression(storage_cfg: dict) -> str:
     if storage_cfg.get("encryption_key_file"):
         return f"{{{{ secret {storage_cfg['encryption_key_file']} }}}}"
@@ -73,10 +67,28 @@ def map_default_policy(policy_name: str) -> str:
     return mapping.get(policy_name, "deny")
 
 
+def build_authentication_backend(policy: dict) -> dict:
+    identity = policy["identity"]
+    local = identity["local"]
+    search = local.get("search", {})
+    backend = {
+        "file": {
+            "path": local["path"],
+            "watch": bool(local.get("watch", False)),
+            "search": {
+                "email": bool(search.get("email", False)),
+                "case_insensitive": bool(search.get("case_insensitive", False)),
+            },
+        }
+    }
+    if local.get("password"):
+        backend["file"]["password"] = local["password"]
+    return backend
+
+
 def build_authelia_values(policy: dict) -> dict:
     portal = policy["portal"]
     session = policy["session"]
-    identity = policy["identity"]["ldap"]
     mfa = policy["mfa"]
     access = policy["access_control"]
     storage = policy["storage"]
@@ -93,33 +105,6 @@ def build_authelia_values(policy: dict) -> dict:
             rule["resources"] = [f"^{path}([/?].*)?$"]
         rules.append(rule)
 
-    ldap_backend = {
-        "address": identity["address"],
-        "implementation": identity.get("implementation", "custom"),
-        "base_dn": identity["base_dn"],
-        "additional_users_dn": identity["additional_users_dn"],
-        "additional_groups_dn": identity["additional_groups_dn"],
-        "users_filter": identity["users_filter"],
-        "groups_filter": identity["groups_filter"],
-        "group_search_mode": identity.get("group_search_mode", "filter"),
-        "user": identity["user"],
-        "password": get_bind_password_expression(identity),
-        "attributes": {
-            "username": identity["username_attribute"],
-            "display_name": identity["display_name_attribute"],
-            "mail": identity["mail_attribute"],
-        },
-    }
-
-    if identity.get("start_tls") is not None:
-        ldap_backend["start_tls"] = bool(identity["start_tls"])
-    if identity.get("permit_referrals") is not None:
-        ldap_backend["permit_referrals"] = bool(identity["permit_referrals"])
-    if identity.get("permit_unauthenticated_bind") is not None:
-        ldap_backend["permit_unauthenticated_bind"] = bool(identity["permit_unauthenticated_bind"])
-    if identity.get("tls"):
-        ldap_backend["tls"] = identity["tls"]
-
     rendered_default_policy = map_default_policy(access.get("default_policy", "deny"))
     if not rules and rendered_default_policy in {"bypass", "deny"}:
         rendered_default_policy = "one_factor"
@@ -131,7 +116,7 @@ def build_authelia_values(policy: dict) -> dict:
         "identity_validation": {
             "reset_password": {"jwt_secret": "${AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET}"}
         },
-        "authentication_backend": {"ldap": ldap_backend},
+        "authentication_backend": build_authentication_backend(policy),
         "access_control": {
             "default_policy": rendered_default_policy,
             "rules": rules,
@@ -253,18 +238,18 @@ def build_index(policy: dict) -> dict:
 
 
 def build_runtime_metadata(policy: dict) -> dict:
-    ldap = policy["identity"]["ldap"]
+    local = policy["identity"]["local"]
+    sync = policy["identity"].get("sync", {})
     return {
         "portal_domain": policy["portal"]["domain"],
         "portal_listen": policy["portal"]["listen"],
-        "ldap": {
-            "address": ldap["address"],
-            "base_dn": ldap["base_dn"],
-            "additional_users_dn": ldap["additional_users_dn"],
-            "additional_groups_dn": ldap["additional_groups_dn"],
-            "group_search_mode": ldap.get("group_search_mode", "filter"),
-            "bind_user": ldap["user"],
-            "bind_password_via": "file" if ldap.get("password_file") else "env",
+        "identity": {
+            "backend": "file",
+            "user_database_path": local["path"],
+            "watch": bool(local.get("watch", False)),
+            "password_algorithm": local.get("password", {}).get("algorithm", "argon2"),
+            "sync_enabled": bool(sync.get("enabled", False)),
+            "sync_source": sync.get("source", "none"),
         },
         "secrets": {
             "session": "file" if policy["session"].get("secret_file") else "env",

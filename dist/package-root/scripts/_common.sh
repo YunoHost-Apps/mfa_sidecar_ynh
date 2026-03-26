@@ -78,110 +78,6 @@ _mfa_sidecar_install_layout() {
         "/etc/mfa-sidecar/secrets"
 }
 
-_mfa_sidecar_ldap_bind_dn() {
-    echo "uid=authelia,ou=users,dc=yunohost,dc=org"
-}
-
-_mfa_sidecar_ldap_bind_cn() {
-    echo "MFA Sidecar Authelia"
-}
-
-_mfa_sidecar_ldap_password_file() {
-    _mfa_sidecar_secret_file ldap_bind_password
-}
-
-_mfa_sidecar_ldap_add_entry_via_ldapi() {
-    local ldif_file="$1"
-    ldapadd -Y EXTERNAL -H ldapi:/// -f "$ldif_file"
-}
-
-_mfa_sidecar_ldap_modify_entry_via_ldapi() {
-    local ldif_file="$1"
-    ldapmodify -Y EXTERNAL -H ldapi:/// -f "$ldif_file"
-}
-
-_mfa_sidecar_ldap_delete_entry_via_ldapi() {
-    local dn="$1"
-    ldapdelete -Y EXTERNAL -H ldapi:/// "$dn"
-}
-
-_mfa_sidecar_ldap_entry_exists() {
-    local dn="$1"
-    ldapsearch -Q -Y EXTERNAL -H ldapi:/// -LLL -b "$dn" -s base dn >/dev/null 2>&1
-}
-
-_mfa_sidecar_ensure_ldap_bind_account() {
-    local bind_dn bind_cn bind_password_file bind_password tmp_ldif
-
-    bind_dn="$(_mfa_sidecar_ldap_bind_dn)"
-    bind_cn="$(_mfa_sidecar_ldap_bind_cn)"
-    bind_password_file="$(_mfa_sidecar_ldap_password_file)"
-
-    if [[ ! -f "$bind_password_file" ]]; then
-        ynh_die "LDAP bind password file missing: $bind_password_file"
-    fi
-
-    bind_password="$(tr -d '\r\n' < "$bind_password_file")"
-    if [[ -z "$bind_password" ]]; then
-        ynh_die "LDAP bind password file is empty: $bind_password_file"
-    fi
-
-    tmp_ldif="$(mktemp)"
-    cat > "$tmp_ldif" <<EOF
-
-dn: ${bind_dn}
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: mailAccount
-cn: ${bind_cn}
-sn: Sidecar
-uid: authelia
-mail: authelia@${domain}
-gidNumber: 1007
-uidNumber: 1007
-homeDirectory: /var/lib/mfa_sidecar
-loginShell: /usr/sbin/nologin
-userPassword: ${bind_password}
-EOF
-
-    if _mfa_sidecar_ldap_entry_exists "$bind_dn"; then
-        cat > "$tmp_ldif" <<EOF
-
-dn: ${bind_dn}
-changetype: modify
-replace: cn
-cn: ${bind_cn}
--
-replace: sn
-sn: Sidecar
--
-replace: mail
-mail: authelia@${domain}
--
-replace: loginShell
-loginShell: /usr/sbin/nologin
--
-replace: homeDirectory
-homeDirectory: /var/lib/mfa_sidecar
--
-replace: userPassword
-userPassword: ${bind_password}
-EOF
-        _mfa_sidecar_ldap_modify_entry_via_ldapi "$tmp_ldif"
-    else
-        _mfa_sidecar_ldap_add_entry_via_ldapi "$tmp_ldif"
-    fi
-
-    rm -f "$tmp_ldif"
-}
-
-_mfa_sidecar_remove_ldap_bind_account() {
-    local bind_dn
-    bind_dn="$(_mfa_sidecar_ldap_bind_dn)"
-    if _mfa_sidecar_ldap_entry_exists "$bind_dn"; then
-        _mfa_sidecar_ldap_delete_entry_via_ldapi "$bind_dn"
-    fi
-}
 
 _mfa_sidecar_secret_file() {
     local name="$1"
@@ -198,23 +94,13 @@ _mfa_sidecar_write_secret_if_missing() {
 
 _mfa_sidecar_write_env_file() {
     local admin_gate_secret_file
-    local ldap_password_file
     admin_gate_secret_file="$(_mfa_sidecar_secret_file admin_gate_secret)"
-    ldap_password_file="$(_mfa_sidecar_secret_file ldap_bind_password)"
     _mfa_sidecar_write_secret_if_missing "$admin_gate_secret_file"
-
-    if [[ -n "${ldap_bind_password:-}" ]]; then
-        umask 077
-        printf '%s\n' "$ldap_bind_password" > "$ldap_password_file"
-    elif [[ ! -f "$ldap_password_file" ]]; then
-        _mfa_sidecar_write_secret_if_missing "$ldap_password_file"
-    fi
 
     cat > /etc/mfa-sidecar/mfa-sidecar.env <<EOF
 AUTHELIA_SESSION_SECRET=$(cat "$(_mfa_sidecar_secret_file session_secret)")
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(cat "$(_mfa_sidecar_secret_file storage_encryption_key)")
 AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET=$(cat "$(_mfa_sidecar_secret_file identity_validation_reset_secret)")
-AUTHELIA_LDAP_PASSWORD=$(cat "$ldap_password_file")
 MFA_SIDECAR_ADMIN_GATE_SECRET=$(cat "$admin_gate_secret_file")
 EOF
     chmod 600 /etc/mfa-sidecar/mfa-sidecar.env
@@ -227,6 +113,18 @@ _mfa_sidecar_install_authelia_binary() {
         "$install_dir/cache/authelia" > "$install_dir/cache/authelia/install-result.json"
 
     install -D -m 755 "$install_dir/cache/authelia/authelia" /usr/local/bin/authelia
+}
+
+_mfa_sidecar_users_file() {
+    echo "/etc/mfa-sidecar/authelia/users.yml"
+}
+
+_mfa_sidecar_ensure_users_file_template() {
+    local users_file
+    users_file="$(_mfa_sidecar_users_file)"
+    if [[ ! -f "$users_file" ]]; then
+        python3 "$install_dir/bin/bootstrap_authelia_users.py" "$users_file"
+    fi
 }
 
 _mfa_sidecar_write_policy_seed() {
@@ -254,24 +152,28 @@ session:
 storage:
   encryption_key_file: $(_mfa_sidecar_secret_file storage_encryption_key)
 identity:
-  display_name: YunoHost LDAP
-  ldap:
-    address: ldap://127.0.0.1:389
-    implementation: custom
-    start_tls: false
-    permit_referrals: false
-    permit_unauthenticated_bind: false
-    base_dn: dc=yunohost,dc=org
-    additional_users_dn: ou=users
-    additional_groups_dn: ou=groups
-    users_filter: (&({username_attribute}={input})(objectClass=inetOrgPerson))
-    groups_filter: (&(member={dn})(objectClass=groupOfNamesYnh))
-    group_search_mode: filter
-    username_attribute: uid
-    display_name_attribute: cn
-    mail_attribute: mail
-    user: uid=authelia,ou=users,dc=yunohost,dc=org
-    password_env: AUTHELIA_LDAP_PASSWORD
+  display_name: MFA Sidecar
+  local:
+    path: /etc/mfa-sidecar/authelia/users.yml
+    watch: false
+    search:
+      email: true
+      case_insensitive: true
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+  sync:
+    enabled: false
+    source: yunohost-ldap-readonly
+    fields:
+      - username
+      - email
 mfa:
   issuer: MFA Sidecar
   webauthn:
@@ -397,10 +299,10 @@ _mfa_sidecar_write_alpha_notes() {
         printf '%s\n' '- dedicated portal domain enforced'
         printf '%s\n' '- managed host+path entries with longest-match-wins semantics'
         printf '%s\n' '- vendored pinned Authelia artifact with sha256 verification'
-        printf '%s\n' '- host-aligned LDAP defaults for wm3v-style YunoHost LDAP'
+        printf '%s\n' '- separate sidecar-owned credential/MFA store with file-backed Authelia auth model'
         printf '\n'
         printf '%s\n' 'Remaining operator tasks:'
-        printf '%s\n' '- MFA Sidecar now auto-generates `/etc/mfa-sidecar/secrets/ldap_bind_password` if you do not provide `ldap_bind_password` during install; manual override remains available if you want to set a specific value later'
+        printf '%s\n' '- bootstrap or import the initial sidecar users file at /etc/mfa-sidecar/authelia/users.yml with hashed passwords before real auth validation'
         printf '%s\n' '- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection'
         printf '%s\n' '- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation'
         printf '%s\n' '- validate live auth flow after install'
