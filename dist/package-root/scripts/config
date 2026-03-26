@@ -6,6 +6,7 @@ ynh_abort_if_errors
 APP_INSTALL_DIR="${install_dir:-$(ynh_app_setting_get --key=install_dir)}"
 APP_DATA_DIR="${data_dir:-$(ynh_app_setting_get --key=data_dir)}"
 POLICY_FILE="$APP_INSTALL_DIR/config/domain-policy.yaml"
+RUNTIME_METADATA_FILE="/etc/mfa-sidecar/runtime-metadata.json"
 ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
 
 compose_upstream_url() {
@@ -19,6 +20,52 @@ ask:
   en: Use this config panel for high-level defaults, service actions, and operator-safe introspection. Use /admin for detailed managed-site curation until a richer YunoHost-native abstraction exists.
   fr: Utilisez ce panneau de configuration pour les paramètres de haut niveau, les actions sur les services et l’inspection sûre côté opérateur. Utilisez /admin pour la gestion détaillée des sites jusqu’à ce qu’une abstraction native YunoHost plus riche existe.
 EOF
+}
+
+get__runtime_summary() {
+    python3 - "$RUNTIME_METADATA_FILE" "$POLICY_FILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+runtime_path = Path(sys.argv[1])
+policy_path = Path(sys.argv[2])
+
+portal_domain = "unknown"
+remember_me = "unknown"
+default_policy = "unknown"
+managed_count = 0
+enabled_count = 0
+
+if runtime_path.exists():
+    try:
+        data = json.loads(runtime_path.read_text(encoding='utf-8'))
+        portal_domain = data.get('portal_domain', portal_domain)
+        remember_me = data.get('session', {}).get('remember_me', remember_me)
+        default_policy = data.get('default_policy', default_policy)
+        managed_sites = data.get('managed_sites', []) or []
+        managed_count = len(managed_sites)
+        enabled_count = sum(1 for item in managed_sites if item.get('enabled'))
+    except Exception:
+        pass
+elif policy_path.exists():
+    try:
+        import yaml
+        data = yaml.safe_load(policy_path.read_text(encoding='utf-8')) or {}
+        portal_domain = data.get('portal', {}).get('domain', portal_domain)
+        remember_me = data.get('session', {}).get('remember_me', remember_me)
+        default_policy = data.get('access_control', {}).get('default_policy', default_policy)
+        managed_sites = data.get('access_control', {}).get('managed_sites', []) or []
+        managed_count = len(managed_sites)
+        enabled_count = sum(1 for item in managed_sites if item.get('enabled'))
+    except Exception:
+        pass
+
+print(f'''style: info
+ask:
+  en: "Portal: {portal_domain} | Remembered session: {remember_me} | Default policy: {default_policy} | Managed entries: {managed_count} total / {enabled_count} enabled"
+  fr: "Portail : {portal_domain} | Session mémorisée : {remember_me} | Politique par défaut : {default_policy} | Entrées gérées : {managed_count} total / {enabled_count} activées"''')
+PY
 }
 
 get__upstream_scheme() {
