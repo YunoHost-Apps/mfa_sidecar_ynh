@@ -12,6 +12,9 @@ ExecStart=/usr/local/bin/authelia --config /etc/mfa-sidecar/authelia/configurati
 Restart=on-failure
 RestartSec=5s
 NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+UMask=0077
 
 [Install]
 WantedBy=multi-user.target
