@@ -3,8 +3,22 @@ source /usr/share/yunohost/helpers
 
 ynh_abort_if_errors
 
-APP_INSTALL_DIR="${install_dir:-$(ynh_app_setting_get --key=install_dir)}"
-APP_DATA_DIR="${data_dir:-$(ynh_app_setting_get --key=data_dir)}"
+APP_INSTALL_DIR="${install_dir:-}"
+APP_DATA_DIR="${data_dir:-}"
+
+if [[ -z "$APP_INSTALL_DIR" || "$APP_INSTALL_DIR" == *'$app'* || "$APP_INSTALL_DIR" == *'__APP__'* ]]; then
+    APP_INSTALL_DIR="$(ynh_app_setting_get --key=install_dir 2>/dev/null || true)"
+fi
+if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'__APP__'* ]]; then
+    APP_DATA_DIR="$(ynh_app_setting_get --key=data_dir 2>/dev/null || true)"
+fi
+if [[ -z "$APP_INSTALL_DIR" || "$APP_INSTALL_DIR" == *'$app'* || "$APP_INSTALL_DIR" == *'__APP__'* ]]; then
+    APP_INSTALL_DIR="/opt/yunohost/${app}"
+fi
+if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'__APP__'* ]]; then
+    APP_DATA_DIR="/var/lib/${app}"
+fi
+
 POLICY_FILE="$APP_INSTALL_DIR/config/domain-policy.yaml"
 RUNTIME_METADATA_FILE="/etc/mfa-sidecar/runtime-metadata.json"
 ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
