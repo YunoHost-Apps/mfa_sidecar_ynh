@@ -78,6 +78,111 @@ _mfa_sidecar_install_layout() {
         "/etc/mfa-sidecar/secrets"
 }
 
+_mfa_sidecar_ldap_bind_dn() {
+    echo "uid=authelia,ou=users,dc=yunohost,dc=org"
+}
+
+_mfa_sidecar_ldap_bind_cn() {
+    echo "MFA Sidecar Authelia"
+}
+
+_mfa_sidecar_ldap_password_file() {
+    _mfa_sidecar_secret_file ldap_bind_password
+}
+
+_mfa_sidecar_ldap_add_entry_via_ldapi() {
+    local ldif_file="$1"
+    ldapadd -Y EXTERNAL -H ldapi:/// -f "$ldif_file"
+}
+
+_mfa_sidecar_ldap_modify_entry_via_ldapi() {
+    local ldif_file="$1"
+    ldapmodify -Y EXTERNAL -H ldapi:/// -f "$ldif_file"
+}
+
+_mfa_sidecar_ldap_delete_entry_via_ldapi() {
+    local dn="$1"
+    ldapdelete -Y EXTERNAL -H ldapi:/// "$dn"
+}
+
+_mfa_sidecar_ldap_entry_exists() {
+    local dn="$1"
+    ldapsearch -Q -Y EXTERNAL -H ldapi:/// -LLL -b "$dn" -s base dn >/dev/null 2>&1
+}
+
+_mfa_sidecar_ensure_ldap_bind_account() {
+    local bind_dn bind_cn bind_password_file bind_password tmp_ldif
+
+    bind_dn="$(_mfa_sidecar_ldap_bind_dn)"
+    bind_cn="$(_mfa_sidecar_ldap_bind_cn)"
+    bind_password_file="$(_mfa_sidecar_ldap_password_file)"
+
+    if [[ ! -f "$bind_password_file" ]]; then
+        ynh_die "LDAP bind password file missing: $bind_password_file"
+    fi
+
+    bind_password="$(tr -d '\r\n' < "$bind_password_file")"
+    if [[ -z "$bind_password" ]]; then
+        ynh_die "LDAP bind password file is empty: $bind_password_file"
+    fi
+
+    tmp_ldif="$(mktemp)"
+    cat > "$tmp_ldif" <<EOF
+
+dn: ${bind_dn}
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: mailAccount
+cn: ${bind_cn}
+sn: Sidecar
+uid: authelia
+mail: authelia@${domain}
+gidNumber: 1007
+uidNumber: 1007
+homeDirectory: /var/lib/mfa_sidecar
+loginShell: /usr/sbin/nologin
+userPassword: ${bind_password}
+EOF
+
+    if _mfa_sidecar_ldap_entry_exists "$bind_dn"; then
+        cat > "$tmp_ldif" <<EOF
+
+dn: ${bind_dn}
+changetype: modify
+replace: cn
+cn: ${bind_cn}
+-
+replace: sn
+sn: Sidecar
+-
+replace: mail
+mail: authelia@${domain}
+-
+replace: loginShell
+loginShell: /usr/sbin/nologin
+-
+replace: homeDirectory
+homeDirectory: /var/lib/mfa_sidecar
+-
+replace: userPassword
+userPassword: ${bind_password}
+EOF
+        _mfa_sidecar_ldap_modify_entry_via_ldapi "$tmp_ldif"
+    else
+        _mfa_sidecar_ldap_add_entry_via_ldapi "$tmp_ldif"
+    fi
+
+    rm -f "$tmp_ldif"
+}
+
+_mfa_sidecar_remove_ldap_bind_account() {
+    local bind_dn
+    bind_dn="$(_mfa_sidecar_ldap_bind_dn)"
+    if _mfa_sidecar_ldap_entry_exists "$bind_dn"; then
+        _mfa_sidecar_ldap_delete_entry_via_ldapi "$bind_dn"
+    fi
+}
+
 _mfa_sidecar_secret_file() {
     local name="$1"
     echo "/etc/mfa-sidecar/secrets/${name}"

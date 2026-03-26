@@ -30,6 +30,7 @@ _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file session_secret)
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file storage_encryption_key)"
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file identity_validation_reset_secret)"
 _mfa_sidecar_write_env_file
+_mfa_sidecar_ensure_ldap_bind_account
 _mfa_sidecar_write_policy_seed
 ynh_app_setting_set --key=portal_subdomain --value="$portal_subdomain"
 ynh_app_setting_set --key=default_policy --value="$default_policy"

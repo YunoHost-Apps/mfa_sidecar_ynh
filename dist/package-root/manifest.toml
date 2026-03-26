@@ -112,7 +112,7 @@ ram.runtime = "200M"
     dir = "/var/lib/$app"
 
     [resources.apt]
-    packages = ["python3", "python3-yaml", "openssl"]
+    packages = ["python3", "python3-yaml", "openssl", "ldap-utils"]
 
     [resources.permissions]
     main.url = "/"

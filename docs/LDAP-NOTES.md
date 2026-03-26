@@ -32,7 +32,13 @@ On an actual YunoHost alpha target, inspect LDAP directly to confirm:
 3. member attribute semantics
 4. whether a dedicated read-only bind account should be created or whether local socket access is preferable for the sidecar host layout
 
-## Likely implementation direction
-- packaged alpha should prefer a dedicated LDAP bind account secret in `/etc/mfa-sidecar/mfa-sidecar.env`
-- if packaging on the same host proves cleaner with `ldapi:///var/run/slapd/ldapi`, evaluate whether Authelia can use that path cleanly under its service user with least-privilege access
-- avoid assuming root or peercred auth for the sidecar service unless there is a very strong reason
+## Current implementation direction
+- package lifecycle now owns a **managed service bind account** at `uid=authelia,ou=users,dc=yunohost,dc=org`
+- install / upgrade / restore reconcile that LDAP entry idempotently via local `ldapi:///` using `ldapadd` / `ldapmodify`
+- remove deletes the managed service bind account so stale sidecar logins do not accumulate
+- bind password source of truth remains `/etc/mfa-sidecar/secrets/ldap_bind_password`, which is mirrored into the service env file for Authelia runtime use
+
+## Remaining caveats
+- the current implementation uses local OpenLDAP client tooling (`ldap-utils`) and assumes EXTERNAL auth over `ldapi:///` is available on the host
+- service privilege is still root-heavy overall; this fixes lifecycle honesty before it fixes least-privilege
+- if future YunoHost-native primitives for service-account lifecycle are found, they may be preferable to hand-managed LDAP object operations
