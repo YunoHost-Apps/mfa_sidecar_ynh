@@ -74,7 +74,10 @@ _mfa_sidecar_write_env_file() {
     ldap_password_file="$(_mfa_sidecar_secret_file ldap_bind_password)"
     _mfa_sidecar_write_secret_if_missing "$admin_gate_secret_file"
 
-    if [[ ! -f "$ldap_password_file" ]]; then
+    if [[ -n "${ldap_bind_password:-}" ]]; then
+        umask 077
+        printf '%s\n' "$ldap_bind_password" > "$ldap_password_file"
+    elif [[ ! -f "$ldap_password_file" ]]; then
         umask 077
         printf '%s\n' 'CHANGEME_LDAP_BIND_PASSWORD' > "$ldap_password_file"
     fi
@@ -173,6 +176,39 @@ _mfa_sidecar_sync_runtime_assets() {
 
     python3 "$install_dir/bin/stage_alpha_runtime.py" \
         "$install_dir/deploy/generated-alpha" /
+}
+
+_mfa_sidecar_wait_for_local_http() {
+    local url="$1"
+    local attempts="${2:-20}"
+    local sleep_seconds="${3:-1}"
+    local i
+
+    for ((i=1; i<=attempts; i++)); do
+        if python3 - "$url" <<'PY' >/dev/null 2>&1
+import sys
+import urllib.request
+
+url = sys.argv[1]
+with urllib.request.urlopen(url, timeout=2) as response:
+    if response.status < 500:
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+        then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+    return 1
+}
+
+_mfa_sidecar_assert_service_active() {
+    local service="$1"
+    if ! systemctl is-active --quiet "$service"; then
+        journalctl -u "$service" -n 80 --no-pager >&2 || true
+        ynh_die "Service failed to start: $service"
+    fi
 }
 
 _mfa_sidecar_inject_primary_domain_include() {
