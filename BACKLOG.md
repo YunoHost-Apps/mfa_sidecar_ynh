@@ -1,38 +1,39 @@
 # BACKLOG.md — MFA Sidecar
 
 ## Now
-- [ ] Finalize v1 architecture document
-- [ ] Decide Nginx vs Caddy for alpha proxy implementation
-- [ ] Validate how Authelia fits YunoHost LDAP in practice
+- [ ] Perform first real install on wm3v from the current package checkpoint
+- [ ] Validate real LDAP bind credential setup and first successful auth flow
+- [ ] Validate first managed-site target end to end (`home.wm3v.com` first)
+- [ ] Validate upgrade/remove/restore behavior on the real host
+- [ ] Add emergency global disable / rollback path
+- [ ] Decide exact alpha recovery/operator recovery stance
+- [ ] Decide whether the current `/admin` shared-secret gate survives alpha or gets replaced immediately after install feedback
+- [x] Finalize v1 architecture document
+- [x] Validate how Authelia fits YunoHost LDAP in practice (pre-install + wm3v read-only validation)
 - [x] Draft alpha runtime scaffolding (systemd/env/nginx templates)
 - [x] Add smoke test for config rendering pipeline
 - [x] Add runtime staging path for generated alpha assets
 - [x] Wire staging/build path into YunoHost package install and upgrade scripts
 - [x] Add protected-domain include injection/removal helpers for live YunoHost domains
-- [ ] Expand include injection beyond the primary protected app domain into broader multi-domain rollout helpers
 - [x] Add read-only discovery of domains/apps/root-domain subpaths for admin suggestions
 - [x] Simplify discovery to YunoHost-first inventory with nginx sanity check
-- [x] Define policy/config schema for per-domain on/off
+- [x] Define policy/config schema for managed host/path on/off
 - [x] Build initial alpha renderer for Authelia config + nginx snippets from shared policy
-- [ ] Define remembered-session policy defaults
-- [ ] Confirm recovery path for alpha (built-in, limited, or custom thin layer)
-- [ ] Scaffold alpha repo layout and config generator
 - [x] Adapt `redirect_ynh` package/lifecycle patterns into the alpha package skeleton (donor copied into `package-base/`)
 - [x] Mutate donor `manifest.toml` and scripts for MFA-sidecar semantics
 - [x] Decide initial install/config questions for alpha package
 - [x] Replace placeholder portal nginx redirect with real Authelia portal + protected-domain generation path
-- [x] Scaffold thin admin/control plane with add/toggle/apply behavior
+- [x] Scaffold thin admin/control plane with add/edit/delete/toggle/apply behavior
 - [x] Add smoke coverage for admin add/toggle/apply flow
 - [x] Wire package draft for `/admin` control plane service + proxy route
+- [x] Add alpha install/operator docs
 
 ## Next
-- [ ] Implement thin admin/control plane for domain toggles
-- [ ] Generate proxy config from declarative domain policy
-- [ ] Wire Authelia config generation from same policy source
+- [ ] Expand include injection beyond the primary protected app domain into broader multi-domain rollout helpers
+- [ ] Define remembered-session policy defaults more explicitly
 - [ ] Add default-protect-new-domains behavior
-- [ ] Add emergency disable / rollback path
-- [ ] Add alpha install/uninstall docs
 - [ ] Replace draft `/admin` shared-secret gate with a cleaner operator auth model after live validation
+- [ ] Reduce root-biased service execution where practical
 
 ## Later
 - [ ] Evaluate authentik fallback path if Authelia proves too limiting

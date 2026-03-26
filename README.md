@@ -3,7 +3,7 @@
 Authelia-based MFA sidecar for selected YunoHost domains and paths.
 
 ## Status
-This project is in active pre-install validation. The package is intended as an **admin-side/operator tool**, not a normal end-user dashboard app.
+This project is at a **first-install alpha candidate** checkpoint. It has strong pre-install validation and smoke coverage, but it still needs a real snapshot-backed install on wm3v to prove the live lifecycle and auth flow. The package is intended as an **admin-side/operator tool**, not a normal end-user dashboard app.
 
 ## Current design goals
 - dedicated portal domain for the sidecar itself
