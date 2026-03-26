@@ -69,17 +69,28 @@ _mfa_sidecar_write_secret_if_missing() {
 
 _mfa_sidecar_write_env_file() {
     local admin_gate_secret_file
+    local ldap_password_file
     admin_gate_secret_file="$(_mfa_sidecar_secret_file admin_gate_secret)"
+    ldap_password_file="$(_mfa_sidecar_secret_file ldap_bind_password)"
     _mfa_sidecar_write_secret_if_missing "$admin_gate_secret_file"
+
+    if [[ ! -f "$ldap_password_file" ]]; then
+        umask 077
+        printf '%s\n' 'CHANGEME_LDAP_BIND_PASSWORD' > "$ldap_password_file"
+    fi
 
     cat > /etc/mfa-sidecar/mfa-sidecar.env <<EOF
 AUTHELIA_SESSION_SECRET=$(cat "$(_mfa_sidecar_secret_file session_secret)")
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(cat "$(_mfa_sidecar_secret_file storage_encryption_key)")
 AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET=$(cat "$(_mfa_sidecar_secret_file identity_validation_reset_secret)")
-AUTHELIA_LDAP_PASSWORD=CHANGEME_LDAP_BIND_PASSWORD
+AUTHELIA_LDAP_PASSWORD=$(cat "$ldap_password_file")
 MFA_SIDECAR_ADMIN_GATE_SECRET=$(cat "$admin_gate_secret_file")
 EOF
     chmod 600 /etc/mfa-sidecar/mfa-sidecar.env
+}
+
+_mfa_sidecar_ldap_password_is_placeholder() {
+    [[ "$(cat "$(_mfa_sidecar_secret_file ldap_bind_password)" 2>/dev/null || true)" == 'CHANGEME_LDAP_BIND_PASSWORD' ]]
 }
 
 _mfa_sidecar_install_authelia_binary() {
@@ -213,7 +224,7 @@ Current beta-shaped improvements:
 - host-aligned LDAP defaults for wm3v-style YunoHost LDAP
 
 Remaining operator tasks:
-- provide a real LDAP bind password in /etc/mfa-sidecar/mfa-sidecar.env
+- replace the placeholder LDAP bind password in /etc/mfa-sidecar/secrets/ldap_bind_password, then rerun `yunohost app upgrade mfa_sidecar --debug` or restart sidecar services
 - retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env to access /admin during alpha validation
 - validate live auth flow after install
 - add and tune managed site entries from the admin control plane

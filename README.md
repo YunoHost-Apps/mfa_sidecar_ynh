@@ -24,7 +24,9 @@ This project is in active pre-install validation. The package is intended as an 
 - thin bundled admin UI at `/admin` for managed host/path entries
 - draft `/admin` auth gate via generated shared secret header
 - simple read-only discovery suggestions from YunoHost domains + app subpaths, with nginx used only as a sanity check
-- repeated smoke coverage for render, staging, discovery, admin add/toggle/apply flow, vendored binary install, and failure contracts
+- repeated smoke coverage for render, staging, discovery, admin add/edit/delete/toggle/apply flow, vendored binary install, package-tree export, and failure contracts
+- explicit package-root export script at `scripts/export_package_root.sh`
+- LDAP bind password now sourced from `/etc/mfa-sidecar/secrets/ldap_bind_password` and refreshed into `/etc/mfa-sidecar/mfa-sidecar.env`
 
 ## Important constraints
 - the sidecar portal must be installed on its own dedicated domain at `/`

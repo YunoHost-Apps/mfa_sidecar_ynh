@@ -24,15 +24,16 @@ Use this before the first real YunoHost install attempt.
 ## Required before real install
 1. Confirm the vendored Authelia artifact in package sources matches the version/checksum you intend to ship
 2. Confirm the target host has Python 3 + PyYAML available for renderer execution
-3. Be ready to set a real LDAP bind password in `/etc/mfa-sidecar/mfa-sidecar.env`
-4. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` for `/admin` access during alpha validation
-5. Ensure the sidecar portal is being installed on its own dedicated domain at `/`
-6. Treat this as an admin-side/operator tool, not a user dashboard app/tile
-7. Prefer testing first on a disposable YunoHost VM or snapshot
+3. Be ready to replace the placeholder LDAP bind password in `/etc/mfa-sidecar/secrets/ldap_bind_password` immediately after install
+4. After replacing it, rerun `yunohost app upgrade mfa_sidecar --debug` or restart `mfa-sidecar-authelia` + `mfa-sidecar-admin` so `/etc/mfa-sidecar/mfa-sidecar.env` is refreshed from the secret file
+5. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` for `/admin` access during alpha validation
+6. Ensure the sidecar portal is being installed on its own dedicated domain at `/`
+7. Treat this as an admin-side/operator tool, not a user dashboard app/tile
+8. Prefer testing first on a disposable YunoHost VM or snapshot
 
 ## Expected first-install rough edges still possible
 - LDAP filters were corrected after live wm3v inspection, but still deserve one more validation during first install
-- service hardening is still draft-level
+- service hardening is improved but still conservative/root-biased rather than a finished least-privilege model
 - multi-domain rollout beyond the primary domain is not yet fully automated
 - package lifecycle has strong dry-run coverage, and the simplified discovery model now has a live wm3v read-only validation, but not yet full live host execution proof
 

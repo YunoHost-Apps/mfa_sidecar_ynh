@@ -13,7 +13,10 @@ It is not "production-proven" yet, but the package is no longer obviously underb
 - vendored Authelia artifact added to package sources
 - Authelia install path now checksum-verifies vendored artifact
 - LDAP defaults corrected from live wm3v inspection
+- LDAP bind password handling moved from a fake env placeholder toward a dedicated secret file (`/etc/mfa-sidecar/secrets/ldap_bind_password`) that regenerates the runtime env file
 - temporary truthful branding/logo added using official Authelia logo
+- service hardening tightened beyond the original draft units
+- explicit package-root export script added so release/publish no longer depends on workspace-root sprawl
 - repeated smoke runs pass consistently
 - live wm3v read-only and constrained root-assisted preflights completed
 

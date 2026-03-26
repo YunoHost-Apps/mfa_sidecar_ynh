@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import hmac
+import html
+import os
+import subprocess
+import sys
+import threading
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, quote_plus, urlparse
+
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from discovery import Discovery
+from policy_admin import PolicyAdmin, PolicyError, normalize_path, validate_upstream, validate_entry_id
+
+DEFAULT_POLICY_PATH = os.environ.get("MFA_SIDECAR_POLICY_PATH", "/etc/mfa-sidecar/config/domain-policy.yaml")
+DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR.parent / "config-render" / "render_alpha_config.py"))
+DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR.parent.parent / "scripts" / "stage_alpha_runtime.py"))
+DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
+DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
+BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
+BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
+DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
+DISCOVERY_YUNOHOST_BIN = os.environ.get("MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN", "yunohost")
+ADMIN_GATE_SECRET = os.environ.get("MFA_SIDECAR_ADMIN_GATE_SECRET", "")
+
+
+def h(value: object) -> str:
+    return html.escape(str(value), quote=True)
+
+
+class AdminApp:
+    def __init__(self) -> None:
+        self.policy_path = Path(DEFAULT_POLICY_PATH)
+        self.generated_dir = Path(DEFAULT_GENERATED_DIR)
+        self.policy = PolicyAdmin(self.policy_path)
+        self.discovery = Discovery(
+            nginx_conf_dir=DISCOVERY_NGINX_CONF_DIR,
+            yunohost_bin=DISCOVERY_YUNOHOST_BIN,
+        )
+        self.lock = threading.Lock()
+
+    def apply_runtime(self) -> None:
+        subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
+        subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
+
+    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool) -> None:
+        entry_id = PolicyAdmin.slugify(f"{host}-{path}")
+        with self.lock:
+            self.policy.add_entry(
+                entry_id=entry_id,
+                label=label,
+                host=host,
+                path=path,
+                upstream=upstream,
+                enabled=enabled,
+            )
+            self.apply_runtime()
+
+    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool) -> None:
+        with self.lock:
+            self.policy.update_entry(
+                entry_id=entry_id,
+                label=label,
+                host=host,
+                path=path,
+                upstream=upstream,
+                enabled=enabled,
+            )
+            self.apply_runtime()
+
+    def toggle_entry_and_apply(self, entry_id: str) -> None:
+        with self.lock:
+            self.policy.toggle_entry(entry_id)
+            self.apply_runtime()
+
+    def delete_entry_and_apply(self, entry_id: str) -> None:
+        with self.lock:
+            self.policy.delete_entry(entry_id)
+            self.apply_runtime()
+
+    def discovered_targets(self) -> tuple[list[dict], str]:
+        try:
+            discovered = self.discovery.discover()
+            managed_pairs = {(entry['host'], normalize_path(entry.get('path', '/'))) for entry in self.policy.list_entries()}
+            suggestions = [
+                item for item in discovered.get('suggestions', [])
+                if item['kind'] == 'app-path' and (item['host'], normalize_path(item.get('path', '/'))) not in managed_pairs
+            ]
+            return suggestions, ""
+        except Exception as exc:
+            return [], str(exc)
+
+    def render_index(self, error: str = "", notice: str = "", edit_entry_id: str = "") -> str:
+        summary = self.policy.portal_summary()
+        entries = self.policy.list_entries()
+        discovered, discovery_error = self.discovered_targets()
+        edit_entry = next((entry for entry in entries if entry['id'] == edit_entry_id), None)
+        rows = []
+        for entry in entries:
+            state = "Enabled" if entry.get("enabled") else "Bypass"
+            action = "Disable" if entry.get("enabled") else "Enable"
+            rows.append(
+                f"<tr>"
+                f"<td><code>{h(entry['id'])}</code></td>"
+                f"<td>{h(entry.get('label', ''))}</td>"
+                f"<td><code>{h(entry['host'])}</code></td>"
+                f"<td><code>{h(normalize_path(entry.get('path', '/')))}</code></td>"
+                f"<td><code>{h(entry['upstream'])}</code></td>"
+                f"<td>{h(state)}</td>"
+                f"<td>"
+                f"<form method='post' action='/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
+                f"<button type='submit'>{h(action)}</button>"
+                f"</form>"
+                f"<form method='get' action='/admin' style='display:inline-block; margin-right: 0.4rem;'>"
+                f"<input type='hidden' name='edit' value='{h(entry['id'])}' />"
+                f"<button type='submit'>Edit</button>"
+                f"</form>"
+                f"<form method='post' action='/entries/{h(entry['id'])}/delete' style='display:inline-block;'>"
+                f"<button type='submit' onclick=\"return confirm('Delete this managed entry?');\">Delete</button>"
+                f"</form>"
+                f"</td>"
+                f"</tr>"
+            )
+        rows_html = "\n".join(rows) or "<tr><td colspan='7'><em>No managed entries yet.</em></td></tr>"
+
+        suggestion_rows = []
+        for item in discovered:
+            upstream_value = item.get('suggested_upstream', 'https://127.0.0.1:443')
+            try:
+                upstream_value = validate_upstream(upstream_value)
+            except PolicyError:
+                upstream_value = 'https://127.0.0.1:443'
+            nginx_state = 'yes' if item.get('nginx_present') else 'no'
+            suggestion_rows.append(
+                f"<tr>"
+                f"<td>{h(item.get('label', ''))}</td>"
+                f"<td><code>{h(item['host'])}</code></td>"
+                f"<td><code>{h(normalize_path(item.get('path', '/')))}</code></td>"
+                f"<td><code>{h(item.get('app_id', ''))}</code></td>"
+                f"<td>{h(nginx_state)}</td>"
+                f"<td><code>{h(upstream_value)}</code></td>"
+                f"<td>"
+                f"<form method='post' action='/discoveries/add'>"
+                f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
+                f"<input type='hidden' name='host' value='{h(item['host'])}' />"
+                f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
+                f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
+                f"<input type='hidden' name='enabled' value='false' />"
+                f"<button type='submit'>Add</button>"
+                f"</form>"
+                f"</td>"
+                f"</tr>"
+            )
+        suggestion_rows_html = "\n".join(suggestion_rows) or "<tr><td colspan='7'><em>No root-domain app paths discovered right now.</em></td></tr>"
+
+        error_html = f"<div class='error'>{h(error)}</div>" if error else ""
+        notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
+        discovery_html = f"<div class='error'>Discovery degraded: {h(discovery_error)}</div>" if discovery_error else ""
+        if edit_entry:
+            form_title = f"Edit managed entry: {edit_entry['id']}"
+            form_action = f"/entries/{edit_entry['id']}/update"
+            submit_label = "Update entry and apply"
+            form_label = edit_entry.get('label', '')
+            form_host = edit_entry['host']
+            form_path = normalize_path(edit_entry.get('path', '/'))
+            form_upstream = edit_entry['upstream']
+            form_enabled = 'true' if edit_entry.get('enabled') else 'false'
+            cancel_html = "<p><a href='/admin'>Cancel edit</a></p>"
+        else:
+            form_title = "Add managed entry"
+            form_action = "/entries"
+            submit_label = "Add entry and apply"
+            form_label = ""
+            form_host = ""
+            form_path = "/"
+            form_upstream = ""
+            form_enabled = 'false'
+            cancel_html = ""
+        return f"""<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>MFA Sidecar admin</title>
+  <style>
+    body {{ font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.4; }}
+    table {{ border-collapse: collapse; width: 100%; margin-top: 1rem; }}
+    th, td {{ border: 1px solid #ccc; padding: 0.5rem; text-align: left; vertical-align: top; }}
+    code {{ white-space: nowrap; }}
+    .error {{ background: #fee; color: #900; padding: 0.75rem; margin: 1rem 0; border: 1px solid #d99; }}
+    .notice {{ background: #efe; color: #060; padding: 0.75rem; margin: 1rem 0; border: 1px solid #9d9; }}
+    .grid {{ display: grid; grid-template-columns: repeat(2, minmax(16rem, 1fr)); gap: 0.75rem 1rem; }}
+    label span {{ display: block; font-weight: 600; margin-bottom: 0.25rem; }}
+    input[type=text], select {{ width: 100%; padding: 0.45rem; }}
+    .muted {{ color: #555; font-size: 0.92em; }}
+  </style>
+</head>
+<body>
+  <h1>MFA Sidecar admin</h1>
+  <p class='muted'>Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
+  {notice_html}
+  {error_html}
+  {discovery_html}
+
+  <h2>Portal summary</h2>
+  <ul>
+    <li><strong>Portal domain:</strong> <code>{h(summary['portal_domain'])}</code></li>
+    <li><strong>Portal path:</strong> <code>{h(summary['portal_path'])}</code></li>
+    <li><strong>Remembered session:</strong> <code>{h(summary['remember_me'])}</code></li>
+    <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
+  </ul>
+
+  <h2>Discovered app paths</h2>
+  <p class='muted'>Only app paths from YunoHost are listed here. If nginx does not show the path, that just means it needs a quick sanity check before trusting it. Manual add remains the escape hatch for anything custom.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Label</th><th>Host</th><th>Path</th><th>App id</th><th>nginx check</th><th>Suggested upstream</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {suggestion_rows_html}
+    </tbody>
+  </table>
+
+  <h2>Managed entries</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Label</th><th>Host</th><th>Path</th><th>Upstream</th><th>State</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows_html}
+    </tbody>
+  </table>
+
+  <h2>{h(form_title)}</h2>
+  <form method='post' action='{h(form_action)}'>
+    <div class='grid'>
+      <label><span>Label</span><input type='text' name='label' placeholder='Homebox' value='{h(form_label)}' /></label>
+      <label><span>Host</span><input type='text' name='host' placeholder='home.wm3v.com' value='{h(form_host)}' required /></label>
+      <label><span>Path</span><input type='text' name='path' value='{h(form_path)}' required /></label>
+      <label><span>Upstream</span><input type='text' name='upstream' placeholder='http://127.0.0.1:3000' value='{h(form_upstream)}' required /></label>
+      <label><span>Initial state</span>
+        <select name='enabled'>
+          <option value='false' {'selected' if form_enabled == 'false' else ''}>Bypass</option>
+          <option value='true' {'selected' if form_enabled == 'true' else ''}>Protected</option>
+        </select>
+      </label>
+    </div>
+    <p><button type='submit'>{h(submit_label)}</button></p>
+  </form>
+  {cancel_html}
+</body>
+</html>
+"""
+
+
+APP = AdminApp()
+
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        if not self._authorized():
+            self.send_error(HTTPStatus.FORBIDDEN)
+            return
+        parsed = urlparse(self.path)
+        if parsed.path not in {"/", "/admin"}:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        qs = parse_qs(parsed.query)
+        edit_entry_id = qs.get("edit", [""])[0]
+        body = APP.render_index(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0], edit_entry_id=edit_entry_id)
+        payload = body.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def do_POST(self) -> None:
+        if not self._authorized():
+            self.send_error(HTTPStatus.FORBIDDEN)
+            return
+        parsed = urlparse(self.path)
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        raw = self.rfile.read(length).decode("utf-8")
+        form = parse_qs(raw)
+        try:
+            if parsed.path in {"/entries", "/discoveries/add"}:
+                host = form.get("host", [""])[0]
+                path = form.get("path", ["/"])[0]
+                label = form.get("label", [""])[0]
+                upstream = form.get("upstream", [""])[0]
+                enabled = form.get("enabled", ["false"])[0].lower() == "true"
+                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
+                return
+            if parsed.path.startswith("/entries/") and parsed.path.endswith("/toggle"):
+                entry_id = validate_entry_id(parsed.path.split("/")[2])
+                APP.toggle_entry_and_apply(entry_id)
+                self._redirect("/admin?notice=" + quote_plus("Entry toggled and runtime applied"))
+                return
+            if parsed.path.startswith("/entries/") and parsed.path.endswith("/update"):
+                entry_id = validate_entry_id(parsed.path.split("/")[2])
+                host = form.get("host", [""])[0]
+                path = form.get("path", ["/"])[0]
+                label = form.get("label", [""])[0]
+                upstream = form.get("upstream", [""])[0]
+                enabled = form.get("enabled", ["false"])[0].lower() == "true"
+                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
+                return
+            if parsed.path.startswith("/entries/") and parsed.path.endswith("/delete"):
+                entry_id = validate_entry_id(parsed.path.split("/")[2])
+                APP.delete_entry_and_apply(entry_id)
+                self._redirect("/admin?notice=" + quote_plus("Entry deleted and runtime applied"))
+                return
+            self.send_error(HTTPStatus.NOT_FOUND)
+        except (PolicyError, subprocess.CalledProcessError) as exc:
+            self._redirect("/admin?error=" + quote_plus(str(exc)))
+
+    def log_message(self, format: str, *args) -> None:
+        return
+
+    def _redirect(self, location: str) -> None:
+        self.send_response(HTTPStatus.SEE_OTHER)
+        self.send_header("Location", location)
+        self.end_headers()
+
+    def _authorized(self) -> bool:
+        if not ADMIN_GATE_SECRET:
+            return True
+        provided = self.headers.get("X-MFA-Sidecar-Admin-Secret", "")
+        return hmac.compare_digest(provided, ADMIN_GATE_SECRET)
+
+
+if __name__ == "__main__":
+    server = ThreadingHTTPServer((BIND_HOST, BIND_PORT), Handler)
+    print(f"MFA Sidecar admin UI listening on http://{BIND_HOST}:{BIND_PORT}")
+    server.serve_forever()

@@ -1,0 +1,36 @@
+[Unit]
+Description=MFA Sidecar (Admin UI)
+After=network-online.target mfa-sidecar-authelia.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/yunohost/mfa_sidecar
+EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
+Environment=MFA_SIDECAR_POLICY_PATH=/opt/yunohost/mfa_sidecar/config/domain-policy.yaml
+Environment=MFA_SIDECAR_RENDER_SCRIPT=/opt/yunohost/mfa_sidecar/bin/render_alpha_config.py
+Environment=MFA_SIDECAR_STAGE_SCRIPT=/opt/yunohost/mfa_sidecar/bin/stage_alpha_runtime.py
+Environment=MFA_SIDECAR_GENERATED_DIR=/opt/yunohost/mfa_sidecar/deploy/generated-alpha
+Environment=MFA_SIDECAR_STAGE_ROOT=/
+Environment=MFA_SIDECAR_ADMIN_BIND=127.0.0.1
+Environment=MFA_SIDECAR_ADMIN_PORT=9087
+ExecStart=/usr/bin/python3 /opt/yunohost/mfa_sidecar/bin/admin_ui_app.py
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadWritePaths=/opt/yunohost/mfa_sidecar/config /opt/yunohost/mfa_sidecar/deploy/generated-alpha /etc/mfa-sidecar
+
+[Install]
+WantedBy=multi-user.target

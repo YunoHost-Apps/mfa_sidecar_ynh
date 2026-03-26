@@ -1,0 +1,8 @@
+{
+  "version": "4.39.16",
+  "tag": "v4.39.16",
+  "asset": "authelia-v4.39.16-linux-amd64.tar.gz",
+  "sha256": "75673659599055c75ff1387f2d066e83636d22903765296dbaad32f75b50f83c",
+  "source": "vendored package source",
+  "packaged_at": "2026-03-25T22:24:53Z"
+}
