@@ -3,6 +3,8 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
+_mfa_sidecar_resolve_paths
+
 ynh_restore "/etc/nginx/conf.d/${domain}.d/${app}.conf"
 ynh_restore "/etc/mfa-sidecar"
 ynh_restore "$install_dir/config/domain-policy.yaml"

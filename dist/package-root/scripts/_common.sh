@@ -1,5 +1,29 @@
 #!/bin/bash
 
+_mfa_sidecar_resolve_paths() {
+    local resolved_install_dir resolved_data_dir
+
+    resolved_install_dir="${install_dir:-}"
+    resolved_data_dir="${data_dir:-}"
+
+    if [[ -z "$resolved_install_dir" || "$resolved_install_dir" == *'$app'* || "$resolved_install_dir" == *'__APP__'* ]]; then
+        resolved_install_dir="$(ynh_app_setting_get --key=install_dir 2>/dev/null || true)"
+    fi
+    if [[ -z "$resolved_data_dir" || "$resolved_data_dir" == *'$app'* || "$resolved_data_dir" == *'__APP__'* ]]; then
+        resolved_data_dir="$(ynh_app_setting_get --key=data_dir 2>/dev/null || true)"
+    fi
+
+    if [[ -z "$resolved_install_dir" || "$resolved_install_dir" == *'$app'* || "$resolved_install_dir" == *'__APP__'* ]]; then
+        resolved_install_dir="/opt/yunohost/${app}"
+    fi
+    if [[ -z "$resolved_data_dir" || "$resolved_data_dir" == *'$app'* || "$resolved_data_dir" == *'__APP__'* ]]; then
+        resolved_data_dir="/var/lib/${app}"
+    fi
+
+    install_dir="$resolved_install_dir"
+    data_dir="$resolved_data_dir"
+}
+
 _mfa_sidecar_validate_inputs() {
     if [[ "$path" != "/" ]]; then
         ynh_die "Portal app must be installed at '/' on its own dedicated domain."
