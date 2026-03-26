@@ -70,6 +70,8 @@ This project now contains a coherent late-alpha / production-hardening candidate
 - removes nginx config
 - stops/disables sidecar service
 - removes `/etc/mfa-sidecar`
+- removes `/var/lib/mfa_sidecar`
+- removes the owned install dir `/opt/yunohost/mfa_sidecar`
 
 ## Honest alpha limitations
 This is a **fully developed alpha candidate**, not a production-ready package.

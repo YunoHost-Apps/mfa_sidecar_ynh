@@ -19,6 +19,6 @@ grep -q 'chmod 640 /etc/mfa-sidecar/authelia/configuration.yml' "$INSTALL_SCRIPT
 
 grep -q 'chown -R "\$app:\$app" "\$install_dir" "\$data_dir"' "$UPGRADE_SCRIPT"
 grep -q 'chown -R "\$app:\$app" "\$install_dir" "\$data_dir"' "$RESTORE_SCRIPT"
-grep -q 'rm -f "\$install_dir/bin/authelia"' "$REMOVE_SCRIPT"
+grep -q 'rm -rf "\$install_dir"' "$REMOVE_SCRIPT"
 
 echo "smoke_least_privilege_contract: ok"
