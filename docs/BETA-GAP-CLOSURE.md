@@ -20,8 +20,8 @@
    - move service off root once binary/runtime ownership constraints are tested
    - tighten file ownership and secret handling
 
-4. **LDAP realism**
-   - confirm group filters and bind model against actual YunoHost LDAP data
+4. **First-user and recovery realism**
+   - confirm first-user bootstrap, login, enrollment, and operator recovery on a real host
 
 5. **Control plane ergonomics**
    - current state is still file/config driven

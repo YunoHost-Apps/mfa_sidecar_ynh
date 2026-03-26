@@ -16,6 +16,8 @@ install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alp
 install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
 install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
 install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
+install -D -m 755 ../sources/bootstrap_authelia_users.py "$install_dir/bin/bootstrap_authelia_users.py"
+install -D -m 755 ../sources/manage_authelia_users.py "$install_dir/bin/manage_authelia_users.py"
 install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
 install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
 install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"

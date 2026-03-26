@@ -167,4 +167,30 @@ run__show_admin_gate() {
     ynh_print_info "Current admin gate secret: $current_secret"
 }
 
+run__show_users_file() {
+    if [[ ! -f "$USERS_FILE" ]]; then
+        echo "Users file not found: $USERS_FILE"
+        return 1
+    fi
+    ynh_print_info "Current sidecar users file: $USERS_FILE"
+    cat "$USERS_FILE"
+}
+
+run__seed_first_user() {
+    if [[ -z "${first_username:-}" || -z "${first_display_name:-}" || -z "${first_email:-}" || -z "${first_password:-}" ]]; then
+        echo "first_username, first_display_name, first_email, and first_password are required"
+        return 1
+    fi
+    python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" ensure-user \
+        --users-file "$USERS_FILE" \
+        --authelia-bin /usr/local/bin/authelia \
+        --username "$first_username" \
+        --display-name "$first_display_name" \
+        --email "$first_email" \
+        --password "$first_password" \
+        --groups admins
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_print_info "Seeded/updated first sidecar user and restarted Authelia."
+}
+
 ynh_app_config_run "$1"

@@ -1,14 +1,14 @@
 # STATUS.md — MFA Sidecar
 
 ## Current phase
-Alpha candidate packaged, but live install flow still needs clean-host validation
+Production-hardening candidate packaged, but live install flow still needs clean-host validation
 
 ## Current recommendation
 Use **Authelia** as the sidecar auth engine in front of selected YunoHost-managed domains, with:
 - passkeys / WebAuthn primary
 - TOTP fallback
-- YunoHost LDAP as first-factor identity source
-- PostgreSQL for durable state
+- separate sidecar-owned credential + MFA store
+- optional read-only YunoHost username/email discovery later if needed
 - thin custom control plane for managed host/path entries and generated config
 
 ## Why this path currently leads

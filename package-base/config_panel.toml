@@ -129,14 +129,49 @@ services = ["nginx"]
         ask.en = "Show current admin gate secret"
         ask.fr = "Afficher le secret actuel de la passerelle admin"
 
+        [main.operations.show_users_file]
+        type = "button"
+        ask.en = "Show current sidecar users file"
+        ask.fr = "Afficher le fichier utilisateurs actuel du sidecar"
+
         [main.operations.users_file_note]
         type = "alert"
         style = "warning"
         ask.en = "The sidecar now uses its own Authelia users file at /etc/mfa-sidecar/authelia/users.yml. Installation bootstraps a template, but you still need to replace the placeholder hash/email with a real first user before meaningful auth testing."
         ask.fr = "Le sidecar utilise maintenant son propre fichier utilisateurs Authelia dans /etc/mfa-sidecar/authelia/users.yml. L’installation initialise un modèle, mais vous devez toujours remplacer le hash/e-mail fictifs par un vrai premier utilisateur avant des tests d’authentification utiles."
 
+        [main.operations.seed_first_user]
+        type = "button"
+        ask.en = "Create or update first sidecar user"
+        ask.fr = "Créer ou mettre à jour le premier utilisateur du sidecar"
+        enabled = "first_username && first_display_name && first_email && first_password"
+
+        [main.operations.first_username]
+        ask.en = "Username"
+        ask.fr = "Nom d'utilisateur"
+        type = "string"
+        bind = "null"
+
+        [main.operations.first_display_name]
+        ask.en = "Display name"
+        ask.fr = "Nom affiché"
+        type = "string"
+        bind = "null"
+
+        [main.operations.first_email]
+        ask.en = "Email"
+        ask.fr = "E-mail"
+        type = "email"
+        bind = "null"
+
+        [main.operations.first_password]
+        ask.en = "Password"
+        ask.fr = "Mot de passe"
+        type = "password"
+        bind = "null"
+
         [main.operations.admin_note]
         type = "alert"
         style = "info"
-        ask.en = "Detailed managed-site editing still lives in the sidecar admin UI on /admin. The config panel is the YunoHost-native surface for common settings and safe operational actions."
-        ask.fr = "L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin. Le panneau de configuration est la surface native YunoHost pour les réglages courants et les actions opérationnelles sûres."
+        ask.en = "Detailed managed-site editing still lives in the sidecar admin UI on /admin. The config panel is the YunoHost-native surface for common settings, first-user bootstrap, and safe operational actions."
+        ask.fr = "L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin. Le panneau de configuration est la surface native YunoHost pour les réglages courants, l’initialisation du premier utilisateur et les actions opérationnelles sûres."

@@ -7,10 +7,24 @@ By default MFA Sidecar now bootstraps a template at:
 
 - `/etc/mfa-sidecar/authelia/users.yml`
 
-This is intentionally **not** a finished real-user database. It is a starter template so the operator has an explicit place to finish first-user setup instead of discovering that requirement later.
+This is intentionally a starter file, not a finished real-user database.
 
-## 2. Create the first real sidecar user
-Edit:
+## 2. Preferred path: seed the first user from the YunoHost config panel
+Open the MFA Sidecar config panel and use:
+
+- **Create or update first sidecar user**
+
+Provide:
+
+- username
+- display name
+- email
+- password
+
+The package will generate the Argon2 hash via the local Authelia CLI, write it into `/etc/mfa-sidecar/authelia/users.yml`, and restart Authelia.
+
+## 3. Manual fallback path
+If needed, you can still edit:
 
 - `/etc/mfa-sidecar/authelia/users.yml`
 
@@ -21,13 +35,11 @@ Replace the placeholder values with a real first user:
 - real email
 - real **Argon2 hash** instead of `REPLACE_WITH_ARGON2_HASH`
 
-Use the Authelia CLI to generate the password hash, for example:
+You can generate the hash manually with:
 
 - `authelia crypto hash generate argon2`
 
-Then save the generated digest into the `password:` field.
-
-## 3. Retrieve the admin gate secret
+## 4. Retrieve the admin gate secret
 Read:
 
 - `/etc/mfa-sidecar/mfa-sidecar.env`
@@ -36,24 +48,24 @@ and copy:
 
 - `MFA_SIDECAR_ADMIN_GATE_SECRET`
 
-You will need that value to pass the `/admin` auth gate during alpha validation.
+You will need that value to pass the `/admin` auth gate during install validation.
 
-## 4. Reload services after first-user setup
-After updating `users.yml`, refresh runtime state with one of:
+## 5. Reload/restart if you used the manual fallback path
+If you edited `users.yml` manually, refresh runtime state with one of:
 
 - `yunohost app upgrade mfa_sidecar --debug`
 - or restart both services:
   - `systemctl restart mfa-sidecar-authelia`
   - `systemctl restart mfa-sidecar-admin`
 
-## 5. Validate the portal
+## 6. Validate the portal
 Check that:
 
 - the portal domain loads
 - the logo renders
 - `/admin` no longer returns nginx 500
 
-## 6. Validate first managed-site workflow
+## 7. Validate first managed-site workflow
 In `/admin`:
 
 - add the first managed site
@@ -65,7 +77,7 @@ Suggested first target on wm3v:
 
 - `home.wm3v.com`
 
-## 7. Validate auth flow
+## 8. Validate auth flow
 Confirm:
 
 - redirect into the sidecar portal
@@ -73,5 +85,5 @@ Confirm:
 - return to the protected target
 - bypass still works for disabled entries
 
-## 8. Record what still hurts
+## 9. Record what still hurts
 If anything still requires manual surgery after install, record it immediately. The goal is to burn down post-install footguns, not normalize them.
