@@ -1,9 +1,9 @@
 # Final pre-install status
 
 ## Overall read
-MFA Sidecar is now in a **credible snapshot-backed first-install state**.
+MFA Sidecar is now in a **credible alpha package state**, but tonight's wm3v attempts proved that a clean host state matters just as much as package quality.
 
-It is not "production-proven" yet, but the package is no longer obviously underbaked in the major areas we could validate safely before a live install.
+It is not "production-proven" yet, and the next attempt should start from a restored snapshot or an equivalently clean host state. The package is no longer obviously underbaked in the major areas we could validate safely before a live install, but the live installer path itself showed stale-state/cache behavior that must be accounted for.
 
 ## Major improvements completed
 - product identity settled on **MFA Sidecar**

@@ -1,7 +1,7 @@
 # STATUS.md — MFA Sidecar
 
 ## Current phase
-Alpha candidate packaged and pre-install validated
+Alpha candidate packaged, but live install flow still needs clean-host validation
 
 ## Current recommendation
 Use **Authelia** as the sidecar auth engine in front of selected YunoHost-managed domains, with:
@@ -23,13 +23,15 @@ Use **Authelia** as the sidecar auth engine in front of selected YunoHost-manage
 - when to reduce root-biased service execution toward a cleaner least-privilege model
 
 ## Current checkpoint
-The repo is now in a **snapshot-first installable alpha state**:
+The repo is now in a **documented alpha package state with strong local validation**, but tonight's wm3v attempts showed that the live install path can still be derailed by stale YunoHost/systemd host state:
 - package lifecycle scripts are in place
 - policy seed + renderer + runtime staging are aligned
 - bundled admin UI works for add/edit/delete/toggle/apply
 - simplified YunoHost-first discovery is implemented and smoke-covered
 - wm3v read-only/live inventory validation has been recorded
 - full smoke suite currently passes
+- installer-facing package branch is `github-package`
+- live wm3v retries produced evidence of stale/cached older unit definitions during install transactions
 
 ## Immediate next step
-Take a VM snapshot, perform the first real install on the dedicated portal domain, set the real LDAP bind password, and validate the first managed-site flow end to end on wm3v.
+Start from a clean host state (preferably snapshot restore), follow `docs/2026-03-26-INSTALL-HANDOFF.md`, and only then perform the next install attempt on the dedicated portal domain.

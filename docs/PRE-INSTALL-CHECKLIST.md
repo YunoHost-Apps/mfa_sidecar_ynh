@@ -24,12 +24,22 @@ Use this before the first real YunoHost install attempt.
 ## Required before real install
 1. Confirm the vendored Authelia artifact in package sources matches the version/checksum you intend to ship
 2. Confirm the target host has Python 3 + PyYAML available for renderer execution
-3. Be ready to replace the placeholder LDAP bind password in `/etc/mfa-sidecar/secrets/ldap_bind_password` immediately after install
-4. After replacing it, rerun `yunohost app upgrade mfa_sidecar --debug` or restart `mfa-sidecar-authelia` + `mfa-sidecar-admin` so `/etc/mfa-sidecar/mfa-sidecar.env` is refreshed from the secret file
-5. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` for `/admin` access during alpha validation
-6. Ensure the sidecar portal is being installed on its own dedicated domain at `/`
-7. Treat this as an admin-side/operator tool, not a user dashboard app/tile
-8. Prefer testing first on a disposable YunoHost VM or snapshot
+3. Ensure the target host is clean before install — ideally from a restored snapshot, otherwise explicitly clean stale units/runtime leftovers first
+4. If not restoring a snapshot, perform host cleanup before reinstalling:
+   - remove any failed `mfa_sidecar` app state if present
+   - stop/disable/reset-failed `mfa-sidecar-admin` + `mfa-sidecar-authelia`
+   - remove stale `/etc/systemd/system/mfa-sidecar-*.service`
+   - remove stale `/etc/mfa-sidecar`, `/opt/yunohost/mfa_sidecar`, `/var/lib/mfa_sidecar`
+   - move aside leftover `auth.<domain>` nginx config from failed attempts
+   - `systemctl daemon-reload`
+   - `nginx -t && systemctl restart nginx`
+5. Be ready to replace the placeholder LDAP bind password in `/etc/mfa-sidecar/secrets/ldap_bind_password` immediately after install
+6. After replacing it, rerun `yunohost app upgrade mfa_sidecar --debug` or restart `mfa-sidecar-authelia` + `mfa-sidecar-admin` so `/etc/mfa-sidecar/mfa-sidecar.env` is refreshed from the secret file
+7. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` for `/admin` access during alpha validation
+8. Ensure the sidecar portal is being installed on its own dedicated domain at `/`
+9. Treat this as an admin-side/operator tool, not a user dashboard app/tile
+10. Use the installer-facing branch only: `https://github.com/wonko6x9/mfa_sidecar_ynh/tree/github-package`
+11. Prefer testing first on a disposable YunoHost VM or snapshot
 
 ## Expected first-install rough edges still possible
 - LDAP filters were corrected after live wm3v inspection, but still deserve one more validation during first install
