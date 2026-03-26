@@ -6,6 +6,20 @@ ynh_abort_if_errors
 APP_INSTALL_DIR="${install_dir:-$(ynh_app_setting_get --key=install_dir)}"
 APP_DATA_DIR="${data_dir:-$(ynh_app_setting_get --key=data_dir)}"
 POLICY_FILE="$APP_INSTALL_DIR/config/domain-policy.yaml"
+ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
+
+compose_upstream_url() {
+    echo "${1}://${2}:${3}"
+}
+
+get__operator_model() {
+    cat << EOF
+style: info
+ask:
+  en: Use this config panel for high-level defaults, service actions, and operator-safe introspection. Use /admin for detailed managed-site curation until a richer YunoHost-native abstraction exists.
+  fr: Utilisez ce panneau de configuration pour les paramètres de haut niveau, les actions sur les services et l’inspection sûre côté opérateur. Utilisez /admin pour la gestion détaillée des sites jusqu’à ce qu’une abstraction native YunoHost plus riche existe.
+EOF
+}
 
 get__upstream_scheme() {
     ynh_app_setting_get --key=upstream_scheme
@@ -68,6 +82,22 @@ run__reload_runtime() {
     ynh_systemctl --service=mfa-sidecar-authelia --action=restart
     ynh_systemctl --service=mfa-sidecar-admin --action=restart
     ynh_print_info "Regenerated runtime assets and restarted MFA Sidecar services."
+}
+
+run__restart_services() {
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_systemctl --service=mfa-sidecar-admin --action=restart
+    ynh_print_info "Restarted MFA Sidecar services without regenerating runtime assets."
+}
+
+run__show_admin_gate() {
+    local current_secret
+    current_secret="$(grep '^MFA_SIDECAR_ADMIN_GATE_SECRET=' "$ENV_FILE" | cut -d= -f2- || true)"
+    if [[ -z "$current_secret" ]]; then
+        echo "Admin gate secret was not found in $ENV_FILE"
+        return 1
+    fi
+    ynh_print_info "Current admin gate secret: $current_secret"
 }
 
 ynh_app_config_run "$1"

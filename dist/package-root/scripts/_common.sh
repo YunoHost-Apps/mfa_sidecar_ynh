@@ -107,7 +107,10 @@ _mfa_sidecar_install_authelia_binary() {
 
 _mfa_sidecar_write_policy_seed() {
     local remember_me
+    local seeded_default_policy
+
     remember_me="$(_mfa_sidecar_session_remember_me)"
+    seeded_default_policy="${default_policy:-open}"
 
     cat > "$install_dir/config/domain-policy.yaml" <<EOF
 version: 1
@@ -157,7 +160,7 @@ mfa:
     enabled: true
     issuer: MFA Sidecar
 access_control:
-  default_policy: bypass
+  default_policy: ${seeded_default_policy}
   managed_sites: []
 recovery:
   mode: authelia-reset-password-and-enrollment
