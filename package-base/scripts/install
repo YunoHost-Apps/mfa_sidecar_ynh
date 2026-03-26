@@ -1,0 +1,59 @@
+#!/bin/bash
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+_mfa_sidecar_validate_inputs
+
+#=================================================
+# SETUP APP STRUCTURE
+#=================================================
+ynh_script_progression "Preparing MFA sidecar alpha layout..."
+
+_mfa_sidecar_install_layout
+install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
+install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
+install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
+install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
+install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
+install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
+install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
+install -D -m 644 ../sources/authelia.service /etc/systemd/system/mfa-sidecar-authelia.service
+install -D -m 644 ../sources/mfa-sidecar-admin.service /etc/systemd/system/mfa-sidecar-admin.service
+install -D -m 644 ../sources/authelia-release.json "$install_dir/sources/authelia-release.json"
+install -D -m 644 ../sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
+install -D -m 644 ../assets/logo.png "$install_dir/www/logo.png"
+
+_mfa_sidecar_install_authelia_binary
+_mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file session_secret)"
+_mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file storage_encryption_key)"
+_mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file identity_validation_reset_secret)"
+_mfa_sidecar_write_env_file
+_mfa_sidecar_write_policy_seed
+_mfa_sidecar_sync_runtime_assets
+_mfa_sidecar_write_alpha_notes
+
+#=================================================
+# CONFIGURE NGINX
+#=================================================
+ynh_script_progression "Configuring NGINX entrypoint for MFA sidecar..."
+
+cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
+ynh_config_add_nginx
+_mfa_sidecar_inject_primary_domain_include
+ynh_systemctl --service=nginx --action=reload || true
+
+#=================================================
+# ENABLE SERVICE (ALPHA DRAFT)
+#=================================================
+ynh_script_progression "Registering sidecar services..."
+ynh_systemctl --service=mfa-sidecar-authelia --action=enable || true
+ynh_systemctl --service=mfa-sidecar-authelia --action=restart || true
+ynh_systemctl --service=mfa-sidecar-admin --action=enable || true
+ynh_systemctl --service=mfa-sidecar-admin --action=restart || true
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression "Installation of $app completed"

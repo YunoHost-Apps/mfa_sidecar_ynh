@@ -1,0 +1,25 @@
+#!/bin/bash
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+ynh_restore "/etc/nginx/conf.d/${domain}.d/${app}.conf"
+ynh_restore "/etc/mfa-sidecar"
+ynh_restore "$install_dir/config/domain-policy.yaml"
+ynh_restore "$install_dir/README.alpha"
+
+_mfa_sidecar_remove_primary_domain_include
+_mfa_sidecar_inject_primary_domain_include
+
+ynh_script_progression "Reloading NGINX web server..."
+ynh_systemctl --service=nginx --action=reload
+
+ynh_script_progression "Reloading sidecar services if present..."
+ynh_systemctl --service=mfa-sidecar-authelia --action=restart || true
+ynh_systemctl --service=mfa-sidecar-admin --action=restart || true
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression "Restoration completed for $app"

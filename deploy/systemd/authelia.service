@@ -1,0 +1,22 @@
+[Unit]
+Description=MFA Sidecar (Authelia)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mfa_sidecar
+Group=mfa_sidecar
+WorkingDirectory=/opt/yunohost/mfa_sidecar
+EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
+ExecStart=/usr/local/bin/authelia --config /etc/mfa-sidecar/authelia/configuration.yml
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mfa_sidecar /etc/mfa-sidecar
+
+[Install]
+WantedBy=multi-user.target

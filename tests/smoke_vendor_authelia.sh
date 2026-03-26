@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUT_DIR="$ROOT_DIR/tests/out/vendor-authelia"
+rm -rf "$OUT_DIR"
+mkdir -p "$OUT_DIR"
+
+python3 "$ROOT_DIR/package-base/sources/install_authelia_from_vendor.py" \
+  "$ROOT_DIR/package-base/sources/authelia-release.json" \
+  "$ROOT_DIR/package-base/sources/vendor" \
+  "$OUT_DIR" > "$OUT_DIR/result.json"
+
+test -x "$OUT_DIR/authelia"
+grep -q '"verified": true' "$OUT_DIR/result.json"
+grep -q '"source": "vendor"' "$OUT_DIR/result.json"
+
+echo "smoke_vendor_authelia: ok"
