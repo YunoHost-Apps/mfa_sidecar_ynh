@@ -16,13 +16,13 @@ Environment=MFA_SIDECAR_GENERATED_DIR=/opt/yunohost/mfa_sidecar/deploy/generated
 Environment=MFA_SIDECAR_STAGE_ROOT=/
 Environment=MFA_SIDECAR_ADMIN_BIND=127.0.0.1
 Environment=MFA_SIDECAR_ADMIN_PORT=9087
+ExecStartPre=/usr/bin/install -d -m 755 /etc/mfa-sidecar /opt/yunohost/mfa_sidecar/config /opt/yunohost/mfa_sidecar/deploy/generated-alpha
 ExecStart=/usr/bin/python3 /opt/yunohost/mfa_sidecar/bin/admin_ui_app.py
 Restart=on-failure
 RestartSec=5s
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
-ProtectSystem=full
 ProtectHome=true
 ProtectControlGroups=true
 ProtectKernelTunables=true
