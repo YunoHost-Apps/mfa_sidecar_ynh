@@ -61,6 +61,18 @@ def managed_sites(policy: dict) -> list[dict]:
     return sorted(policy["access_control"].get("managed_sites", []), key=rule_sort_key)
 
 
+def map_default_policy(policy_name: str) -> str:
+    mapping = {
+        "open": "bypass",
+        "protected": "two_factor",
+        "bypass": "bypass",
+        "one_factor": "one_factor",
+        "two_factor": "two_factor",
+        "deny": "deny",
+    }
+    return mapping.get(policy_name, "deny")
+
+
 def build_authelia_values(policy: dict) -> dict:
     portal = policy["portal"]
     session = policy["session"]
@@ -117,7 +129,7 @@ def build_authelia_values(policy: dict) -> dict:
         },
         "authentication_backend": {"ldap": ldap_backend},
         "access_control": {
-            "default_policy": access.get("default_policy", "deny"),
+            "default_policy": map_default_policy(access.get("default_policy", "deny")),
             "rules": rules,
         },
         "session": {
@@ -130,7 +142,6 @@ def build_authelia_values(policy: dict) -> dict:
                 {
                     "domain": portal["domain"],
                     "authelia_url": f"https://{portal['domain']}{portal['path']}",
-                    "default_redirection_url": portal["default_redirect_url"],
                 }
             ],
         },
