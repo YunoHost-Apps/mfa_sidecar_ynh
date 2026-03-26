@@ -72,6 +72,7 @@ _mfa_sidecar_install_layout() {
         "$install_dir/deploy/generated-alpha" \
         "$install_dir/cache/authelia" \
         "$install_dir/sources/vendor" \
+        "$install_dir/run" \
         "$data_dir" \
         "/etc/mfa-sidecar/authelia" \
         "/etc/mfa-sidecar/nginx/protected" \
@@ -102,8 +103,13 @@ AUTHELIA_SESSION_SECRET=$(cat "$(_mfa_sidecar_secret_file session_secret)")
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(cat "$(_mfa_sidecar_secret_file storage_encryption_key)")
 AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET=$(cat "$(_mfa_sidecar_secret_file identity_validation_reset_secret)")
 MFA_SIDECAR_ADMIN_GATE_SECRET=$(cat "$admin_gate_secret_file")
+MFA_SIDECAR_RUNTIME_DIR=$install_dir/run
 EOF
-    chmod 600 /etc/mfa-sidecar/mfa-sidecar.env
+    chmod 640 /etc/mfa-sidecar/mfa-sidecar.env
+}
+
+_mfa_sidecar_authelia_bin() {
+    echo "$install_dir/bin/authelia"
 }
 
 _mfa_sidecar_install_authelia_binary() {
@@ -112,7 +118,7 @@ _mfa_sidecar_install_authelia_binary() {
         "$install_dir/sources/vendor" \
         "$install_dir/cache/authelia" > "$install_dir/cache/authelia/install-result.json"
 
-    install -D -m 755 "$install_dir/cache/authelia/authelia" /usr/local/bin/authelia
+    install -D -m 755 "$install_dir/cache/authelia/authelia" "$(_mfa_sidecar_authelia_bin)"
 }
 
 _mfa_sidecar_users_file() {
@@ -293,7 +299,7 @@ _mfa_sidecar_write_alpha_notes() {
         printf '%s\n' '- nginx protected includes: /etc/mfa-sidecar/nginx/protected/*.conf'
         printf '%s\n' '- env file: /etc/mfa-sidecar/mfa-sidecar.env'
         printf '%s\n' "- vendored authelia source: $install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
-        printf '%s\n' '- installed authelia binary: /usr/local/bin/authelia'
+        printf '%s\n' "- installed authelia binary: $install_dir/bin/authelia"
         printf '\n'
         printf '%s\n' 'Current beta-shaped improvements:'
         printf '%s\n' '- dedicated portal domain enforced'

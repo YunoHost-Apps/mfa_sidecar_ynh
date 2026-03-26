@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=root
-Group=root
+User=mfa_sidecar
+Group=mfa_sidecar
 EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
 Environment=MFA_SIDECAR_POLICY_PATH=/opt/yunohost/mfa_sidecar/config/domain-policy.yaml
 Environment=MFA_SIDECAR_RENDER_SCRIPT=/opt/yunohost/mfa_sidecar/bin/render_alpha_config.py
@@ -21,7 +21,10 @@ RestartSec=5s
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
-UMask=0077
+ProtectSystem=strict
+ReadWritePaths=/etc/mfa-sidecar /var/lib/mfa_sidecar /opt/yunohost/mfa_sidecar /etc/nginx/conf.d
+UMask=0027
+WorkingDirectory=/opt/yunohost/mfa_sidecar
 
 [Install]
 WantedBy=multi-user.target

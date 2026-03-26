@@ -27,7 +27,7 @@ rm -f /etc/systemd/system/mfa-sidecar-admin.service
 #=================================================
 rm -rf /etc/mfa-sidecar
 rm -rf /var/lib/mfa_sidecar
-rm -f /usr/local/bin/authelia
+rm -f "$install_dir/bin/authelia"
 systemctl daemon-reload || true
 
 #=================================================

@@ -35,7 +35,8 @@
 - [ ] Define remembered-session policy defaults more explicitly
 - [ ] Add default-protect-new-domains behavior
 - [ ] Replace draft `/admin` shared-secret gate with a cleaner operator auth model after live validation
-- [ ] Reduce root-biased service execution where practical
+- [x] Reduce root-biased service execution where practical
+- [ ] Validate the new app-user/systemd sandbox posture on a real host
 
 ## Later
 - [ ] Evaluate authentik fallback path if Authelia proves too limiting

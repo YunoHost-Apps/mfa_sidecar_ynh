@@ -8,16 +8,16 @@ It now has a package-managed binary path:
 - local release metadata with sha256
 - sha256 verification before install
 - binary extraction from vendored tarball
-- installation of verified `authelia` to `/usr/local/bin/authelia`
+- installation of verified `authelia` into the app-owned runtime at `/opt/yunohost/mfa_sidecar/bin/authelia`
 
 ## Why this matters
-Previously, the first install had a guaranteed hard stop if `/usr/local/bin/authelia` was absent.
-That is now removed because the package carries the tested pinned artifact itself.
+Previously, the first install had a guaranteed hard stop if the Authelia binary was absent.
+That is now removed because the package carries the tested pinned artifact itself and installs it into the app-owned runtime path.
 
 ## Current viability scorecard
 ### Stronger now
 - package lifecycle wiring: yes
-- host-aligned LDAP defaults: yes
+- separate sidecar-owned auth store model: yes
 - real host read-only validation: yes
 - constrained root-assisted read-only validation: yes
 - binary provisioning story owned by package: yes
@@ -26,7 +26,7 @@ That is now removed because the package carries the tested pinned artifact itsel
 - smoke coverage around vendor/install/render/stage/include/service contract: yes
 
 ### Still real risks
-- first live auth flow still depends on a real LDAP bind password being supplied after install
+- first live auth flow still depends on finishing a real first sidecar user in `/etc/mfa-sidecar/authelia/users.yml` after install
 - service still uses a draft root-biased unit
 - protected-domain rollout is still best for first single-domain use, not broad polished multi-domain rollout
 - no full live install/upgrade/remove execution on a disposable YunoHost target has happened yet
@@ -37,7 +37,7 @@ Before the vendored binary work, the installer was **not first-try viable** unle
 After this change, the installer is **substantially closer to first-try viable** on wm3v, assuming:
 1. portal app is installed on its own dedicated domain (recommended: `auth.wm3v.com`) at `/`
 2. first protected app is `home.wm3v.com`
-3. LDAP bind password is supplied during install, or immediately after install if intentionally left blank
+3. the initial sidecar users file is completed with a real first user and Argon2 hash before meaningful auth testing
 4. a VM snapshot exists before the first run
 
 ## Recommendation

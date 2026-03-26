@@ -40,9 +40,13 @@ ynh_app_setting_set --key=session_duration --value="$session_duration"
 ynh_app_setting_set --key=upstream_scheme --value="$upstream_scheme"
 ynh_app_setting_set --key=upstream_host --value="$upstream_host"
 ynh_app_setting_set --key=upstream_port --value="$upstream_port"
-chown -R root:root /etc/mfa-sidecar "$install_dir"
+chown -R "$app:$app" "$install_dir" "$data_dir"
+chown -R "$app:$app" /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/secrets
+chown root:"$app" /etc/mfa-sidecar/mfa-sidecar.env
+chmod 750 "$install_dir" "$install_dir/bin" "$install_dir/config" "$install_dir/run"
 chmod 700 /etc/mfa-sidecar/secrets
-chmod 600 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env
+chmod 750 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/nginx/protected
+chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env
 _mfa_sidecar_sync_runtime_assets
 _mfa_sidecar_write_alpha_notes
 

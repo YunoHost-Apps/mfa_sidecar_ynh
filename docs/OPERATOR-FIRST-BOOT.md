@@ -58,6 +58,10 @@ If you edited `users.yml` manually, refresh runtime state with one of:
   - `systemctl restart mfa-sidecar-authelia`
   - `systemctl restart mfa-sidecar-admin`
 
+The packaged Authelia binary now lives at:
+
+- `/opt/yunohost/mfa_sidecar/bin/authelia`
+
 ## 6. Validate the portal
 Check that:
 

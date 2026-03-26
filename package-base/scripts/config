@@ -198,7 +198,7 @@ run__seed_first_user() {
     fi
     python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" ensure-user \
         --users-file "$USERS_FILE" \
-        --authelia-bin /usr/local/bin/authelia \
+        --authelia-bin /opt/yunohost/mfa_sidecar/bin/authelia \
         --username "$first_username" \
         --display-name "$first_display_name" \
         --email "$first_email" \

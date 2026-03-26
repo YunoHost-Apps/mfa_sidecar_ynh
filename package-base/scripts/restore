@@ -21,9 +21,13 @@ install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
 install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
 
 _mfa_sidecar_write_env_file
-chown -R root:root /etc/mfa-sidecar "$install_dir"
+chown -R "$app:$app" "$install_dir" "$data_dir"
+chown -R "$app:$app" /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/secrets || true
+chown root:"$app" /etc/mfa-sidecar/mfa-sidecar.env || true
+chmod 750 "$install_dir" "$install_dir/bin" "$install_dir/config" "$install_dir/run" || true
 chmod 700 /etc/mfa-sidecar/secrets || true
-chmod 600 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env || true
+chmod 750 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/nginx/protected || true
+chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env || true
 
 _mfa_sidecar_remove_primary_domain_include
 _mfa_sidecar_inject_primary_domain_include

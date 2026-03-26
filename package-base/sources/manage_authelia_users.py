@@ -196,7 +196,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ensure = sub.add_parser("ensure-user")
     ensure.add_argument("--users-file", required=True)
-    ensure.add_argument("--authelia-bin", default="/usr/local/bin/authelia")
+    ensure.add_argument("--authelia-bin", default="/opt/yunohost/mfa_sidecar/bin/authelia")
     ensure.add_argument("--username", required=True)
     ensure.add_argument("--display-name", required=True)
     ensure.add_argument("--email", required=True)
