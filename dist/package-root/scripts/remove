@@ -12,6 +12,15 @@ _mfa_sidecar_remove_primary_domain_include
 ynh_systemctl --service=nginx --action=reload || true
 ynh_config_remove_nginx
 
+portal_nginx_conf="/etc/nginx/conf.d/${domain}.conf"
+portal_nginx_dir="/etc/nginx/conf.d/${domain}.d"
+if [[ -f "$portal_nginx_conf" ]]; then
+    rm -f "$portal_nginx_conf"
+fi
+if [[ -d "$portal_nginx_dir" ]] && [[ -z "$(find "$portal_nginx_dir" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
+    rmdir "$portal_nginx_dir" 2>/dev/null || true
+fi
+
 #=================================================
 # DISABLE SERVICE (ALPHA DRAFT)
 #=================================================
