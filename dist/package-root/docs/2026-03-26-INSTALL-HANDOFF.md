@@ -70,8 +70,7 @@ Desired result: units not found, or at least no loaded stale unit content.
 3. Install from:
    - `https://github.com/wonko6x9/mfa_sidecar_ynh/tree/github-package`
 4. If install succeeds:
-   - set `/etc/mfa-sidecar/secrets/ldap_bind_password`
-   - restart sidecar services or rerun upgrade to refresh env
+   - confirm `/etc/mfa-sidecar/secrets/ldap_bind_password` exists (it should now auto-generate by default unless explicitly overridden)
    - retrieve `MFA_SIDECAR_ADMIN_GATE_SECRET`
    - validate `/admin`
    - test first managed target using `home.wm3v.com`

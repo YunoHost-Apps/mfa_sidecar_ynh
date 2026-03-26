@@ -101,7 +101,7 @@ Again: not automatically invalid, but it raises the burden of correctness, clean
 ## Other observations
 
 - Using install/data/system_user resources is good.
-- Using a password install question for LDAP bind password is appropriate and aligns with YunoHost forms semantics.
+- Using a password install question for LDAP bind password as an optional override is appropriate and aligns with YunoHost forms semantics.
 - `init_main_permission` usage is valid.
 - Declaring `main.auth_header = false` is coherent for this app.
 - The package remains intentionally single-instance; that is consistent with the product shape.

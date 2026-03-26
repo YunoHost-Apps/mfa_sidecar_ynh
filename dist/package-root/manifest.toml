@@ -95,8 +95,8 @@ ram.runtime = "200M"
     ask.fr = "Mot de passe LDAP de liaison pour uid=authelia"
     type = "password"
     optional = true
-    help.en = "Recommended: provide it now so the portal can authenticate against YunoHost LDAP immediately. Leave blank only if you will set /etc/mfa-sidecar/secrets/ldap_bind_password manually right after install."
-    help.fr = "Recommandé : fournissez-le maintenant pour que le portail puisse s'authentifier immédiatement contre LDAP YunoHost. Laissez vide seulement si vous allez définir /etc/mfa-sidecar/secrets/ldap_bind_password manuellement juste après l'installation."
+    help.en = "Optional override. If left blank, MFA Sidecar will generate a strong local secret automatically and use it as the LDAP bind password."
+    help.fr = "Surcharge facultative. Si laissé vide, MFA Sidecar générera automatiquement un secret local fort et l'utilisera comme mot de passe de liaison LDAP."
 
     [install.init_main_permission]
     type = "group"
