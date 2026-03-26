@@ -30,6 +30,12 @@ _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file storage_encrypt
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file identity_validation_reset_secret)"
 
 _mfa_sidecar_write_env_file
+ynh_app_setting_set_default --key=portal_subdomain --value="${portal_subdomain:-auth}"
+ynh_app_setting_set_default --key=default_policy --value="${default_policy:-open}"
+ynh_app_setting_set_default --key=session_duration --value="${session_duration:-24h}"
+ynh_app_setting_set_default --key=upstream_scheme --value="${upstream_scheme:-https}"
+ynh_app_setting_set_default --key=upstream_host --value="${upstream_host:-127.0.0.1}"
+ynh_app_setting_set_default --key=upstream_port --value="${upstream_port:-443}"
 
 if [[ ! -f "$install_dir/config/domain-policy.yaml" ]]; then
     _mfa_sidecar_write_policy_seed

@@ -67,7 +67,7 @@ Severity: **should fix**
 
 For a system-style admin app with no native polished app management integration into YunoHost, a `config_panel.toml` + optional `scripts/config` would be the idiomatic way to expose core settings and actions.
 
-Missing a config panel does not block install, but it makes the package feel foreign to YunoHost and forces the admin to rely on the custom admin UI plus filesystem state.
+**Status:** improved in review by adding a first YunoHost-native config panel plus `scripts/config` action surface for common settings and runtime reload.
 
 ### 5. change_url support is conceptually dishonest
 Severity: **should fix**
@@ -112,8 +112,9 @@ Again: not automatically invalid, but it raises the burden of correctness, clean
 1. Keep the new apt resource.
 2. Keep backup/restore enabled in tests.
 3. Keep the newly declared `admin` permission.
-4. Re-run smoke tests after export/publication refresh.
-5. If time permits before install, remove or explicitly neuter `change_url` support.
+4. Keep the new YunoHost config panel / config actions.
+5. Re-run smoke tests after export/publication refresh.
+6. If time permits before install, remove or explicitly neuter `change_url` support.
 
 ### Before calling this truly YunoHost-native / catalog-worthy
 1. Add a real `config_panel.toml`.
