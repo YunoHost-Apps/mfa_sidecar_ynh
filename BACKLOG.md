@@ -7,7 +7,7 @@
 - [ ] Validate real first-user bootstrap, YunoHost user sync, and first successful auth flow against the sidecar-owned users store
 - [ ] Validate first managed-site target end to end (`home.wm3v.com` first)
 - [ ] Validate upgrade/remove/restore behavior on the real host
-- [ ] Add emergency global disable / rollback path
+- [x] Add emergency global disable / rollback path
 - [ ] Decide exact production recovery/operator recovery stance
 - [ ] Decide whether the current `/admin` shared-secret gate survives first production-hardened install or gets replaced immediately after install feedback
 - [x] Finalize v1 architecture document

@@ -151,6 +151,21 @@ run__reload_runtime() {
     ynh_print_info "Regenerated runtime assets and restarted MFA Sidecar services."
 }
 
+run__emergency_disable() {
+    local target_conf include_glob
+    target_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
+    include_glob="/etc/mfa-sidecar/nginx/protected/*.conf"
+
+    if [[ -f "$target_conf" ]]; then
+        python3 "$APP_INSTALL_DIR/bin/inject_protected_include.py" remove "$target_conf" || true
+    fi
+
+    ynh_systemctl --service=nginx --action=reload || true
+    ynh_systemctl --service=mfa-sidecar-authelia --action=stop || true
+    ynh_systemctl --service=mfa-sidecar-admin --action=stop || true
+    ynh_print_info "Emergency disable complete: primary include hook removed, nginx reloaded, and sidecar services stopped. Managed protected snippets remain on disk for later recovery."
+}
+
 run__restart_services() {
     ynh_systemctl --service=mfa-sidecar-authelia --action=restart
     ynh_systemctl --service=mfa-sidecar-admin --action=restart

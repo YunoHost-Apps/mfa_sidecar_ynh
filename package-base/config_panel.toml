@@ -124,6 +124,11 @@ services = ["nginx"]
         ask.en = "Restart sidecar services only"
         ask.fr = "Redémarrer seulement les services du sidecar"
 
+        [main.operations.emergency_disable]
+        type = "button"
+        ask.en = "Emergency disable sidecar protection"
+        ask.fr = "Désactiver en urgence la protection du sidecar"
+
         [main.operations.show_admin_gate]
         type = "button"
         ask.en = "Show current admin gate secret"
@@ -178,5 +183,5 @@ services = ["nginx"]
         [main.operations.admin_note]
         type = "alert"
         style = "info"
-        ask.en = "Detailed managed-site editing still lives in the sidecar admin UI on /admin. The config panel is the YunoHost-native surface for common settings, first-user bootstrap, user sync, and safe operational actions. YunoHost-driven user sync disables missing upstream users instead of deleting them."
-        ask.fr = "L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin. Le panneau de configuration est la surface native YunoHost pour les réglages courants, l’initialisation du premier utilisateur, la synchronisation des utilisateurs et les actions opérationnelles sûres. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."
+        ask.en = "Detailed managed-site editing still lives in the sidecar admin UI on /admin. The config panel is the YunoHost-native surface for common settings, first-user bootstrap, user sync, emergency disable, and safe operational actions. YunoHost-driven user sync disables missing upstream users instead of deleting them."
+        ask.fr = "L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin. Le panneau de configuration est la surface native YunoHost pour les réglages courants, l’initialisation du premier utilisateur, la synchronisation des utilisateurs, la désactivation d’urgence et les actions opérationnelles sûres. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."
