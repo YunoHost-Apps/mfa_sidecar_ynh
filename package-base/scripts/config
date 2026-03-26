@@ -193,4 +193,13 @@ run__seed_first_user() {
     ynh_print_info "Seeded/updated first sidecar user and restarted Authelia."
 }
 
+run__sync_users_from_yunohost() {
+    python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" sync-from-yunohost \
+        --users-file "$USERS_FILE" \
+        --yunohost-bin "${MFA_SIDECAR_SYNC_YUNOHOST_BIN:-yunohost}" \
+        --default-groups admins
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_print_info "Synchronized sidecar users from YunoHost and restarted Authelia. Missing upstream users are disabled, not deleted."
+}
+
 ynh_app_config_run "$1"

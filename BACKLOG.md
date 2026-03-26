@@ -4,7 +4,7 @@
 - [ ] Consult authoritative YunoHost docs and real package conventions for required package structure and admin-page/admin-UX expectations before the next install attempt (no more donor-only guessing)
 - [ ] Reconcile MFA Sidecar package/admin approach against that YunoHost guidance, especially installer-facing repo shape, app icon/admin presentation, and whether `/admin` is the right model
 - [ ] Perform first real install on wm3v from a clean host state using the documented procedure
-- [ ] Validate real first-user bootstrap and first successful auth flow against the sidecar-owned users store
+- [ ] Validate real first-user bootstrap, YunoHost user sync, and first successful auth flow against the sidecar-owned users store
 - [ ] Validate first managed-site target end to end (`home.wm3v.com` first)
 - [ ] Validate upgrade/remove/restore behavior on the real host
 - [ ] Add emergency global disable / rollback path

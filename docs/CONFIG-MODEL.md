@@ -59,8 +59,9 @@ alpha:
 - The portal app itself must live on its **own dedicated domain** at `/`; do not co-host it on a shared app domain/path.
 - `session.*` drives shared remembered-session behavior across managed sites.
 - `identity.local.*` is the sidecar-owned credential/MFA authority.
-- `identity.sync.*` is the optional read-only bridge for lightweight username/email discovery from YunoHost.
+- `identity.sync.*` is the optional read-only bridge for lightweight username/email discovery and user-lifecycle reconciliation from YunoHost.
 - The sidecar should not rely on YunoHost LDAP as its primary password backend if the goal is a genuinely separate outer shell.
+- Sync should update identity metadata (username/display/email) and disable vanished upstream users by default, while leaving password and MFA state separate.
 - `access_control.managed_sites[*].enabled` is the user-facing binary on/off switch.
 - `managed_sites` are explicitly operator-managed entries, not automatic discovery truth.
 - A managed site is identified by `host + path` and can represent either a full domain (`/`) or a specific subpath.

@@ -77,7 +77,18 @@ Suggested first target on wm3v:
 
 - `home.wm3v.com`
 
-## 8. Validate auth flow
+## 8. Validate user sync behavior
+Use the config panel action:
+
+- **Sync users from YunoHost**
+
+Confirm that:
+
+- new YunoHost users appear in `/etc/mfa-sidecar/authelia/users.yml`
+- missing upstream users become `disabled: true`
+- existing sidecar password/MFA state is not overwritten
+
+## 9. Validate auth flow
 Confirm:
 
 - redirect into the sidecar portal
@@ -85,5 +96,5 @@ Confirm:
 - return to the protected target
 - bypass still works for disabled entries
 
-## 9. Record what still hurts
+## 10. Record what still hurts
 If anything still requires manual surgery after install, record it immediately. The goal is to burn down post-install footguns, not normalize them.

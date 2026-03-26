@@ -18,9 +18,10 @@ Use **Authelia** as the sidecar auth engine in front of selected YunoHost-manage
 - lighter and more sidecar-shaped than a full IdP platform
 
 ## Current open questions
-- exact recovery-code/operator recovery strategy for v1/alpha
+- exact recovery-code/operator recovery strategy for first live install
 - whether the temporary `/admin` shared-secret gate is acceptable for first live install or needs one more UX pass afterward
 - when to reduce root-biased service execution toward a cleaner least-privilege model
+- whether YunoHost-driven user sync should eventually become automatic/scheduled rather than operator-triggered only
 
 ## Current checkpoint
 The repo is now in a **documented alpha package state with strong local validation**, but tonight's wm3v attempts showed that the live install path can still be derailed by stale YunoHost/systemd host state:
