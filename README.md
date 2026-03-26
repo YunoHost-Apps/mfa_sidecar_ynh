@@ -5,7 +5,7 @@
 Authelia-based MFA sidecar for selected YunoHost domains and paths.
 
 ## Status
-This project is at a **first-install alpha candidate** checkpoint. It has strong pre-install validation and smoke coverage, but wm3v attempts showed that the live install path must start from a clean host state (preferably a restored snapshot) to avoid stale YunoHost/systemd state contaminating the result. The package is intended as an **admin-side/operator tool**, not a normal end-user dashboard app.
+This project is at a **production-hardened alpha candidate** checkpoint. Local validation is strong, the auth model has been corrected to a separate sidecar-owned store, operator recovery/break-glass paths exist, and services now run as the package app user rather than root. The remaining gap is clean-host live validation from a restored snapshot or otherwise cleaned target so stale YunoHost/systemd state does not poison the result. The package is intended as an **admin-side/operator tool**, not a normal end-user dashboard app.
 
 ## Branches and install surface
 - `main` is the **installer-facing distribution branch** on GitHub and should expose a top-level YunoHost package layout.
@@ -35,9 +35,11 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - thin bundled admin UI at `/admin` for managed host/path entries
 - draft `/admin` auth gate via generated shared secret header
 - simple read-only discovery suggestions from YunoHost domains + app subpaths, with nginx used only as a sanity check
-- repeated smoke coverage for render, staging, discovery, admin add/edit/delete/toggle/apply flow, vendored binary install, package-tree export, and failure contracts
+- repeated smoke coverage for render, staging, discovery, admin add/edit/delete/toggle/apply flow, vendored binary install, package-tree export, user bootstrap/sync, break-glass disable, least-privilege service posture, and failure contracts
 - explicit package-root export script at `scripts/export_package_root.sh`
-- current code still contains an LDAP-auth branch from the earlier design, but that is now being superseded by the separate-store architecture
+- sidecar-owned users file bootstrap and managed first-user helper using Authelia-generated Argon2 hashes
+- YunoHost-driven user sync that preserves separate password/MFA authority while disabling users removed upstream
+- emergency disable path that drops the primary include hook and stops sidecar services without destructive uninstall
 
 ## Important constraints
 - the sidecar portal must be installed on its own dedicated domain at `/`

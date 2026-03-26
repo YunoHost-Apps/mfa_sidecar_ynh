@@ -10,6 +10,7 @@
 - [x] Add emergency global disable / rollback path
 - [ ] Decide exact production recovery/operator recovery stance
 - [ ] Decide whether the current `/admin` shared-secret gate survives first production-hardened install or gets replaced immediately after install feedback
+- [ ] Decide whether this project should be considered complete at “production-hardened alpha pending clean-host live validation” or kept open until that live validation is executed
 - [x] Finalize v1 architecture document
 - [x] Validate how Authelia fits YunoHost LDAP in practice (pre-install + wm3v read-only validation)
 - [x] Draft alpha runtime scaffolding (systemd/env/nginx templates)

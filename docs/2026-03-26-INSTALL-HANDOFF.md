@@ -70,7 +70,8 @@ Desired result: units not found, or at least no loaded stale unit content.
 3. Install from:
    - `https://github.com/wonko6x9/mfa_sidecar_ynh/tree/github-package`
 4. If install succeeds:
-   - confirm `/etc/mfa-sidecar/secrets/ldap_bind_password` exists (it should now auto-generate by default unless explicitly overridden)
+   - confirm `/etc/mfa-sidecar/authelia/users.yml` exists
+   - replace the placeholder bootstrap user values with a real first user + Argon2 hash
    - retrieve `MFA_SIDECAR_ADMIN_GATE_SECRET`
    - validate `/admin`
    - test first managed target using `home.wm3v.com`

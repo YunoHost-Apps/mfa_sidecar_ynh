@@ -1,7 +1,7 @@
 # STATUS.md — MFA Sidecar
 
 ## Current phase
-Production-hardening candidate packaged, but live install flow still needs clean-host validation
+Production-hardened alpha candidate packaged; remaining blocker is clean-host live validation
 
 ## Current recommendation
 Use **Authelia** as the sidecar auth engine in front of selected YunoHost-managed domains, with:
@@ -20,7 +20,6 @@ Use **Authelia** as the sidecar auth engine in front of selected YunoHost-manage
 ## Current open questions
 - exact recovery-code/operator recovery strategy for first live install
 - whether the temporary `/admin` shared-secret gate is acceptable for first live install or needs one more UX pass afterward
-- when to reduce root-biased service execution toward a cleaner least-privilege model
 - whether YunoHost-driven user sync should eventually become automatic/scheduled rather than operator-triggered only
 
 ## Current checkpoint
@@ -31,7 +30,7 @@ The repo is now in a **documented alpha package state with strong local validati
 - simplified YunoHost-first discovery is implemented and smoke-covered
 - wm3v read-only/live inventory validation has been recorded
 - full smoke suite currently passes
-- installer-facing package branch is `github-package`
+- GitHub `main` is the installer-facing package branch, while GitLab mirrors that package view on `github-package`
 - live wm3v retries produced evidence of stale/cached older unit definitions during install transactions
 
 ## Immediate next step

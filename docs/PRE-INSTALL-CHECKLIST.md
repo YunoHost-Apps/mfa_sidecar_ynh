@@ -33,18 +33,18 @@ Use this before the first real YunoHost install attempt.
    - move aside leftover `auth.<domain>` nginx config from failed attempts
    - `systemctl daemon-reload`
    - `nginx -t && systemctl restart nginx`
-5. Decide whether to override `ldap_bind_password` during install; if left blank, MFA Sidecar now auto-generates a strong local secret for it
-6. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` for `/admin` access during alpha validation
+5. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` for `/admin` access during alpha validation
+6. Be ready to finish the first sidecar user in `/etc/mfa-sidecar/authelia/users.yml` by replacing the placeholder email/hash with a real user and an Argon2 password digest
 7. Ensure the sidecar portal is being installed on its own dedicated domain at `/`
 8. Treat this as an admin-side/operator tool, not a user dashboard app/tile
 9. Use the installer-facing branch only: `https://github.com/wonko6x9/mfa_sidecar_ynh`
 10. Prefer testing first on a disposable YunoHost VM or snapshot
 
 ## Expected first-install rough edges still possible
-- LDAP filters were corrected after live wm3v inspection, but still deserve one more validation during first install
-- service hardening is improved but still conservative/root-biased rather than a finished least-privilege model
+- `/admin` still uses an interim shared-secret gate rather than a polished operator auth flow
 - multi-domain rollout beyond the primary domain is not yet fully automated
 - package lifecycle has strong dry-run coverage, and the simplified discovery model now has a live wm3v read-only validation, but not yet full live host execution proof
+- first real install still needs a deliberate first-user bootstrap and end-to-end auth validation against the sidecar-owned users store
 
 ## Recommended first validation sequence
 1. snapshot / disposable VM

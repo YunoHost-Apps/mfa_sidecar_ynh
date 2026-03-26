@@ -14,7 +14,7 @@ YunoHost packaging docs describe a conventional app repo/package with top-level 
 - `manifest.toml`
 - package scripts/resources/config files at repo root
 
-This validates the installer-facing `github-package` branch approach.
+This validates the installer-facing package-root branch approach: GitHub `main` for installer use, with GitLab mirroring that package view on `github-package`.
 
 ### 2. Stick to YunoHost conventions, even when they feel arbitrary
 The packaging overview explicitly says that while some conventions are historical or inelegant, it is still more important to align with common community practices than to invent a cleaner private structure.

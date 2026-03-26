@@ -27,7 +27,7 @@ That is now removed because the package carries the tested pinned artifact itsel
 
 ### Still real risks
 - first live auth flow still depends on finishing a real first sidecar user in `/etc/mfa-sidecar/authelia/users.yml` after install
-- service still uses a draft root-biased unit
+- `/admin` still uses an interim shared-secret gate instead of a polished operator auth flow
 - protected-domain rollout is still best for first single-domain use, not broad polished multi-domain rollout
 - no full live install/upgrade/remove execution on a disposable YunoHost target has happened yet
 - auth.wm3v.com may still contain historical stalagmites not surfaced by the constrained inspection pass

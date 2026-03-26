@@ -19,4 +19,5 @@ The upstream branding guide explicitly allows reasonable size/format/layout adju
 ## UI positioning
 - This package should be treated as an **admin-side/operator tool**.
 - It should **not** appear as a normal end-user dashboard tile/app.
-- The logo is for package/admin presentation, not for ordinary user launch UX.
+- The packaged logo is for package/admin presentation, not for ordinary user launch UX.
+- For YunoHost app-list / catalog-style icon display, the normal convention is a matching logo in the central `YunoHost/apps` artwork repo (`logos/<app>.png`), not just a local package asset.
