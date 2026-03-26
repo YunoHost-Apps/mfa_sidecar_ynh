@@ -204,15 +204,22 @@ _mfa_sidecar_wait_for_local_http() {
     local url="$1"
     local attempts="${2:-20}"
     local sleep_seconds="${3:-1}"
+    local header_name="${4:-}"
+    local header_value="${5:-}"
     local i
 
     for ((i=1; i<=attempts; i++)); do
-        if python3 - "$url" <<'PY' >/dev/null 2>&1
+        if python3 - "$url" "$header_name" "$header_value" <<'PY' >/dev/null 2>&1
 import sys
 import urllib.request
 
 url = sys.argv[1]
-with urllib.request.urlopen(url, timeout=2) as response:
+header_name = sys.argv[2]
+header_value = sys.argv[3]
+request = urllib.request.Request(url)
+if header_name and header_value:
+    request.add_header(header_name, header_value)
+with urllib.request.urlopen(request, timeout=2) as response:
     if response.status < 500:
         raise SystemExit(0)
 raise SystemExit(1)
@@ -223,6 +230,12 @@ PY
         sleep "$sleep_seconds"
     done
     return 1
+}
+
+_mfa_sidecar_dump_admin_diagnostics() {
+    systemctl status mfa-sidecar-admin --no-pager >&2 || true
+    journalctl -u mfa-sidecar-admin --since '-2 minutes' --no-pager >&2 || true
+    ss -ltnp 2>/dev/null | grep ':9087' >&2 || true
 }
 
 _mfa_sidecar_assert_service_active() {

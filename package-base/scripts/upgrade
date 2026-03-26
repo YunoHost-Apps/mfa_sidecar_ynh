@@ -66,8 +66,10 @@ _mfa_sidecar_assert_service_active mfa-sidecar-authelia
 ynh_systemctl --service=mfa-sidecar-admin --action=restart || true
 _mfa_sidecar_assert_service_active mfa-sidecar-admin
 
-if ! _mfa_sidecar_wait_for_local_http "http://127.0.0.1:9087/admin" 20 1; then
-    journalctl -u mfa-sidecar-admin -n 80 --no-pager >&2 || true
+if ! _mfa_sidecar_wait_for_local_http \
+    "http://127.0.0.1:9087/admin" 20 1 \
+    "X-MFA-Sidecar-Admin-Secret" "$(grep '^MFA_SIDECAR_ADMIN_GATE_SECRET=' /etc/mfa-sidecar/mfa-sidecar.env | cut -d= -f2-)"; then
+    _mfa_sidecar_dump_admin_diagnostics
     ynh_die "Admin UI did not become reachable on 127.0.0.1:9087/admin after upgrade"
 fi
 
