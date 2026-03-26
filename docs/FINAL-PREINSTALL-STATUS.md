@@ -47,7 +47,7 @@ These are the things that cannot be fully settled without a real install:
 1. confirm `auth.wm3v.com` as dedicated portal domain
 2. snapshot the VM
 3. install MFA Sidecar on `auth.wm3v.com` at `/`
-4. provide the real LDAP bind password during install if possible; if left blank intentionally, set it immediately after install
+4. optionally override the LDAP bind password during install; otherwise let MFA Sidecar auto-generate and persist a local secret for it
 5. start with `home.wm3v.com` as the first enabled managed site target
 6. validate portal reachability, redirect, auth flow, and return path
 

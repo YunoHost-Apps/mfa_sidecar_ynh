@@ -102,8 +102,7 @@ _mfa_sidecar_write_env_file() {
         umask 077
         printf '%s\n' "$ldap_bind_password" > "$ldap_password_file"
     elif [[ ! -f "$ldap_password_file" ]]; then
-        umask 077
-        printf '%s\n' 'CHANGEME_LDAP_BIND_PASSWORD' > "$ldap_password_file"
+        _mfa_sidecar_write_secret_if_missing "$ldap_password_file"
     fi
 
     cat > /etc/mfa-sidecar/mfa-sidecar.env <<EOF
@@ -114,10 +113,6 @@ AUTHELIA_LDAP_PASSWORD=$(cat "$ldap_password_file")
 MFA_SIDECAR_ADMIN_GATE_SECRET=$(cat "$admin_gate_secret_file")
 EOF
     chmod 600 /etc/mfa-sidecar/mfa-sidecar.env
-}
-
-_mfa_sidecar_ldap_password_is_placeholder() {
-    [[ "$(cat "$(_mfa_sidecar_secret_file ldap_bind_password)" 2>/dev/null || true)" == 'CHANGEME_LDAP_BIND_PASSWORD' ]]
 }
 
 _mfa_sidecar_install_authelia_binary() {
@@ -287,7 +282,7 @@ Current beta-shaped improvements:
 - host-aligned LDAP defaults for wm3v-style YunoHost LDAP
 
 Remaining operator tasks:
-- if you provided ldap_bind_password during install, no immediate LDAP secret surgery should be needed; otherwise set /etc/mfa-sidecar/secrets/ldap_bind_password and restart sidecar services or rerun `yunohost app upgrade mfa_sidecar --debug`
+- MFA Sidecar now auto-generates `/etc/mfa-sidecar/secrets/ldap_bind_password` if you do not provide `ldap_bind_password` during install; manual override remains available if you want to set a specific value later
 - use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection
 - retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation
 - validate live auth flow after install

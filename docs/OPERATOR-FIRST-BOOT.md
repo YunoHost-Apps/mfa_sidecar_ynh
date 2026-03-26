@@ -2,12 +2,14 @@
 
 Use this immediately after the next real install to minimize post-install churn.
 
-## 1. Set the LDAP bind password
-Replace the placeholder in:
+## 1. Confirm the LDAP bind password state
+By default MFA Sidecar now auto-generates:
 
 - `/etc/mfa-sidecar/secrets/ldap_bind_password`
 
-Then refresh runtime state with one of:
+You should not need to replace it unless you explicitly want to override it with a known value.
+
+If you do change it manually later, refresh runtime state with one of:
 
 - `yunohost app upgrade mfa_sidecar --debug`
 - or restart both services:
