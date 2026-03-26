@@ -1,7 +1,9 @@
 # BACKLOG.md — MFA Sidecar
 
 ## Now
-- [ ] Perform first real install on wm3v from the current package checkpoint
+- [ ] Consult authoritative YunoHost docs and real package conventions for required package structure and admin-page/admin-UX expectations before the next install attempt (no more donor-only guessing)
+- [ ] Reconcile MFA Sidecar package/admin approach against that YunoHost guidance, especially installer-facing repo shape, app icon/admin presentation, and whether `/admin` is the right model
+- [ ] Perform first real install on wm3v from a clean host state using the documented procedure
 - [ ] Validate real LDAP bind credential setup and first successful auth flow
 - [ ] Validate first managed-site target end to end (`home.wm3v.com` first)
 - [ ] Validate upgrade/remove/restore behavior on the real host
