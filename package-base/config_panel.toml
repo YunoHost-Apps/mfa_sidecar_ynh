@@ -19,6 +19,21 @@ services = ["nginx"]
         choices.protected = "Protected by default"
         bind = "default_policy:__INSTALL_DIR__/config/domain-policy.yaml"
 
+        [main.portal.default_redirect_url]
+        ask.en = "Default redirect URL"
+        ask.fr = "URL de redirection par défaut"
+        type = "url"
+        readonly = true
+        bind = "portal>default_redirect_url:__INSTALL_DIR__/config/domain-policy.yaml"
+
+        [main.portal.operator_model]
+        ask.en = "Operator model"
+        ask.fr = "Modèle opérateur"
+        type = "alert"
+        style = "info"
+        bind = "null"
+        readonly = true
+
         [main.portal.portal_domain]
         ask.en = "Portal domain"
         ask.fr = "Domaine du portail"
@@ -78,6 +93,7 @@ services = ["nginx"]
         ask.fr = "Enregistrer la configuration amont par défaut"
         enabled = "upstream_scheme && upstream_host && upstream_port"
 
+
     [main.operations]
     name.en = "Operations"
     name.fr = "Opérations"
@@ -88,6 +104,16 @@ services = ["nginx"]
         type = "button"
         ask.en = "Regenerate runtime and restart services"
         ask.fr = "Régénérer l’environnement d’exécution et redémarrer les services"
+
+        [main.operations.restart_services]
+        type = "button"
+        ask.en = "Restart sidecar services only"
+        ask.fr = "Redémarrer seulement les services du sidecar"
+
+        [main.operations.show_admin_gate]
+        type = "button"
+        ask.en = "Show current admin gate secret"
+        ask.fr = "Afficher le secret actuel de la passerelle admin"
 
         [main.operations.admin_note]
         type = "alert"
