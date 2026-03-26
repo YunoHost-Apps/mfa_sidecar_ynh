@@ -28,6 +28,7 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - generated Authelia config and nginx snippets
 - runtime staging into `/etc/mfa-sidecar`
 - package lifecycle scripts for install/upgrade/backup/restore/remove
+- first YunoHost-native config surface via `config_panel.toml` + `scripts/config` for high-level settings and operator actions
 - thin bundled admin UI at `/admin` for managed host/path entries
 - draft `/admin` auth gate via generated shared secret header
 - simple read-only discovery suggestions from YunoHost domains + app subpaths, with nginx used only as a sanity check
