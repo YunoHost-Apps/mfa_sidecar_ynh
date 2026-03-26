@@ -7,15 +7,11 @@ Wants=network-online.target
 Type=simple
 User=root
 Group=root
-WorkingDirectory=/opt/yunohost/mfa_sidecar
 EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
-ExecStartPre=/usr/bin/install -d -m 755 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /var/lib/mfa_sidecar
 ExecStart=/usr/local/bin/authelia --config /etc/mfa-sidecar/authelia/configuration.yml
 Restart=on-failure
 RestartSec=5s
 NoNewPrivileges=true
-PrivateTmp=true
-PrivateDevices=true
 
 [Install]
 WantedBy=multi-user.target
