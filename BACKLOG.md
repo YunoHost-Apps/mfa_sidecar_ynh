@@ -1,10 +1,11 @@
 # BACKLOG.md — MFA Sidecar
 
 ## Now
-- [ ] Consult authoritative YunoHost docs and real package conventions for required package structure and admin-page/admin-UX expectations before the next install attempt (no more donor-only guessing)
-- [ ] Reconcile MFA Sidecar package/admin approach against that YunoHost guidance, especially installer-facing repo shape, app icon/admin presentation, and whether `/admin` is the right model
-- [ ] Perform first real install on wm3v from a clean host state using the documented procedure
-- [ ] Validate real first-user bootstrap, YunoHost user sync, and first successful auth flow against the sidecar-owned users store
+- [ ] Make first-run operator UX obvious: after install, the user must be able to discover how to create the first sidecar user, retrieve the admin gate secret, and define protected targets without spelunking through repo docs
+- [ ] Reduce first-user bootstrap fragility: stop shipping a crash-on-start placeholder hash and replace it with a safe, explicit operator path (config-panel-driven if possible)
+- [ ] Fix runtime ownership/permission bugs so generated live assets are readable by the service user by default
+- [ ] Add publish/installer-branch safeguards so dev/package drift cannot silently ship stale auth models again
+- [ ] Reconcile MFA Sidecar package/admin approach against YunoHost guidance, especially installer-facing repo shape, app icon/admin presentation, and whether `/admin` is the right model
 - [ ] Validate first managed-site target end to end (`home.wm3v.com` first)
 - [ ] Validate upgrade/remove/restore behavior on the real host
 - [x] Add emergency global disable / rollback path
@@ -45,6 +46,7 @@
 - [ ] Consider admin-vs-user stricter remembered-session policy
 - [ ] Consider recovery-code UX improvements
 - [ ] Consider broader app-aware policy only if clearly needed
+- [ ] Consider protocol-aware / second-firewall behavior only as v1.5/v2 work; keep v1 browser-first and selective
 
 ## Explicitly rejected for v1
 - [x] Custom mobile app

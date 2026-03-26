@@ -78,9 +78,11 @@ Still missing or intentionally rough:
 - real live-host validation is still the biggest remaining truth test; green smoke coverage is necessary but not sufficient
 - managed include injection/removal needs broader live validation across more YunoHost app/domain layouts, not just the current known-good path
 - the sidecar-owned users database path still needs real operator validation under first login / enrollment flows on target
-- first-user creation is currently a template + Argon2 CLI flow, which is honest but still a little raw
-- least-privilege hardening is now materially better than the early draft, but still needs live-host validation to confirm the new app-user/systemd sandbox posture behaves cleanly on target
+- first-user creation is currently too manual/fragile; the wm3v proof exposed that a bad placeholder hash can crash Authelia on startup if the operator path is not followed correctly
+- runtime ownership/permission handling around generated files needs a final hardening pass so the service user can always read what install/upgrade generated
 - `/admin` is operator-usable now, but its auth gate is still a pragmatic shared-secret header design rather than a polished long-term operator auth model
+- first-run UX is still poor: a fresh operator can land on a login page without obvious guidance on how to create the first user or define what gets protected
+- v1 scope is intentionally narrow: browser-first compatible web apps only, not a general protocol-aware second firewall
 
 ## Why this still counts as alpha candidate
 Because the core architecture loop is now closed:

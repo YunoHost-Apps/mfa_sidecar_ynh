@@ -1,6 +1,6 @@
 # Operator first-boot checklist
 
-Use this immediately after the next real install to minimize post-install churn.
+Use this immediately after install. Current v1 is a browser-first perimeter shell for selected compatible web apps; it is not a universal MFA layer for mail protocols, sync clients, or generic non-browser traffic.
 
 ## 1. Confirm the sidecar users file exists
 By default MFA Sidecar now bootstraps a template at:
@@ -21,7 +21,9 @@ Provide:
 - email
 - password
 
-The package will generate the Argon2 hash via the local Authelia CLI, write it into `/etc/mfa-sidecar/authelia/users.yml`, and restart Authelia.
+The package should generate the Argon2 hash via the local Authelia CLI, write it into `/etc/mfa-sidecar/authelia/users.yml`, and restart Authelia.
+
+**Reality check from wm3v:** this path must be made much more obvious in-package. A fresh operator should not have to infer this from a bare login page.
 
 ## 3. Manual fallback path
 If needed, you can still edit:
@@ -66,7 +68,8 @@ The packaged Authelia binary now lives at:
 Check that:
 
 - the portal domain loads
-- the logo renders
+- the login page is expected and documented (because this v1 uses a separate outer auth shell)
+- the logo renders where package/admin presentation should show it
 - `/admin` no longer returns nginx 500
 
 ## 7. Validate first managed-site workflow
@@ -102,3 +105,17 @@ Confirm:
 
 ## 10. Record what still hurts
 If anything still requires manual surgery after install, record it immediately. The goal is to burn down post-install footguns, not normalize them.
+
+## 11. Scope reminder for v1
+Treat MFA Sidecar as a selective browser-side perimeter shell.
+
+Good first targets:
+- Homebox
+- admin dashboards
+- browser-first internal tools
+
+Do not treat these as first-pass protected targets:
+- IMAP / SMTP / mail protocols
+- mobile-client-first apps
+- sync / DAV-heavy apps like main Nextcloud mobile flows
+- generic machine/API traffic
