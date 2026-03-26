@@ -17,6 +17,10 @@ def copy_file(src: Path, dst: Path) -> None:
     shutil.copy2(src, dst)
 
 
+def set_mode(path: Path, mode: int) -> None:
+    path.chmod(mode)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("generated_dir")
@@ -30,18 +34,26 @@ def main() -> None:
     metadata = generated / "runtime-metadata.json"
     nginx_dir = generated / "nginx"
 
-    copy_file(authelia_cfg, prefix / "etc/mfa-sidecar/authelia/configuration.yml")
-    copy_file(metadata, prefix / "etc/mfa-sidecar/runtime-metadata.json")
+    authelia_dst = prefix / "etc/mfa-sidecar/authelia/configuration.yml"
+    metadata_dst = prefix / "etc/mfa-sidecar/runtime-metadata.json"
+    copy_file(authelia_cfg, authelia_dst)
+    copy_file(metadata, metadata_dst)
+    set_mode(authelia_dst, 0o640)
+    set_mode(metadata_dst, 0o644)
 
     portal_src = nginx_dir / "portal.generated.conf"
-    copy_file(portal_src, prefix / "etc/mfa-sidecar/nginx/portal.conf")
+    portal_dst = prefix / "etc/mfa-sidecar/nginx/portal.conf"
+    copy_file(portal_src, portal_dst)
+    set_mode(portal_dst, 0o644)
 
     protected_out = prefix / "etc/mfa-sidecar/nginx/protected"
     ensure_dir(protected_out)
     for conf in nginx_dir.glob("*.generated.conf"):
         if conf.name == "portal.generated.conf":
             continue
-        copy_file(conf, protected_out / conf.name.replace(".generated", ""))
+        target = protected_out / conf.name.replace(".generated", "")
+        copy_file(conf, target)
+        set_mode(target, 0o644)
 
     print(f"Staged alpha runtime into: {prefix}")
 

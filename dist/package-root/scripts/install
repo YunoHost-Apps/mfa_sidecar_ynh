@@ -48,6 +48,8 @@ chmod 700 /etc/mfa-sidecar/secrets
 chmod 750 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/nginx/protected
 chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env
 _mfa_sidecar_sync_runtime_assets
+chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
+chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
 _mfa_sidecar_write_alpha_notes
 
 #=================================================

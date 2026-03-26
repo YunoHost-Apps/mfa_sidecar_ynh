@@ -9,12 +9,13 @@ import yaml
 
 TEMPLATE = {
     "users": {
-        "admin": {
-            "disabled": False,
-            "displayname": "MFA Sidecar Admin",
-            "password": "REPLACE_WITH_ARGON2_HASH",
+        "admin-bootstrap": {
+            "disabled": True,
+            "displayname": "MFA Sidecar Bootstrap Placeholder",
+            "password": "$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$2M9QGyGynl3CE4Yd7sQ0Jd0N1k1fA0sQO9L5H5lYv3o",
             "email": "admin@example.invalid",
             "groups": ["admins"],
+            "note": "Replace this disabled bootstrap placeholder with a real first user via the YunoHost config panel before meaningful auth use.",
         }
     }
 }
