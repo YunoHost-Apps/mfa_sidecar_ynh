@@ -175,6 +175,29 @@ _mfa_sidecar_sync_runtime_assets() {
         "$install_dir/deploy/generated-alpha" /
 }
 
+_mfa_sidecar_wait_for_local_http() {
+    local url="$1"
+    local attempts="${2:-20}"
+    local sleep_seconds="${3:-1}"
+    local i
+
+    for ((i=1; i<=attempts; i++)); do
+        if curl --silent --show-error --fail --max-time 2 "$url" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+    return 1
+}
+
+_mfa_sidecar_assert_service_active() {
+    local service="$1"
+    if ! systemctl is-active --quiet "$service"; then
+        journalctl -u "$service" -n 80 --no-pager >&2 || true
+        ynh_die "Service failed to start: $service"
+    fi
+}
+
 _mfa_sidecar_inject_primary_domain_include() {
     local target_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
     local include_path="/etc/mfa-sidecar/nginx/protected/portal_root_seed.conf"
