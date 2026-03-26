@@ -12,7 +12,7 @@ import yaml
 
 DEFAULT_GROUPS = ["admins"]
 MANAGED_MARKER = "managed_by_mfa_sidecar_sync"
-DEFAULT_PLACEHOLDER_HASH = "REPLACE_WITH_ARGON2_HASH"
+DEFAULT_PLACEHOLDER_HASH = "$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$2M9QGyGynl3CE4Yd7sQ0Jd0N1k1fA0sQO9L5H5lYv3o"
 
 
 def ensure_parent(path: Path) -> None:

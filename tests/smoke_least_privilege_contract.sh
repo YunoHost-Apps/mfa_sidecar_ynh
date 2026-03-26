@@ -14,6 +14,8 @@ grep -q '"$install_dir/bin/authelia"' "$COMMON"
 grep -q 'chown -R "\$app:\$app" "\$install_dir" "\$data_dir"' "$INSTALL_SCRIPT"
 grep -q 'chown root:"\$app" /etc/mfa-sidecar/mfa-sidecar.env' "$INSTALL_SCRIPT"
 grep -q 'chmod 640 /etc/mfa-sidecar/secrets/\* /etc/mfa-sidecar/mfa-sidecar.env' "$INSTALL_SCRIPT"
+grep -q 'chown "\$app:\$app" /etc/mfa-sidecar/authelia/configuration.yml' "$INSTALL_SCRIPT"
+grep -q 'chmod 640 /etc/mfa-sidecar/authelia/configuration.yml' "$INSTALL_SCRIPT"
 
 grep -q 'chown -R "\$app:\$app" "\$install_dir" "\$data_dir"' "$UPGRADE_SCRIPT"
 grep -q 'chown -R "\$app:\$app" "\$install_dir" "\$data_dir"' "$RESTORE_SCRIPT"

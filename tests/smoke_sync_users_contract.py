@@ -83,7 +83,7 @@ def main() -> None:
         assert alice['disabled'] is False
         assert alice['displayname'] == 'Alice Example'
         assert alice['email'] == 'alice@example.com'
-        assert alice['password'] == 'REPLACE_WITH_ARGON2_HASH'
+        assert alice['password'].startswith('$argon2id$')
         assert alice['managed_by_mfa_sidecar_sync'] is True
 
         assert orphan['disabled'] is True

@@ -14,8 +14,10 @@ grep -q 'bootstrap_authelia_users.py' "$INSTALL_SCRIPT"
 grep -q '_mfa_sidecar_ensure_users_file_template' "$INSTALL_SCRIPT"
 grep -q '^_mfa_sidecar_ensure_users_file_template() {' "$COMMON"
 
-# Bootstrap helper should create the expected placeholder structure.
-grep -q 'REPLACE_WITH_ARGON2_HASH' "$BOOTSTRAP"
+# Bootstrap helper should create a disabled but syntactically valid placeholder user.
+grep -q 'admin-bootstrap' "$BOOTSTRAP"
+grep -q 'disabled": True' "$BOOTSTRAP"
+grep -q '\$argon2id\$v=19' "$BOOTSTRAP"
 grep -q "'admins'" "$BOOTSTRAP" || grep -q '"admins"' "$BOOTSTRAP"
 
 # Operator docs/panel should point to the users file reality.
