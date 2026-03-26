@@ -94,6 +94,20 @@ services = ["nginx"]
         enabled = "upstream_scheme && upstream_host && upstream_port"
 
 
+    [main.status]
+    name.en = "Status"
+    name.fr = "Statut"
+    help.en = "Read-only operator visibility into the currently staged sidecar state."
+    help.fr = "Visibilité en lecture seule pour l’opérateur sur l’état actuellement déployé du sidecar."
+
+        [main.status.runtime_summary]
+        type = "alert"
+        style = "info"
+        bind = "null"
+        readonly = true
+        ask.en = "Runtime summary"
+        ask.fr = "Résumé d’exécution"
+
     [main.operations]
     name.en = "Operations"
     name.fr = "Opérations"
