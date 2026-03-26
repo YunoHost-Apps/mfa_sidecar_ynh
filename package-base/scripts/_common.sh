@@ -250,42 +250,42 @@ _mfa_sidecar_remove_primary_domain_include() {
 }
 
 _mfa_sidecar_write_alpha_notes() {
-    cat > "$install_dir/README.alpha" <<EOF
-MFA Sidecar alpha package
-=========================
-
-This alpha package seeds a managed-sites policy file, installs a vendored pinned
-Authelia release, generates Authelia/nginx runtime artifacts, and stages them
-into live runtime paths.
-
-Current install choices:
-- portal domain: ${domain}
-- portal path: /
-- default initial rule state: ${default_policy}
-- remembered session: ${session_duration}
-- default upstream seed: ${upstream_scheme}://${upstream_host}:${upstream_port}
-
-Generated/staged paths:
-- policy seed: $install_dir/config/domain-policy.yaml
-- generated artifacts: $install_dir/deploy/generated-alpha/
-- authelia config: /etc/mfa-sidecar/authelia/configuration.yml
-- nginx portal include: /etc/mfa-sidecar/nginx/portal.conf
-- nginx protected includes: /etc/mfa-sidecar/nginx/protected/*.conf
-- env file: /etc/mfa-sidecar/mfa-sidecar.env
-- vendored authelia source: $install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz
-- installed authelia binary: /usr/local/bin/authelia
-
-Current beta-shaped improvements:
-- dedicated portal domain enforced
-- managed host+path entries with longest-match-wins semantics
-- vendored pinned Authelia artifact with sha256 verification
-- host-aligned LDAP defaults for wm3v-style YunoHost LDAP
-
-Remaining operator tasks:
-- MFA Sidecar now auto-generates `/etc/mfa-sidecar/secrets/ldap_bind_password` if you do not provide `ldap_bind_password` during install; manual override remains available if you want to set a specific value later
-- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection
-- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation
-- validate live auth flow after install
-- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls
-EOF
+    {
+        printf '%s\n' 'MFA Sidecar alpha package'
+        printf '%s\n' '========================='
+        printf '\n'
+        printf '%s\n' 'This alpha package seeds a managed-sites policy file, installs a vendored pinned'
+        printf '%s\n' 'Authelia release, generates Authelia/nginx runtime artifacts, and stages them'
+        printf '%s\n' 'into live runtime paths.'
+        printf '\n'
+        printf '%s\n' 'Current install choices:'
+        printf '%s\n' "- portal domain: ${domain}"
+        printf '%s\n' '- portal path: /'
+        printf '%s\n' "- default initial rule state: ${default_policy}"
+        printf '%s\n' "- remembered session: ${session_duration}"
+        printf '%s\n' "- default upstream seed: ${upstream_scheme}://${upstream_host}:${upstream_port}"
+        printf '\n'
+        printf '%s\n' 'Generated/staged paths:'
+        printf '%s\n' "- policy seed: $install_dir/config/domain-policy.yaml"
+        printf '%s\n' "- generated artifacts: $install_dir/deploy/generated-alpha/"
+        printf '%s\n' '- authelia config: /etc/mfa-sidecar/authelia/configuration.yml'
+        printf '%s\n' '- nginx portal include: /etc/mfa-sidecar/nginx/portal.conf'
+        printf '%s\n' '- nginx protected includes: /etc/mfa-sidecar/nginx/protected/*.conf'
+        printf '%s\n' '- env file: /etc/mfa-sidecar/mfa-sidecar.env'
+        printf '%s\n' "- vendored authelia source: $install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
+        printf '%s\n' '- installed authelia binary: /usr/local/bin/authelia'
+        printf '\n'
+        printf '%s\n' 'Current beta-shaped improvements:'
+        printf '%s\n' '- dedicated portal domain enforced'
+        printf '%s\n' '- managed host+path entries with longest-match-wins semantics'
+        printf '%s\n' '- vendored pinned Authelia artifact with sha256 verification'
+        printf '%s\n' '- host-aligned LDAP defaults for wm3v-style YunoHost LDAP'
+        printf '\n'
+        printf '%s\n' 'Remaining operator tasks:'
+        printf '%s\n' '- MFA Sidecar now auto-generates `/etc/mfa-sidecar/secrets/ldap_bind_password` if you do not provide `ldap_bind_password` during install; manual override remains available if you want to set a specific value later'
+        printf '%s\n' '- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection'
+        printf '%s\n' '- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation'
+        printf '%s\n' '- validate live auth flow after install'
+        printf '%s\n' '- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls'
+    } > "$install_dir/README.alpha"
 }
