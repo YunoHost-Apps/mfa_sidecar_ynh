@@ -62,6 +62,7 @@ _mfa_sidecar_write_alpha_notes
 #=================================================
 ynh_script_progression "Refreshing NGINX entrypoint for MFA sidecar..."
 
+mkdir -p "/etc/nginx/conf.d/${domain}.d"
 cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
 ynh_config_add_nginx
 _mfa_sidecar_inject_primary_domain_include
