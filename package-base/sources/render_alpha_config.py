@@ -120,6 +120,10 @@ def build_authelia_values(policy: dict) -> dict:
     if identity.get("tls"):
         ldap_backend["tls"] = identity["tls"]
 
+    rendered_default_policy = map_default_policy(access.get("default_policy", "deny"))
+    if not rules and rendered_default_policy in {"bypass", "deny"}:
+        rendered_default_policy = "one_factor"
+
     authelia = {
         "theme": "auto",
         "server": {"address": f"tcp://{portal['listen']['host']}:{portal['listen']['port']}"},
@@ -129,7 +133,7 @@ def build_authelia_values(policy: dict) -> dict:
         },
         "authentication_backend": {"ldap": ldap_backend},
         "access_control": {
-            "default_policy": map_default_policy(access.get("default_policy", "deny")),
+            "default_policy": rendered_default_policy,
             "rules": rules,
         },
         "session": {
