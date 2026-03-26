@@ -10,6 +10,7 @@ RESTORE_SCRIPT="$ROOT_DIR/package-base/scripts/restore"
 grep -q '_mfa_sidecar_wait_for_local_http()' "$COMMON"
 grep -q '_mfa_sidecar_assert_service_active()' "$COMMON"
 grep -q 'journalctl -u "\$service" -n 80 --no-pager' "$COMMON"
+grep -q 'urllib.request.urlopen' "$COMMON"
 
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-authelia' "$INSTALL_SCRIPT"
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-admin' "$INSTALL_SCRIPT"

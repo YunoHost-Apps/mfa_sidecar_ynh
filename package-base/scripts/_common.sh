@@ -182,7 +182,17 @@ _mfa_sidecar_wait_for_local_http() {
     local i
 
     for ((i=1; i<=attempts; i++)); do
-        if curl --silent --show-error --fail --max-time 2 "$url" >/dev/null 2>&1; then
+        if python3 - "$url" <<'PY' >/dev/null 2>&1
+import sys
+import urllib.request
+
+url = sys.argv[1]
+with urllib.request.urlopen(url, timeout=2) as response:
+    if response.status < 500:
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+        then
             return 0
         fi
         sleep "$sleep_seconds"
