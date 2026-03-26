@@ -142,8 +142,8 @@ services = ["nginx"]
         [main.operations.users_file_note]
         type = "alert"
         style = "warning"
-        ask.en = "The sidecar now uses its own Authelia users file at /etc/mfa-sidecar/authelia/users.yml. Installation bootstraps a template, but you still need to replace the placeholder hash/email with a real first user before meaningful auth testing."
-        ask.fr = "Le sidecar utilise maintenant son propre fichier utilisateurs Authelia dans /etc/mfa-sidecar/authelia/users.yml. L’installation initialise un modèle, mais vous devez toujours remplacer le hash/e-mail fictifs par un vrai premier utilisateur avant des tests d’authentification utiles."
+        ask.en = "The sidecar now uses its own Authelia users file at /etc/mfa-sidecar/authelia/users.yml. Installation bootstraps a disabled placeholder only; you still need to create a real first sidecar user before meaningful auth testing. Portal access is broader, but operator/admin actions remain separate."
+        ask.fr = "Le sidecar utilise maintenant son propre fichier utilisateurs Authelia dans /etc/mfa-sidecar/authelia/users.yml. L’installation initialise uniquement un espace réservé désactivé ; vous devez toujours créer un vrai premier utilisateur du sidecar avant des tests d’authentification utiles. L’accès au portail est plus large, mais les actions opérateur/admin restent séparées."
 
         [main.operations.seed_first_user]
         type = "button"
@@ -183,5 +183,5 @@ services = ["nginx"]
         [main.operations.admin_note]
         type = "alert"
         style = "info"
-        ask.en = "Detailed managed-site editing still lives in the sidecar admin UI on /admin. The config panel is the YunoHost-native surface for common settings, first-user bootstrap, user sync, emergency disable, and safe operational actions. YunoHost-driven user sync disables missing upstream users instead of deleting them."
-        ask.fr = "L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin. Le panneau de configuration est la surface native YunoHost pour les réglages courants, l’initialisation du premier utilisateur, la synchronisation des utilisateurs, la désactivation d’urgence et les actions opérationnelles sûres. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."
+        ask.en = "The portal on / is the user-facing outer login shell and should be broadly reachable. Detailed managed-site editing still lives in the sidecar admin UI on /admin, and config-panel / operational actions remain for sidecar admins/operators. YunoHost-driven user sync disables missing upstream users instead of deleting them."
+        ask.fr = "Le portail sur / est la coque de connexion externe destinée aux utilisateurs et doit être largement accessible. L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin, et les actions du panneau de configuration / opérationnelles restent réservées aux admins/opérateurs du sidecar. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."

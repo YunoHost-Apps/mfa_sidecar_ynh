@@ -5,7 +5,7 @@
 Authelia-based MFA sidecar for selected YunoHost domains and paths.
 
 ## Status
-This project is at a **production-hardened alpha candidate** checkpoint. Local validation is strong, the auth model has been corrected to a separate sidecar-owned store, operator recovery/break-glass paths exist, and services now run as the package app user rather than root. The remaining gap is clean-host live validation from a restored snapshot or otherwise cleaned target so stale YunoHost/systemd state does not poison the result. The package is intended as an **admin-side/operator tool**, not a normal end-user dashboard app.
+This project is at a **production-hardened alpha candidate** checkpoint. Local validation is strong, the auth model has been corrected to a separate sidecar-owned store, operator recovery/break-glass paths exist, and services now run as the package app user rather than root. The remaining gap is clean-host live validation from a restored snapshot or otherwise cleaned target so stale YunoHost/systemd state does not poison the result. The package is intended as a **browser-first perimeter shell** with a user-facing portal and a separate operator/admin control plane, not a normal end-user dashboard tile.
 
 ## Branches and install surface
 - `main` is the **installer-facing distribution branch** on GitHub and should expose a top-level YunoHost package layout.

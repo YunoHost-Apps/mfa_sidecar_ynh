@@ -44,15 +44,23 @@ YunoHost’s quality model explicitly treats backup/restore as a major quality t
 
 ## Significant conformance gaps still present
 
-### 3. Admin access model lives mostly outside YunoHost permission semantics
-Severity: **should fix soon / maybe must-fix before broader release**
+### 3. Portal-vs-admin permission split must match the product
+Severity: **must fix before broader release**
 
-Before this review, the package only modeled `main` permission while `/admin` access was effectively enforced by a custom header secret.
+The chosen v1 architecture is a user-facing browser perimeter shell on `/` plus a separate admin/operator control plane on `/admin`.
 
-That is operationally workable, but in YunoHost terms it is odd because `/admin` is a first-class path and YunoHost expects permission modeling when meaningful.
+That means:
+- the **portal** cannot remain admin-only in YunoHost permissions
+- the **admin/control plane** still should be admin-only
 
-**Status:** partially improved in review by adding a declared `admin` permission:
+Earlier package revisions treated the whole app more like an admin-side utility, which is now wrong for the product.
+
+**Desired model:**
 ```toml
+main.url = "/"
+main.allowed = "visitors"
+main.auth_header = false
+
 admin.url = "/admin"
 admin.allowed = "admins"
 admin.show_tile = false
@@ -60,7 +68,7 @@ admin.auth_header = false
 admin.protected = true
 ```
 
-**Remaining concern:** the custom admin gate header is still the real access control plane. The YunoHost permission is now more honest, but the model is still layered/unusual.
+**Remaining concern:** the custom admin gate header is still the real access control plane. The YunoHost permission split becomes more honest, but the layered model remains unusual.
 
 ### 4. No YunoHost config panel
 Severity: **should fix**
@@ -102,7 +110,7 @@ Again: not automatically invalid, but it raises the burden of correctness, clean
 
 - Using install/data/system_user resources is good.
 - Using a password install question for LDAP bind password as an optional override is appropriate and aligns with YunoHost forms semantics.
-- `init_main_permission` usage is valid.
+- `init_main_permission` usage is valid, but for the chosen v1 architecture the default must reflect a broadly reachable portal rather than an admin-only utility.
 - Declaring `main.auth_header = false` is coherent for this app.
 - The package remains intentionally single-instance; that is consistent with the product shape.
 

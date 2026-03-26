@@ -92,7 +92,7 @@ ram.runtime = "200M"
 
     [install.init_main_permission]
     type = "group"
-    default = "admins"
+    default = "visitors"
 
 [resources]
     [resources.system_user]
@@ -108,7 +108,7 @@ ram.runtime = "200M"
 
     [resources.permissions]
     main.url = "/"
-    main.allowed = "admins"
+    main.allowed = "visitors"
     main.auth_header = false
 
     admin.url = "/admin"

@@ -17,7 +17,7 @@ Logo asset sourced from Authelia's official branding guide/repository assets:
 The upstream branding guide explicitly allows reasonable size/format/layout adjustments while asking that usage not imply endorsement or affiliation.
 
 ## UI positioning
-- This package should be treated as an **admin-side/operator tool**.
+- This package should be treated as a **browser-first perimeter shell** with a user-facing portal plus a separate admin/operator control plane.
 - It should **not** appear as a normal end-user dashboard tile/app.
 - The packaged logo is for package/admin presentation, not for ordinary user launch UX.
 - For YunoHost app-list / catalog-style icon display, the normal convention is a matching logo in the central `YunoHost/apps` artwork repo (`logos/<app>.png`), not just a local package asset.
