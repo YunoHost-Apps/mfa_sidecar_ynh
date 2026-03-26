@@ -74,7 +74,7 @@ Severity: **should fix**
 
 The package docs/state repeatedly assert this app belongs on a dedicated domain rooted at `/`. Keeping a `change_url` script implies support for lifecycle operations that the package conceptually does not want to support.
 
-This is not necessarily an immediate install blocker, but it is misleading surface area.
+**Status:** improved in review by explicitly failing `change_url` with a truthful message instead of pretending relocation is supported.
 
 ### 6. Direct mutation of nginx configs belonging to other app/domain surfaces
 Severity: **high-risk design issue**
