@@ -1,7 +1,7 @@
 # STATUS.md — MFA Sidecar
 
 ## Current phase
-Browser-first v1 perimeter shell confirmed; operator bootstrap/config UX and live package footguns still need cleanup
+Browser-first v1 perimeter shell confirmed; local package hardening is strong, and the remaining meaningful uncertainty is live host validation plus operator UX polish
 
 ## Current recommendation
 Use **Authelia** as the sidecar auth engine for a **browser-first perimeter shell** in front of selected YunoHost-managed web apps, with:
@@ -32,8 +32,8 @@ The repo is now in a **documented alpha package state with strong local validati
 - direct Authelia portal is live and reachable once bootstrap/user and permission bugs are corrected
 - GitHub `main` is the installer-facing package branch, while GitLab mirrors that package view on `github-package`
 - browser-first perimeter-shell framing is the right v1 scope; protocol-wide/firewall-like behavior is out of scope for now
-- current install still has operator-footgun bugs: stale publish drift was possible, generated runtime file permissions were wrong, and first-user bootstrap is too manual/fragile
-- first-run UX is still poor: the operator can land on a login page without a clear obvious path to create users or define what gets protected
+- earlier install iterations exposed real operator-footgun classes: publish drift, runtime permission mistakes, and bootstrap confusion; the repo now contains fixes and regression coverage for those classes, but they still need live-host confirmation
+- first-run UX is improved but still rough around the edges: the operator path exists in config actions/docs, yet it still needs live validation to prove a fresh admin will not get stranded at the login page
 
 ## Immediate next step
 Fix the operator/bootstrap UX and remaining package footguns, then re-validate the intended v1 flow on a compatible browser-first target app.

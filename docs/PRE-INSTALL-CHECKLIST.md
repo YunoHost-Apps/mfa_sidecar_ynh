@@ -33,8 +33,8 @@ Use this before the first real YunoHost install attempt.
    - move aside leftover `auth.<domain>` nginx config from failed attempts
    - `systemctl daemon-reload`
    - `nginx -t && systemctl restart nginx`
-5. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` for `/admin` access during alpha validation
-6. Be ready to finish the first sidecar user in `/etc/mfa-sidecar/authelia/users.yml` by replacing the placeholder email/hash with a real user and an Argon2 password digest
+5. Be ready to retrieve/use the generated `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env` (or the config-panel action) for `/admin` access during alpha validation
+6. Be ready to create the first sidecar user through the YunoHost config panel action; manual editing of `/etc/mfa-sidecar/authelia/users.yml` is now fallback-only
 7. Ensure the sidecar portal is being installed on its own dedicated domain at `/`
 8. Treat this as a browser-first perimeter shell with a user-facing portal on `/` and a separate admin/operator surface on `/admin`, not a normal dashboard tile
 9. Use the installer-facing branch only: `https://github.com/wonko6x9/mfa_sidecar_ynh`

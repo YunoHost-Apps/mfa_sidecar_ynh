@@ -19,5 +19,10 @@ test -f "$OUT_DIR/etc/mfa-sidecar/nginx/protected/root_site.conf"
 test -f "$OUT_DIR/etc/mfa-sidecar/nginx/protected/nextcloud_exception.conf"
 grep -q '"backend": "file"' "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json"
 grep -q '"user_database_path": "/etc/mfa-sidecar/authelia/users.yml"' "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json"
+[[ "$(stat -c '%a' "$OUT_DIR/etc/mfa-sidecar")" == "750" ]]
+[[ "$(stat -c '%a' "$OUT_DIR/etc/mfa-sidecar/authelia/configuration.yml")" == "640" ]]
+[[ "$(stat -c '%a' "$OUT_DIR/etc/mfa-sidecar/runtime-metadata.json")" == "640" ]]
+[[ "$(stat -c '%a' "$OUT_DIR/etc/mfa-sidecar/nginx/portal.conf")" == "640" ]]
+[[ "$(stat -c '%a' "$OUT_DIR/etc/mfa-sidecar/nginx/protected/root_site.conf")" == "640" ]]
 
 echo "smoke_stage_runtime: ok"

@@ -80,8 +80,8 @@ Still missing or intentionally rough:
 - real live-host validation is still the biggest remaining truth test; green smoke coverage is necessary but not sufficient
 - managed include injection/removal needs broader live validation across more YunoHost app/domain layouts, not just the current known-good path
 - the sidecar-owned users database path still needs real operator validation under first login / enrollment flows on target
-- first-user creation is currently too manual/fragile; the wm3v proof exposed that a bad placeholder hash can crash Authelia on startup if the operator path is not followed correctly
-- runtime ownership/permission handling around generated files needs a final hardening pass so the service user can always read what install/upgrade generated
+- first-user creation now has a real config-panel-driven path and helper tooling, but it still needs end-to-end live-host proof that a fresh operator will discover and complete it cleanly
+- runtime ownership/permission handling has been hardened in-repo, including staging-time mode enforcement, but it still needs live-host proof across install/upgrade/restore on target
 - `/admin` is operator-usable now, but its auth gate is still a pragmatic shared-secret header design rather than a polished long-term operator auth model
 - first-run UX is still poor: a fresh operator can land on a login page without obvious guidance on how to create the first user or define what gets protected
 - v1 scope is intentionally narrow: browser-first compatible web apps only, not a general protocol-aware second firewall
