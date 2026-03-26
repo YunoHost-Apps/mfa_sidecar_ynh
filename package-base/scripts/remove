@@ -24,6 +24,9 @@ rm -f /etc/systemd/system/mfa-sidecar-admin.service
 # REMOVE RUNTIME ARTIFACTS
 #=================================================
 rm -rf /etc/mfa-sidecar
+rm -rf /var/lib/mfa_sidecar
+rm -f /usr/local/bin/authelia
+systemctl daemon-reload || true
 
 #=================================================
 # END OF SCRIPT

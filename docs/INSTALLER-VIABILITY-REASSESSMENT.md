@@ -37,7 +37,7 @@ Before the vendored binary work, the installer was **not first-try viable** unle
 After this change, the installer is **substantially closer to first-try viable** on wm3v, assuming:
 1. portal app is installed on its own dedicated domain (recommended: `auth.wm3v.com`) at `/`
 2. first protected app is `home.wm3v.com`
-3. LDAP bind password is supplied immediately after install
+3. LDAP bind password is supplied during install, or immediately after install if intentionally left blank
 4. a VM snapshot exists before the first run
 
 ## Recommendation
