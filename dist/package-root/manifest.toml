@@ -90,6 +90,14 @@ ram.runtime = "200M"
     help.en = "Plain numeric TCP port; validated during install"
     help.fr = "Port TCP numérique simple ; validé pendant l'installation"
 
+    [install.ldap_bind_password]
+    ask.en = "LDAP bind password for uid=authelia"
+    ask.fr = "Mot de passe LDAP de liaison pour uid=authelia"
+    type = "password"
+    optional = true
+    help.en = "Recommended: provide it now so the portal can authenticate against YunoHost LDAP immediately. Leave blank only if you will set /etc/mfa-sidecar/secrets/ldap_bind_password manually right after install."
+    help.fr = "Recommandé : fournissez-le maintenant pour que le portail puisse s'authentifier immédiatement contre LDAP YunoHost. Laissez vide seulement si vous allez définir /etc/mfa-sidecar/secrets/ldap_bind_password manuellement juste après l'installation."
+
     [install.init_main_permission]
     type = "group"
     default = "admins"

@@ -74,7 +74,10 @@ _mfa_sidecar_write_env_file() {
     ldap_password_file="$(_mfa_sidecar_secret_file ldap_bind_password)"
     _mfa_sidecar_write_secret_if_missing "$admin_gate_secret_file"
 
-    if [[ ! -f "$ldap_password_file" ]]; then
+    if [[ -n "${ldap_bind_password:-}" ]]; then
+        umask 077
+        printf '%s\n' "$ldap_bind_password" > "$ldap_password_file"
+    elif [[ ! -f "$ldap_password_file" ]]; then
         umask 077
         printf '%s\n' 'CHANGEME_LDAP_BIND_PASSWORD' > "$ldap_password_file"
     fi
