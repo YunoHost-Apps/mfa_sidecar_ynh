@@ -31,6 +31,7 @@ chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env || true
 chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml 2>/dev/null || true
 chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml 2>/dev/null || true
 
+mkdir -p "/etc/nginx/conf.d/${domain}.d"
 _mfa_sidecar_remove_primary_domain_include
 _mfa_sidecar_inject_primary_domain_include
 
