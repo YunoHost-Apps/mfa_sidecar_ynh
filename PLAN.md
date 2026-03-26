@@ -19,7 +19,8 @@ This is a **gatekeeper** that sits in front of selected YunoHost-managed domains
 
 ## V1 scope
 - Removable sidecar architecture
-- YunoHost LDAP used as identity/password source
+- Separate Authelia credential + MFA store (hashed/salted, independent of YunoHost auth)
+- Optional read-only YunoHost identity/contact sync for username/email seeding or recovery context
 - Sidecar MFA engine: passkeys first, TOTP fallback
 - Shared auth session across protected domains
 - Public/unprotected domains remain untouched
@@ -38,8 +39,9 @@ This is a **gatekeeper** that sits in front of selected YunoHost-managed domains
 ## Recommended stack (current)
 - Reverse proxy layer: Nginx first choice; Caddy acceptable alternative
 - Sidecar auth engine: Authelia
-- Identity source: YunoHost LDAP
-- Storage: PostgreSQL
+- Sidecar identity store: separate Authelia-managed credential/MFA store
+- Optional directory/contact feed: YunoHost LDAP read-only for username/email discovery only
+- Storage: PostgreSQL (or Authelia-supported durable store as implementation settles)
 - Thin custom control plane for domain toggles + generated config
 - TOTP fallback and WebAuthn provided by auth engine where practical
 

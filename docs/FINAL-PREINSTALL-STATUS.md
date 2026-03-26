@@ -12,9 +12,9 @@ It is not "production-proven" yet, and the next attempt should start from a rest
 - longest-match-wins override semantics implemented
 - vendored Authelia artifact added to package sources
 - Authelia install path now checksum-verifies vendored artifact
-- LDAP defaults corrected from live wm3v inspection
-- LDAP bind password handling moved from a fake env placeholder toward a dedicated secret file (`/etc/mfa-sidecar/secrets/ldap_bind_password`) that regenerates the runtime env file
+- LDAP defaults were explored and partially hardened during the earlier design branch, but the architecture is now being corrected toward a separate sidecar-owned auth store
 - temporary truthful branding/logo added using official Authelia logo
+- local package/admin logo asset is present, but YunoHost app-list icon behavior may still depend on the central app-catalog artwork path rather than the packaged asset alone
 - service hardening tightened beyond the original draft units
 - explicit package-root export script added so release/publish no longer depends on workspace-root sprawl
 - repeated smoke runs pass consistently

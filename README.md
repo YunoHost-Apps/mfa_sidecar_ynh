@@ -17,7 +17,8 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - managed host/path entries with simple on/off control
 - longest-match-wins path overrides
 - WebAuthn/passkeys primary, TOTP fallback
-- YunoHost LDAP as the identity source
+- separate Authelia credential/MFA store independent from YunoHost auth
+- optional read-only YunoHost identity/contact lookup rather than YunoHost-auth coupling
 - removable sidecar architecture rather than patching YunoHost core auth
 
 ## Current package capabilities
@@ -34,7 +35,7 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - simple read-only discovery suggestions from YunoHost domains + app subpaths, with nginx used only as a sanity check
 - repeated smoke coverage for render, staging, discovery, admin add/edit/delete/toggle/apply flow, vendored binary install, package-tree export, and failure contracts
 - explicit package-root export script at `scripts/export_package_root.sh`
-- LDAP bind password now sourced from `/etc/mfa-sidecar/secrets/ldap_bind_password` and refreshed into `/etc/mfa-sidecar/mfa-sidecar.env`
+- current code still contains an LDAP-auth branch from the earlier design, but that is now being superseded by the separate-store architecture
 
 ## Important constraints
 - the sidecar portal must be installed on its own dedicated domain at `/`

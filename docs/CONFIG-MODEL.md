@@ -27,7 +27,9 @@ session:
 storage:
   encryption_key_env: AUTHELIA_STORAGE_ENCRYPTION_KEY
 identity:
-  ldap: ...
+  local: ...
+  sync:
+    source: yunohost-ldap-readonly
 mfa:
   webauthn: ...
   totp: ...
@@ -56,8 +58,9 @@ alpha:
 - `portal.*` defines where the sidecar UI/auth endpoint lives.
 - The portal app itself must live on its **own dedicated domain** at `/`; do not co-host it on a shared app domain/path.
 - `session.*` drives shared remembered-session behavior across managed sites.
-- `identity.ldap.*` points at YunoHost LDAP as the source of users/passwords.
-- On wm3v live inspection, YunoHost users/groups aligned better with `inetOrgPerson` and `groupOfNamesYnh` than the earlier more generic placeholder filters.
+- `identity.local.*` is the sidecar-owned credential/MFA authority.
+- `identity.sync.*` is the optional read-only bridge for lightweight username/email discovery from YunoHost.
+- The sidecar should not rely on YunoHost LDAP as its primary password backend if the goal is a genuinely separate outer shell.
 - `access_control.managed_sites[*].enabled` is the user-facing binary on/off switch.
 - `managed_sites` are explicitly operator-managed entries, not automatic discovery truth.
 - A managed site is identified by `host + path` and can represent either a full domain (`/`) or a specific subpath.

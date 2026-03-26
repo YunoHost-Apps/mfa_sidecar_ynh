@@ -49,7 +49,20 @@
 **Why:**
 - strongest fit for reverse-proxy gate model
 - lighter than full identity platforms
-- supports LDAP + WebAuthn + TOTP + remembered sessions
+- supports separate credential/MFA state, WebAuthn, TOTP, and remembered sessions
+
+## D-008: Keep sidecar auth state separate from YunoHost auth state
+**Decision:** Authelia should maintain its **own** hashed/salted credential and MFA store rather than authenticating directly against YunoHost LDAP.
+
+**Why:**
+- preserves the shell/gate model John wants
+- creates a real trust-boundary separation between the outer gate and the inside system
+- compromise of one store should not automatically collapse the other
+- avoids accidental drift into pseudo-SSO when the product goal is removable perimeter protection
+
+**Implementation note:**
+- YunoHost LDAP may still be used read-only for lightweight user/contact discovery or reconciliation
+- YunoHost LDAP should not be treated as the primary password authority for the sidecar
 
 ## D-007: Use `redirect_ynh` as packaging/proxy scaffold donor
 **Decision:** Use `YunoHost-Apps/redirect_ynh` as a donor scaffold for YunoHost package structure and reverse-proxy lifecycle patterns.

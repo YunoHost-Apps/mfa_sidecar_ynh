@@ -25,6 +25,7 @@ grep -q '^Environment=MFA_SIDECAR_ADMIN_PORT=9087$' "$SERVICE"
 grep -q '^location \^~ /admin {$' "$PORTAL_CONF"
 grep -q 'X-MFA-Sidecar-Admin-Secret' "$PORTAL_CONF"
 grep -q 'proxy_pass http://127.0.0.1:9087;' "$PORTAL_CONF"
+grep -q "'/admin/logo'" "$ROOT_DIR/package-base/sources/admin_ui_app.py"
 grep -q 'install -D -m 644 ../assets/logo.png "\$install_dir/www/logo.png"' "$ROOT_DIR/package-base/scripts/install"
 grep -q 'install -D -m 644 ../assets/logo.png "\$install_dir/www/logo.png"' "$ROOT_DIR/package-base/scripts/upgrade"
 

@@ -24,6 +24,7 @@ DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR
 DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR.parent.parent / "scripts" / "stage_alpha_runtime.py"))
 DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
 DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
+DEFAULT_LOGO_PATH = os.environ.get("MFA_SIDECAR_ADMIN_LOGO_PATH", "/opt/yunohost/mfa_sidecar/www/logo.png")
 BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
@@ -202,7 +203,7 @@ class AdminApp:
   </style>
 </head>
 <body>
-  <h1>MFA Sidecar admin</h1>
+  <h1 style='display:flex; align-items:center; gap:0.75rem;'><img src='/admin/logo' alt='MFA Sidecar logo' style='height:40px; width:40px; object-fit:contain;' /> <span>MFA Sidecar admin</span></h1>
   <p class='muted'>Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
   {notice_html}
   {error_html}
@@ -264,6 +265,7 @@ class AdminApp:
 
 
 APP = AdminApp()
+LOGO_PATH = Path(DEFAULT_LOGO_PATH)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -272,6 +274,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.FORBIDDEN)
             return
         parsed = urlparse(self.path)
+        if parsed.path == "/admin/logo":
+            self._serve_logo()
+            return
         if parsed.path not in {"/", "/admin"}:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -337,6 +342,17 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.SEE_OTHER)
         self.send_header("Location", location)
         self.end_headers()
+
+    def _serve_logo(self) -> None:
+        if not LOGO_PATH.exists():
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        payload = LOGO_PATH.read_bytes()
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def _authorized(self) -> bool:
         if not ADMIN_GATE_SECRET:
