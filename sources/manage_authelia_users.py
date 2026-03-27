@@ -47,7 +47,12 @@ def hash_password(authelia_bin: str, password: str) -> str:
     lines = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
     if not lines:
         raise SystemExit("Authelia hash command returned no output")
-    return lines[-1]
+    for line in reversed(lines):
+        if line.startswith("Digest: "):
+            return line.split("Digest: ", 1)[1].strip()
+        if line.startswith("$"):
+            return line
+    raise SystemExit(f"Authelia hash command returned unexpected output: {lines[-1]}")
 
 
 def run_json(command: list[str]) -> dict | list:
