@@ -371,7 +371,7 @@ _mfa_sidecar_write_alpha_notes() {
         printf '%s\n' '- separate sidecar-owned credential/MFA store with file-backed Authelia auth model'
         printf '\n'
         printf '%s\n' 'Remaining operator tasks:'
-        printf '%s\n' '- bootstrap or import the initial sidecar users file at /etc/mfa-sidecar/authelia/users.yml with hashed passwords before real auth validation'
+        printf '%s\n' '- if you did not create the first sidecar admin during install, do it immediately from the config panel before real auth validation'
         printf '%s\n' '- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection'
         printf '%s\n' '- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation'
         printf '%s\n' '- validate live auth flow after install'

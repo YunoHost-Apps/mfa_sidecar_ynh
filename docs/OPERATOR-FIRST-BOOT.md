@@ -9,8 +9,10 @@ By default MFA Sidecar now bootstraps a template at:
 
 This is intentionally a starter file, not a finished real-user database.
 
-## 2. Preferred path: seed the first user from the YunoHost config panel
-Open the MFA Sidecar config panel and use:
+## 2. Preferred path: create the first user during install, or seed it from the YunoHost config panel
+If you provided first-user details during install, this step may already be done.
+
+Otherwise open the MFA Sidecar config panel and use:
 
 - **Create or update first sidecar user**
 

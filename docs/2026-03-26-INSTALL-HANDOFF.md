@@ -71,9 +71,10 @@ Desired result: units not found, or at least no loaded stale unit content.
    - `https://github.com/wonko6x9/mfa_sidecar_ynh/tree/github-package`
 4. If install succeeds:
    - confirm `/etc/mfa-sidecar/authelia/users.yml` exists
-   - replace the placeholder bootstrap user values with a real first user + Argon2 hash
+   - if you did not create the first sidecar admin during install, create it immediately via config-panel action or helper flow
    - retrieve `MFA_SIDECAR_ADMIN_GATE_SECRET`
    - validate `/admin`
+   - if the portal domain still appears to fall into default YunoHost behavior, force `yunohost tools regen-conf nginx --force` and verify the parent `auth.<domain>.conf` exists before blaming the sidecar
    - test first managed target using `home.wm3v.com`
 5. If install fails again, immediately capture:
    - `systemctl cat mfa-sidecar-authelia`

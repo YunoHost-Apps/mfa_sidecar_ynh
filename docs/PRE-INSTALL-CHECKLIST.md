@@ -49,11 +49,12 @@ Use this before the first real YunoHost install attempt.
 ## Recommended first validation sequence
 1. snapshot / disposable VM
 2. install Authelia binary
-3. install package
+3. install package (optionally create the first sidecar admin during install)
 4. inspect `/etc/mfa-sidecar/`
 5. inspect generated nginx include placement
-6. reload/test nginx
-7. verify portal responds
-8. verify protected-domain redirect/auth flow
-9. test upgrade path
-10. test remove/rollback path
+6. if the portal domain seems to fall through to default/catch-all nginx behavior, run `yunohost tools regen-conf nginx --force` and re-check the parent server block for the portal domain
+7. reload/test nginx
+8. verify portal responds
+9. verify protected-domain redirect/auth flow
+10. test upgrade path
+11. test remove/rollback path

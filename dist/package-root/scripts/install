@@ -53,6 +53,19 @@ _mfa_sidecar_install_reinject_hooks
 _mfa_sidecar_write_sudoers
 chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
 chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
+if [[ "${seed_first_user:-0}" == "1" || "${seed_first_user:-false}" == "true" ]]; then
+    if [[ -z "${first_username:-}" || -z "${first_display_name:-}" || -z "${first_email:-}" || -z "${first_password:-}" ]]; then
+        ynh_die "seed_first_user was requested but first_username, first_display_name, first_email, and first_password were not all provided."
+    fi
+    python3 "$install_dir/bin/manage_authelia_users.py" ensure-user \
+        --users-file /etc/mfa-sidecar/authelia/users.yml \
+        --authelia-bin "$install_dir/bin/authelia" \
+        --username "$first_username" \
+        --display-name "$first_display_name" \
+        --email "$first_email" \
+        --password "$first_password" \
+        --groups admins
+fi
 _mfa_sidecar_write_alpha_notes
 
 #=================================================

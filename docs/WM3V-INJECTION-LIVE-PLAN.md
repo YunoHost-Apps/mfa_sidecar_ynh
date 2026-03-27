@@ -21,6 +21,7 @@ Why this is the right first proof:
 2. If no snapshot restore is being used, perform the cleanup from `docs/2026-03-26-INSTALL-HANDOFF.md`.
 3. Confirm installer-facing branch is the intended one on GitHub.
 4. Have break-glass steps ready from `docs/EMERGENCY-DISABLE.md`.
+5. If the portal domain was recently added and nginx behaves like it has no parent server block for that host, run `yunohost tools regen-conf nginx --force` before chasing sidecar ghosts.
 
 ## Install / bootstrap sequence
 1. Install MFA Sidecar on **`auth.wm3v.com` at `/`**.

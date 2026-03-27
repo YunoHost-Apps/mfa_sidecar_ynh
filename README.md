@@ -85,6 +85,7 @@ What is **not** yet true:
 - the current architecture is **not** yet live-proven end-to-end on wm3v after the injection pivot
 - the package should still be treated as **snapshot-first / rollback-friendly** until that host proof is complete
 - discovery/target selection still needs honest live validation on a real target app
+- fresh-domain nginx parent server block creation can still depend on `yunohost tools regen-conf nginx --force` if the host/domain state is weird after install
 
 ## Recommended first live proof
 
