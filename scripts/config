@@ -90,6 +90,14 @@ ask:
 PY
 }
 
+get__default_policy() {
+    ynh_app_setting_get --key=default_policy
+}
+
+get__session_duration() {
+    ynh_app_setting_get --key=session_duration
+}
+
 get__upstream_scheme() {
     ynh_app_setting_get --key=upstream_scheme
 }
@@ -104,6 +112,14 @@ get__upstream_port() {
 
 set__default_policy() {
     ynh_app_setting_set --key=default_policy --value="$default_policy"
+}
+
+set__session_duration() {
+    case "$session_duration" in
+        8h|24h|168h|336h|720h) ;;
+        *) echo "Unsupported remembered session duration: $session_duration"; return 1 ;;
+    esac
+    ynh_app_setting_set --key=session_duration --value="$session_duration"
 }
 
 set__remember_me() {
