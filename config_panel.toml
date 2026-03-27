@@ -1,0 +1,187 @@
+version = "1.0"
+
+[main]
+name.en = "MFA Sidecar"
+name.fr = "MFA Sidecar"
+services = ["nginx"]
+
+    [main.portal]
+    name.en = "Portal"
+    name.fr = "Portail"
+    help.en = "High-level sidecar settings exposed in YunoHost. Common operational changes belong here; detailed managed-site editing still lives in the sidecar admin UI."
+    help.fr = "Paramètres sidecar de haut niveau exposés dans YunoHost. Les changements opérationnels courants vont ici ; l’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar."
+
+        [main.portal.default_policy]
+        ask.en = "Default policy for newly added sites"
+        ask.fr = "Politique par défaut pour les nouveaux sites ajoutés"
+        type = "select"
+        choices.open = "Public by default"
+        choices.protected = "Protected by default"
+        bind = "default_policy:__INSTALL_DIR__/config/domain-policy.yaml"
+
+        [main.portal.default_redirect_url]
+        ask.en = "Default redirect URL"
+        ask.fr = "URL de redirection par défaut"
+        type = "url"
+        readonly = true
+        bind = "portal>default_redirect_url:__INSTALL_DIR__/config/domain-policy.yaml"
+
+        [main.portal.operator_model]
+        ask.en = "Operator model"
+        ask.fr = "Modèle opérateur"
+        type = "alert"
+        style = "info"
+        bind = "null"
+        readonly = true
+
+        [main.portal.portal_domain]
+        ask.en = "Portal domain"
+        ask.fr = "Domaine du portail"
+        type = "domain"
+        readonly = true
+        bind = "domain"
+
+        [main.portal.portal_path]
+        ask.en = "Portal path"
+        ask.fr = "Chemin du portail"
+        type = "path"
+        readonly = true
+        bind = "portal>path:__INSTALL_DIR__/config/domain-policy.yaml"
+
+        [main.portal.session_duration]
+        ask.en = "Remembered session duration"
+        ask.fr = "Durée de session mémorisée"
+        type = "select"
+        choices.8h = "8 hours"
+        choices.24h = "24 hours"
+        choices.168h = "7 days"
+        choices.336h = "14 days"
+        choices.720h = "30 days"
+        bind = "remember_me:__INSTALL_DIR__/config/domain-policy.yaml"
+
+    [main.upstream]
+    name.en = "Default upstream seed"
+    name.fr = "Configuration amont par défaut"
+    help.en = "These values seed new managed entries. They do not rewrite existing managed sites automatically."
+    help.fr = "Ces valeurs servent de base aux nouvelles entrées gérées. Elles ne réécrivent pas automatiquement les sites déjà gérés."
+
+        [main.upstream.upstream_scheme]
+        ask.en = "Scheme"
+        ask.fr = "Schéma"
+        type = "select"
+        choices.http = "http"
+        choices.https = "https"
+        bind = "null"
+
+        [main.upstream.upstream_host]
+        ask.en = "Host or IP"
+        ask.fr = "Hôte ou IP"
+        type = "string"
+        bind = "null"
+
+        [main.upstream.upstream_port]
+        ask.en = "Port"
+        ask.fr = "Port"
+        type = "number"
+        min = 1
+        max = 65535
+        bind = "null"
+
+        [main.upstream.save_upstream_defaults]
+        type = "button"
+        ask.en = "Save default upstream seed"
+        ask.fr = "Enregistrer la configuration amont par défaut"
+        enabled = "upstream_scheme && upstream_host && upstream_port"
+
+
+    [main.status]
+    name.en = "Status"
+    name.fr = "Statut"
+    help.en = "Read-only operator visibility into the currently staged sidecar state."
+    help.fr = "Visibilité en lecture seule pour l’opérateur sur l’état actuellement déployé du sidecar."
+
+        [main.status.runtime_summary]
+        type = "alert"
+        style = "info"
+        bind = "null"
+        readonly = true
+        ask.en = "Runtime summary"
+        ask.fr = "Résumé d’exécution"
+
+    [main.operations]
+    name.en = "Operations"
+    name.fr = "Opérations"
+    help.en = "YunoHost-native operational actions for the sidecar."
+    help.fr = "Actions opérationnelles natives YunoHost pour le sidecar."
+
+        [main.operations.reload_runtime]
+        type = "button"
+        ask.en = "Regenerate runtime and restart services"
+        ask.fr = "Régénérer l’environnement d’exécution et redémarrer les services"
+
+        [main.operations.restart_services]
+        type = "button"
+        ask.en = "Restart sidecar services only"
+        ask.fr = "Redémarrer seulement les services du sidecar"
+
+        [main.operations.emergency_disable]
+        type = "button"
+        ask.en = "Emergency disable sidecar protection"
+        ask.fr = "Désactiver en urgence la protection du sidecar"
+
+        [main.operations.show_admin_gate]
+        type = "button"
+        ask.en = "Show current admin gate secret"
+        ask.fr = "Afficher le secret actuel de la passerelle admin"
+
+        [main.operations.show_users_file]
+        type = "button"
+        ask.en = "Show current sidecar users file"
+        ask.fr = "Afficher le fichier utilisateurs actuel du sidecar"
+
+        [main.operations.users_file_note]
+        type = "alert"
+        style = "warning"
+        ask.en = "The sidecar now uses its own Authelia users file at /etc/mfa-sidecar/authelia/users.yml. Installation bootstraps a disabled placeholder only; you still need to create a real first sidecar user before meaningful auth testing. Portal access is broader, but operator/admin actions remain separate."
+        ask.fr = "Le sidecar utilise maintenant son propre fichier utilisateurs Authelia dans /etc/mfa-sidecar/authelia/users.yml. L’installation initialise uniquement un espace réservé désactivé ; vous devez toujours créer un vrai premier utilisateur du sidecar avant des tests d’authentification utiles. L’accès au portail est plus large, mais les actions opérateur/admin restent séparées."
+
+        [main.operations.seed_first_user]
+        type = "button"
+        ask.en = "Create or update first sidecar user"
+        ask.fr = "Créer ou mettre à jour le premier utilisateur du sidecar"
+        enabled = "first_username && first_display_name && first_email && first_password"
+
+        [main.operations.sync_users_from_yunohost]
+        type = "button"
+        ask.en = "Sync users from YunoHost"
+        ask.fr = "Synchroniser les utilisateurs depuis YunoHost"
+
+        [main.operations.first_username]
+        ask.en = "Username"
+        ask.fr = "Nom d'utilisateur"
+        type = "string"
+        bind = "null"
+
+        [main.operations.first_display_name]
+        ask.en = "Display name"
+        ask.fr = "Nom affiché"
+        type = "string"
+        bind = "null"
+
+        [main.operations.first_email]
+        ask.en = "Email"
+        ask.fr = "E-mail"
+        type = "email"
+        bind = "null"
+
+        [main.operations.first_password]
+        ask.en = "Password"
+        ask.fr = "Mot de passe"
+        type = "password"
+        bind = "null"
+
+        [main.operations.admin_note]
+        type = "alert"
+        style = "info"
+        ask.en = "The portal on / is the user-facing outer login shell and should be broadly reachable. Detailed managed-site editing still lives in the sidecar admin UI on /admin, and config-panel / operational actions remain for sidecar admins/operators. YunoHost-driven user sync disables missing upstream users instead of deleting them."
+        ask.fr = "Le portail sur / est la coque de connexion externe destinée aux utilisateurs et doit être largement accessible. L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin, et les actions du panneau de configuration / opérationnelles restent réservées aux admins/opérateurs du sidecar. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."
