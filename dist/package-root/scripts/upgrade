@@ -54,6 +54,7 @@ chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env
 
 _mfa_sidecar_sync_runtime_assets
 _mfa_sidecar_sync_protected_domain_includes
+_mfa_sidecar_install_reinject_hooks
 chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
 chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
 _mfa_sidecar_write_alpha_notes

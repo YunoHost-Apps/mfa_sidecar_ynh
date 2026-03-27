@@ -284,43 +284,45 @@ _mfa_sidecar_sync_protected_domain_includes() {
         return 0
     fi
 
-    python3 - "$render_index" <<'PYEOF'
-import json
-import sys
-from pathlib import Path
-
-MARKER_PREFIX = "mfa-sidecar-"
-render_index = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-desired = {}
-
-for bucket in ("enabled", "disabled"):
-    for entry in render_index.get(bucket, []):
-        site_id = entry["id"]
-        host = entry["host"]
-        snippet = Path(f"/etc/mfa-sidecar/nginx/protected/{site_id}.conf")
-        if not snippet.exists():
-            continue
-        nginx_dir = Path(f"/etc/nginx/conf.d/{host}.d")
-        if not nginx_dir.is_dir():
-            continue
-        target = nginx_dir / f"{MARKER_PREFIX}{site_id}.conf"
-        desired[str(target)] = f"include {snippet};\n"
-
-for target_path, content in desired.items():
-    target = Path(target_path)
-    current = target.read_text(encoding="utf-8") if target.exists() else ""
-    if current != content:
-        target.write_text(content, encoding="utf-8")
-
-for domain_dir in Path("/etc/nginx/conf.d").glob("*.d"):
-    for conf in domain_dir.glob(f"{MARKER_PREFIX}*.conf"):
-        if str(conf) not in desired:
-            conf.unlink()
-PYEOF
+    python3 "$install_dir/bin/inject_protected_include.py" reinject-all "$render_index"
 }
 
 _mfa_sidecar_remove_protected_domain_includes() {
-    find /etc/nginx/conf.d -path '*/mfa-sidecar-*.conf' -delete 2>/dev/null || true
+    local render_index="$install_dir/deploy/generated-alpha/render-index.json"
+    if [[ ! -f "$render_index" ]]; then
+        find /etc/nginx/conf.d -name '*.conf' -print0 2>/dev/null | while IFS= read -r -d '' conf; do
+            python3 "$install_dir/bin/inject_protected_include.py" remove "$conf" || true
+        done
+        return 0
+    fi
+
+    python3 - "$render_index" "$install_dir/bin/inject_protected_include.py" <<'PYEOF'
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+render_index = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+injector = sys.argv[2]
+seen = set()
+for bucket in ('enabled', 'disabled'):
+    for entry in render_index.get(bucket, []):
+        target = entry.get('target_conf')
+        if not target or target in seen:
+            continue
+        seen.add(target)
+        subprocess.run(['python3', injector, 'remove', target], check=False)
+PYEOF
+}
+
+_mfa_sidecar_install_reinject_hooks() {
+    install -D -m 755 ../sources/hooks/post_app_upgrade-reinject /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
+    install -D -m 755 ../sources/hooks/conf_regen-reinject /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
+}
+
+_mfa_sidecar_remove_reinject_hooks() {
+    rm -f /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
+    rm -f /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
 }
 
 _mfa_sidecar_write_alpha_notes() {

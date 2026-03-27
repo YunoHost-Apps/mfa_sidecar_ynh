@@ -83,7 +83,7 @@ class AdminApp:
                 if str(conf) not in desired:
                     conf.unlink()
 
-    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool) -> None:
+    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         entry_id = PolicyAdmin.slugify(f"{host}-{path}")
         with self.lock:
             self.policy.add_entry(
@@ -93,10 +93,11 @@ class AdminApp:
                 path=path,
                 upstream=upstream,
                 enabled=enabled,
+                target_conf=(target_conf or self.discovery.discover_target_conf(host, path)),
             )
             self.apply_runtime()
 
-    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool) -> None:
+    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         with self.lock:
             self.policy.update_entry(
                 entry_id=entry_id,
@@ -105,6 +106,7 @@ class AdminApp:
                 path=path,
                 upstream=upstream,
                 enabled=enabled,
+                target_conf=(target_conf or self.discovery.discover_target_conf(host, path)),
             )
             self.apply_runtime()
 
@@ -176,7 +178,7 @@ class AdminApp:
                 f"<td>{h(item.get('label', ''))}</td>"
                 f"<td><code>{h(item['host'])}</code></td>"
                 f"<td><code>{h(normalize_path(item.get('path', '/')))}</code></td>"
-                f"<td><code>{h(item.get('app_id', ''))}</code></td>"
+                f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
                 f"<td>{h(nginx_state)}</td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
                 f"<td>"
@@ -186,6 +188,7 @@ class AdminApp:
                 f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
                 f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
                 f"<input type='hidden' name='enabled' value='false' />"
+                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
                 f"<button type='submit'>Add</button>"
                 f"</form>"
                 f"</td>"
@@ -205,6 +208,7 @@ class AdminApp:
             form_path = normalize_path(edit_entry.get('path', '/'))
             form_upstream = edit_entry['upstream']
             form_enabled = 'true' if edit_entry.get('enabled') else 'false'
+            form_target_conf = edit_entry.get('target_conf', '')
             cancel_html = "<p><a href='/admin'>Cancel edit</a></p>"
         else:
             form_title = "Add managed entry"
@@ -215,6 +219,7 @@ class AdminApp:
             form_path = "/"
             form_upstream = ""
             form_enabled = 'false'
+            form_target_conf = ''
             cancel_html = ""
         return f"""<!doctype html>
 <html lang='en'>
@@ -336,7 +341,8 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                target_conf = fields.get("target_conf", [""])[0].strip()
+                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
                 return
             if parsed.path.startswith("/entries/") and parsed.path.endswith("/toggle"):
@@ -351,7 +357,8 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                target_conf = fields.get("target_conf", [""])[0].strip()
+                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
                 return
             if parsed.path.startswith("/entries/") and parsed.path.endswith("/delete"):

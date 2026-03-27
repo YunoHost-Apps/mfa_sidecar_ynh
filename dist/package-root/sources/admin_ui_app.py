@@ -25,7 +25,6 @@ DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR
 DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_alpha_runtime.py"))
 DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
 DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
-DEFAULT_LOGO_PATH = os.environ.get("MFA_SIDECAR_ADMIN_LOGO_PATH", "/opt/yunohost/mfa_sidecar/www/logo.png")
 DEFAULT_PROTECTED_NGINX_DIR = os.environ.get("MFA_SIDECAR_PROTECTED_NGINX_DIR", str(Path(DEFAULT_STAGE_ROOT) / "etc/mfa-sidecar/nginx/protected"))
 BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
@@ -84,7 +83,7 @@ class AdminApp:
                 if str(conf) not in desired:
                     conf.unlink()
 
-    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool) -> None:
+    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         entry_id = PolicyAdmin.slugify(f"{host}-{path}")
         with self.lock:
             self.policy.add_entry(
@@ -94,10 +93,11 @@ class AdminApp:
                 path=path,
                 upstream=upstream,
                 enabled=enabled,
+                target_conf=(target_conf or self.discovery.discover_target_conf(host, path)),
             )
             self.apply_runtime()
 
-    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool) -> None:
+    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         with self.lock:
             self.policy.update_entry(
                 entry_id=entry_id,
@@ -106,6 +106,7 @@ class AdminApp:
                 path=path,
                 upstream=upstream,
                 enabled=enabled,
+                target_conf=(target_conf or self.discovery.discover_target_conf(host, path)),
             )
             self.apply_runtime()
 
@@ -177,7 +178,7 @@ class AdminApp:
                 f"<td>{h(item.get('label', ''))}</td>"
                 f"<td><code>{h(item['host'])}</code></td>"
                 f"<td><code>{h(normalize_path(item.get('path', '/')))}</code></td>"
-                f"<td><code>{h(item.get('app_id', ''))}</code></td>"
+                f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
                 f"<td>{h(nginx_state)}</td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
                 f"<td>"
@@ -187,6 +188,7 @@ class AdminApp:
                 f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
                 f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
                 f"<input type='hidden' name='enabled' value='false' />"
+                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
                 f"<button type='submit'>Add</button>"
                 f"</form>"
                 f"</td>"
@@ -206,6 +208,7 @@ class AdminApp:
             form_path = normalize_path(edit_entry.get('path', '/'))
             form_upstream = edit_entry['upstream']
             form_enabled = 'true' if edit_entry.get('enabled') else 'false'
+            form_target_conf = edit_entry.get('target_conf', '')
             cancel_html = "<p><a href='/admin'>Cancel edit</a></p>"
         else:
             form_title = "Add managed entry"
@@ -216,6 +219,7 @@ class AdminApp:
             form_path = "/"
             form_upstream = ""
             form_enabled = 'false'
+            form_target_conf = ''
             cancel_html = ""
         return f"""<!doctype html>
 <html lang='en'>
@@ -236,7 +240,7 @@ class AdminApp:
   </style>
 </head>
 <body>
-  <h1 style='display:flex; align-items:center; gap:0.75rem;'><img src='/admin/logo' alt='MFA Sidecar logo' style='height:40px; width:40px; object-fit:contain;' /> <span>MFA Sidecar admin</span></h1>
+  <h1>MFA Sidecar admin</h1>
   <p class='muted'>Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
   {notice_html}
   {error_html}
@@ -298,7 +302,6 @@ class AdminApp:
 
 
 APP = AdminApp()
-LOGO_PATH = Path(DEFAULT_LOGO_PATH)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -307,9 +310,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.FORBIDDEN)
             return
         parsed = urlparse(self.path)
-        if parsed.path == "/admin/logo":
-            self._serve_logo()
-            return
         if parsed.path not in {"/", "/admin"}:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -341,7 +341,8 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                target_conf = fields.get("target_conf", [""])[0].strip()
+                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
                 return
             if parsed.path.startswith("/entries/") and parsed.path.endswith("/toggle"):
@@ -356,7 +357,8 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                target_conf = fields.get("target_conf", [""])[0].strip()
+                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
                 return
             if parsed.path.startswith("/entries/") and parsed.path.endswith("/delete"):
@@ -375,17 +377,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.SEE_OTHER)
         self.send_header("Location", location)
         self.end_headers()
-
-    def _serve_logo(self) -> None:
-        if not LOGO_PATH.exists():
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-        payload = LOGO_PATH.read_bytes()
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "image/png")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
 
     def _authorized(self) -> bool:
         if not ADMIN_GATE_SECRET:

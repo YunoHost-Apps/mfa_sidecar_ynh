@@ -10,6 +10,8 @@ from textwrap import dedent
 
 import yaml
 
+AUTH_ENDPOINT_MARKER = "# mfa-sidecar-auth-endpoint"
+
 
 def load_policy(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as fh:
@@ -209,32 +211,13 @@ def build_nginx_portal_conf(policy: dict) -> str:
     ).strip() + "\n"
 
 
-def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: str) -> str:
-    upstream = site["upstream"]
-    host = site["host"]
-    path = normalize_path(site.get("path", "/"))
-    location_modifier = "" if path == "/" else "^~"
-    location_path = "/" if path == "/" else path
+def build_nginx_auth_endpoint_conf(site: dict, authz_endpoint: str) -> str:
     auth_location = f"/authelia-auth-{site['id']}"
-    location_directive = f"location {location_modifier} {location_path}".replace("  ", " ")
-
     return dedent(
         f"""
-        {location_directive} {{
-          auth_request {auth_location};
-          error_page 401 =302 https://{portal_domain}/?rd=$scheme://$http_host$request_uri;
-
-          proxy_pass {upstream};
-          proxy_set_header Host $host;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Host $server_name;
-          proxy_set_header X-Forwarded-Uri $request_uri;
-          proxy_set_header X-Real-IP $remote_addr;
-        }}
-
         location = {auth_location} {{
           internal;
+          {AUTH_ENDPOINT_MARKER}
           proxy_pass {authz_endpoint};
           proxy_pass_request_body off;
           proxy_set_header Content-Length "";
@@ -246,8 +229,8 @@ def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: s
         }}
 
         # id: {site['id']}
-        # host: {host}
-        # path: {path}
+        # host: {site['host']}
+        # path: {normalize_path(site.get('path', '/'))}
         # enabled: {str(site.get('enabled', False)).lower()}
         """
     ).strip() + "\n"
@@ -256,19 +239,28 @@ def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: s
 def build_index(policy: dict) -> dict:
     enabled = []
     disabled = []
+    portal_domain = policy["portal"]["domain"]
     for site in managed_sites(policy):
         target = enabled if site.get("enabled", False) else disabled
+        normalized_path = normalize_path(site.get("path", "/"))
+        host = site["host"]
+        target_conf = str(site.get("target_conf") or f"/etc/nginx/conf.d/{host}.d/default.conf")
         target.append(
             {
                 "id": site["id"],
-                "host": site["host"],
-                "path": normalize_path(site.get("path", "/")),
+                "host": host,
+                "path": normalized_path,
                 "upstream": site["upstream"],
-                "label": site.get("label", site["host"]),
+                "label": site.get("label", host),
+                "portal_domain": portal_domain,
+                "auth_location": f"/authelia-auth-{site['id']}",
+                "auth_snippet": f"/etc/mfa-sidecar/nginx/protected/{site['id']}.conf",
+                "target_conf": target_conf,
+                "injection_mode": "location-inject",
             }
         )
     return {
-        "portal_domain": policy["portal"]["domain"],
+        "portal_domain": portal_domain,
         "enabled": enabled,
         "disabled": disabled,
     }
@@ -337,7 +329,7 @@ def render(policy_path: Path, out_dir: Path) -> None:
     portal_domain = policy["portal"]["domain"]
     for site in managed_sites(policy):
         target_file = nginx_dir / f"{site['id']}.generated.conf"
-        target_file.write_text(build_nginx_protected_conf(site, portal_domain, authz_endpoint), encoding="utf-8")
+        target_file.write_text(build_nginx_auth_endpoint_conf(site, authz_endpoint), encoding="utf-8")
 
     (out_dir / "render-index.json").write_text(json.dumps(build_index(policy), indent=2) + "\n", encoding="utf-8")
     (out_dir / "runtime-metadata.json").write_text(json.dumps(build_runtime_metadata(policy), indent=2) + "\n", encoding="utf-8")
