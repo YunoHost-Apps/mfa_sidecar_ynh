@@ -94,10 +94,6 @@ _mfa_sidecar_write_secret_if_missing() {
 }
 
 _mfa_sidecar_write_env_file() {
-    local admin_gate_secret_file
-    admin_gate_secret_file="$(_mfa_sidecar_secret_file admin_gate_secret)"
-    _mfa_sidecar_write_secret_if_missing "$admin_gate_secret_file"
-
     cat > /etc/mfa-sidecar/mfa-sidecar.env <<EOF
 AUTHELIA_SESSION_SECRET=$(cat "$(_mfa_sidecar_secret_file session_secret)")
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(cat "$(_mfa_sidecar_secret_file storage_encryption_key)")

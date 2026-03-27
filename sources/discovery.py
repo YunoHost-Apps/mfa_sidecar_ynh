@@ -125,39 +125,38 @@ class Discovery:
         return found
 
     def _build_suggestions(self, domains: list[str], apps: list[dict], nginx_paths: dict[tuple[str, str], str]) -> list[dict]:
-        suggestions = []
+        suggestions_by_pair: dict[tuple[str, str], dict] = {}
 
-        domain_set = set(domains)
         for domain in domains:
             root_target_conf = nginx_paths.get((domain, "/"), f"/etc/nginx/conf.d/{domain}.d/default.conf")
-            suggestions.append(
-                {
-                    "kind": "domain",
-                    "label": domain,
-                    "host": domain,
-                    "path": "/",
-                    "nginx_present": (domain, "/") in nginx_paths,
-                    "target_conf": root_target_conf,
-                    "suggested_upstream": self._discover_upstream(domain, "/", nginx_paths),
-                }
-            )
+            suggestions_by_pair[(domain, "/")] = {
+                "kind": "domain",
+                "label": domain,
+                "host": domain,
+                "path": "/",
+                "nginx_present": (domain, "/") in nginx_paths,
+                "target_conf": root_target_conf,
+                "suggested_upstream": self._discover_upstream(domain, "/", nginx_paths),
+            }
 
         for app in apps:
             path = app["path"]
-            suggestions.append(
-                {
-                    "kind": "app-path",
-                    "label": app["label"],
-                    "host": app["domain"],
-                    "path": path,
-                    "app_id": app["id"],
-                    "suggested_upstream": self._discover_upstream(app["domain"], path, nginx_paths),
-                    "nginx_present": (app["domain"], path) in nginx_paths,
-                    "target_conf": nginx_paths.get((app["domain"], path), f"/etc/nginx/conf.d/{app['domain']}.d/{app['id']}.conf"),
-                }
-            )
-            domain_set.add(app["domain"])
+            pair = (app["domain"], path)
+            candidate = {
+                "kind": "app-path",
+                "label": app["label"],
+                "host": app["domain"],
+                "path": path,
+                "app_id": app["id"],
+                "suggested_upstream": self._discover_upstream(app["domain"], path, nginx_paths),
+                "nginx_present": (app["domain"], path) in nginx_paths,
+                "target_conf": nginx_paths.get((app["domain"], path), f"/etc/nginx/conf.d/{app['domain']}.d/{app['id']}.conf"),
+            }
+            existing = suggestions_by_pair.get(pair)
+            if existing is None or existing.get("kind") != "app-path":
+                suggestions_by_pair[pair] = candidate
 
+        suggestions = list(suggestions_by_pair.values())
         suggestions.sort(key=lambda item: (item["host"], item["path"], item["kind"]))
         return suggestions
 
