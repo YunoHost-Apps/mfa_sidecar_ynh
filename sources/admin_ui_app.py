@@ -111,16 +111,63 @@ class AdminApp:
         entries = self.policy.list_entries()
         discovered, discovery_error = self.discovered_targets()
         edit_entry = next((entry for entry in entries if entry['id'] == edit_entry_id), None)
-        rows = []
-        for entry in entries:
-            state = "Enabled" if entry.get("enabled") else "Bypass"
-            action = "Disable" if entry.get("enabled") else "Enable"
-            rows.append(
+
+        entries_by_pair = {
+            (entry['host'], normalize_path(entry.get('path', '/'))): entry
+            for entry in entries
+        }
+        target_rows = []
+
+        for item in discovered:
+            path_value = normalize_path(item.get('path', '/'))
+            pair = (item['host'], path_value)
+            if pair in entries_by_pair:
+                continue
+            upstream_value = item.get('suggested_upstream', 'https://127.0.0.1:443')
+            try:
+                upstream_value = validate_upstream(upstream_value)
+            except PolicyError:
+                upstream_value = 'https://127.0.0.1:443'
+            nginx_state = 'yes' if item.get('nginx_present') else 'no'
+            common_inputs = (
+                f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
+                f"<input type='hidden' name='host' value='{h(item['host'])}' />"
+                f"<input type='hidden' name='path' value='{h(path_value)}' />"
+                f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
+                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
+            )
+            target_rows.append(
                 f"<tr>"
-                f"<td><code>{h(entry['id'])}</code></td>"
+                f"<td>{h(item.get('label', ''))}</td>"
+                f"<td><code>{h(item['host'])}</code></td>"
+                f"<td><code>{h(path_value)}</code></td>"
+                f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
+                f"<td><code>{h(upstream_value)}</code></td>"
+                f"<td>Unmanaged<br><span class='muted'>nginx check: {h(nginx_state)}</span></td>"
+                f"<td>"
+                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block; margin-right: 0.4rem;'>"
+                f"{common_inputs}"
+                f"<input type='hidden' name='enabled' value='true' />"
+                f"<button type='submit'>Protect</button>"
+                f"</form>"
+                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
+                f"{common_inputs}"
+                f"<input type='hidden' name='enabled' value='false' />"
+                f"<button type='submit'>Bypass</button>"
+                f"</form>"
+                f"</td>"
+                f"</tr>"
+            )
+
+        for entry in entries:
+            state = "Protected" if entry.get("enabled") else "Bypass"
+            action = "Disable" if entry.get("enabled") else "Enable"
+            target_rows.append(
+                f"<tr>"
                 f"<td>{h(entry.get('label', ''))}</td>"
                 f"<td><code>{h(entry['host'])}</code></td>"
                 f"<td><code>{h(normalize_path(entry.get('path', '/')))}</code></td>"
+                f"<td><code>{h(entry['id'])}</code><br><span class='muted'>{h(entry.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(entry['upstream'])}</code></td>"
                 f"<td>{h(state)}</td>"
                 f"<td>"
@@ -137,46 +184,8 @@ class AdminApp:
                 f"</td>"
                 f"</tr>"
             )
-        rows_html = "\n".join(rows) or "<tr><td colspan='7'><em>No managed entries yet.</em></td></tr>"
 
-        suggestion_rows = []
-        for item in discovered:
-            upstream_value = item.get('suggested_upstream', 'https://127.0.0.1:443')
-            try:
-                upstream_value = validate_upstream(upstream_value)
-            except PolicyError:
-                upstream_value = 'https://127.0.0.1:443'
-            nginx_state = 'yes' if item.get('nginx_present') else 'no'
-            common_inputs = (
-                f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
-                f"<input type='hidden' name='host' value='{h(item['host'])}' />"
-                f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
-                f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
-                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
-            )
-            suggestion_rows.append(
-                f"<tr>"
-                f"<td>{h(item.get('label', ''))}</td>"
-                f"<td><code>{h(item['host'])}</code></td>"
-                f"<td><code>{h(normalize_path(item.get('path', '/')))}</code></td>"
-                f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
-                f"<td>{h(nginx_state)}</td>"
-                f"<td><code>{h(upstream_value)}</code></td>"
-                f"<td>"
-                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block; margin-right: 0.4rem;'>"
-                f"{common_inputs}"
-                f"<input type='hidden' name='enabled' value='true' />"
-                f"<button type='submit'>Protect</button>"
-                f"</form>"
-                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
-                f"{common_inputs}"
-                f"<input type='hidden' name='enabled' value='false' />"
-                f"<button type='submit'>Bypass</button>"
-                f"</form>"
-                f"</td>"
-                f"</tr>"
-            )
-        suggestion_rows_html = "\n".join(suggestion_rows) or "<tr><td colspan='7'><em>No discovered YunoHost app locations need onboarding right now.</em></td></tr>"
+        targets_html = "\n".join(target_rows) or "<tr><td colspan='7'><em>No discovered or managed app locations yet.</em></td></tr>"
 
         error_html = f"<div class='error'>{h(error)}</div>" if error else ""
         notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
@@ -236,28 +245,16 @@ class AdminApp:
     <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
   </ul>
 
-  <h2>Discovered app locations</h2>
-  <p class='muted'>Known YunoHost app locations, including root-path apps, show up here for one-click onboarding. If nginx does not show the path, that just means it needs a quick sanity check before trusting it. Manual add remains the escape hatch for anything custom.</p>
+  <h2>Targets</h2>
+  <p class='muted'>One table, one control surface. Discovered YunoHost app locations appear here as unmanaged rows with one-click onboarding. Managed rows stay here too, so manual add lands in the same list with the same controls.</p>
   <table>
     <thead>
       <tr>
-        <th>Label</th><th>Host</th><th>Path</th><th>App id</th><th>nginx check</th><th>Suggested upstream</th><th>Action</th>
+        <th>Label</th><th>Host</th><th>Path</th><th>ID / source</th><th>Upstream</th><th>Status</th><th>Action</th>
       </tr>
     </thead>
     <tbody>
-      {suggestion_rows_html}
-    </tbody>
-  </table>
-
-  <h2>Managed entries</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th><th>Label</th><th>Host</th><th>Path</th><th>Upstream</th><th>State</th><th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {rows_html}
+      {targets_html}
     </tbody>
   </table>
 
