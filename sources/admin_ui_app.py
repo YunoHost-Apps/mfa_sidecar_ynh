@@ -35,6 +35,21 @@ def h(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
+def load_package_version() -> str:
+    candidates = [
+        Path(DEFAULT_INSTALL_DIR) / "manifest.toml",
+        BASE_DIR.parent / "manifest.toml",
+    ]
+    for path in candidates:
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.startswith("version = "):
+                    return line.split("=", 1)[1].strip().strip('"')
+        except OSError:
+            continue
+    return "unknown"
+
+
 class AdminApp:
     def __init__(self) -> None:
         self.policy_path = Path(DEFAULT_POLICY_PATH)
@@ -111,6 +126,7 @@ class AdminApp:
 
     def render_index(self, error: str = "", notice: str = "", edit_entry_id: str = "") -> str:
         summary = self.policy.portal_summary()
+        package_version = load_package_version()
         entries = self.policy.list_entries()
         discovered, discovery_error = self.discovered_targets()
         edit_entry = next((entry for entry in entries if entry['id'] == edit_entry_id), None)
@@ -237,7 +253,7 @@ class AdminApp:
 </head>
 <body>
   <h1>MFA Sidecar admin</h1>
-  <p class='muted'>Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
+  <p class='muted'>Version <code>{h(package_version)}</code> · Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
   {notice_html}
   {error_html}
   {discovery_html}
