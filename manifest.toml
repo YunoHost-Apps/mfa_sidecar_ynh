@@ -7,7 +7,7 @@ name = "MFA Sidecar"
 description.en = "Browser-first MFA perimeter layer for selected YunoHost web apps"
 description.fr = "Couche périmétrique MFA orientée navigateur pour des applications web YunoHost sélectionnées"
 
-version = "0.1.2~ynh1"
+version = "0.1.2~ynh2"
 maintainers = []
 
 [upstream]
