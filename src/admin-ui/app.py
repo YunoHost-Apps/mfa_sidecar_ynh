@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hmac
 import html
+import json
 import os
 import subprocess
 import sys
@@ -20,10 +21,11 @@ from discovery import Discovery
 from policy_admin import PolicyAdmin, PolicyError, normalize_path, validate_upstream, validate_entry_id
 
 DEFAULT_POLICY_PATH = os.environ.get("MFA_SIDECAR_POLICY_PATH", "/etc/mfa-sidecar/config/domain-policy.yaml")
-DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR.parent / "config-render" / "render_alpha_config.py"))
-DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR.parent.parent / "scripts" / "stage_alpha_runtime.py"))
+DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR / "render_alpha_config.py"))
+DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_alpha_runtime.py"))
 DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
 DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
+DEFAULT_PROTECTED_NGINX_DIR = os.environ.get("MFA_SIDECAR_PROTECTED_NGINX_DIR", str(Path(DEFAULT_STAGE_ROOT) / "etc/mfa-sidecar/nginx/protected"))
 BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
@@ -49,6 +51,37 @@ class AdminApp:
     def apply_runtime(self) -> None:
         subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
         subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
+        self._sync_protected_domain_includes()
+
+    def _sync_protected_domain_includes(self) -> None:
+        render_index_path = self.generated_dir / "render-index.json"
+        if not render_index_path.exists():
+            return
+        render_index = json.loads(render_index_path.read_text(encoding="utf-8"))
+        marker_prefix = "mfa-sidecar-"
+        nginx_conf_dir = Path(DISCOVERY_NGINX_CONF_DIR)
+        desired: dict[str, str] = {}
+        for bucket in ("enabled", "disabled"):
+            for entry in render_index.get(bucket, []):
+                site_id = entry["id"]
+                host = entry["host"]
+                snippet = Path(DEFAULT_PROTECTED_NGINX_DIR) / f"{site_id}.conf"
+                if not snippet.exists():
+                    continue
+                nginx_dir = nginx_conf_dir / f"{host}.d"
+                if not nginx_dir.is_dir():
+                    continue
+                target = nginx_dir / f"{marker_prefix}{site_id}.conf"
+                desired[str(target)] = f"include {snippet};\n"
+        for target_path, content in desired.items():
+            target = Path(target_path)
+            existing = target.read_text(encoding="utf-8") if target.exists() else ""
+            if existing != content:
+                target.write_text(content, encoding="utf-8")
+        for domain_dir in nginx_conf_dir.glob("*.d"):
+            for conf in domain_dir.glob(f"{marker_prefix}*.conf"):
+                if str(conf) not in desired:
+                    conf.unlink()
 
     def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool) -> None:
         entry_id = PolicyAdmin.slugify(f"{host}-{path}")

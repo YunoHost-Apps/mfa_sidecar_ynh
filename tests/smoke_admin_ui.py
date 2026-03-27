@@ -107,6 +107,7 @@ def main() -> None:
 
         (tmpdir / 'etc/nginx/conf.d/wm3v.com.d').mkdir(parents=True, exist_ok=True)
         (tmpdir / 'etc/nginx/conf.d/wm3v.com.d/root.conf').write_text('location /kanboard {\n}\n', encoding='utf-8')
+        (tmpdir / 'etc/nginx/conf.d/home.wm3v.com.d').mkdir(parents=True, exist_ok=True)
 
         script = """
 from app import AdminApp
@@ -131,6 +132,11 @@ print('ok')
         assert (generated_dir / "authelia-config.generated.yml").exists()
         assert (stage_root / "etc/mfa-sidecar/authelia/configuration.yml").exists()
         assert (stage_root / "etc/mfa-sidecar/nginx/protected/wm3v-com-kanboard.conf").exists()
+        root_wrapper = tmpdir / 'etc/nginx/conf.d/wm3v.com.d/mfa-sidecar-root_site.conf'
+        assert root_wrapper.exists()
+        expected_include = f"include {stage_root / 'etc/mfa-sidecar/nginx/protected/root_site.conf'};"
+        assert expected_include == root_wrapper.read_text(encoding='utf-8').strip()
+        assert not (tmpdir / 'etc/nginx/conf.d/wm3v.com.d/mfa-sidecar-wm3v-com-kanboard.conf').exists()
 
     print("smoke_admin_ui: ok")
 

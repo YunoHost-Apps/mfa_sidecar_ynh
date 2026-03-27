@@ -55,6 +55,35 @@ def managed_sites(policy: dict) -> list[dict]:
     return sorted(policy["access_control"].get("managed_sites", []), key=rule_sort_key)
 
 
+def extract_cookie_domain(fqdn: str) -> str:
+    parts = fqdn.strip(".").split(".")
+    if len(parts) <= 2:
+        return fqdn.strip(".")
+    return ".".join(parts[1:])
+
+
+def collect_cookie_domains(policy: dict) -> list[dict]:
+    portal = policy["portal"]
+    session = policy["session"]
+    explicit = str(session.get("cookie_domain", "")).strip().strip(".")
+    portal_cookie_domain = explicit or extract_cookie_domain(portal["domain"])
+
+    cookies_by_domain: dict[str, dict] = {
+        portal_cookie_domain: {
+            "domain": portal_cookie_domain,
+            "authelia_url": f"https://{portal['domain']}{portal['path']}",
+        }
+    }
+    for site in policy["access_control"].get("managed_sites", []):
+        site_cookie_domain = extract_cookie_domain(site["host"])
+        if site_cookie_domain not in cookies_by_domain:
+            cookies_by_domain[site_cookie_domain] = {
+                "domain": site_cookie_domain,
+                "authelia_url": f"https://{portal['domain']}{portal['path']}",
+            }
+    return list(cookies_by_domain.values())
+
+
 def map_default_policy(policy_name: str) -> str:
     mapping = {
         "open": "bypass",
@@ -127,12 +156,7 @@ def build_authelia_values(policy: dict) -> dict:
             "expiration": session["expiration"],
             "inactivity": session["inactivity"],
             "remember_me": session["remember_me"],
-            "cookies": [
-                {
-                    "domain": portal["domain"],
-                    "authelia_url": f"https://{portal['domain']}{portal['path']}",
-                }
-            ],
+            "cookies": collect_cookie_domains(policy),
         },
         "storage": {
             "encryption_key": get_storage_key_expression(storage),
@@ -189,13 +213,14 @@ def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: s
     upstream = site["upstream"]
     host = site["host"]
     path = normalize_path(site.get("path", "/"))
-    location_modifier = "=" if path == "/" else "^~"
+    location_modifier = "" if path == "/" else "^~"
     location_path = "/" if path == "/" else path
     auth_location = f"/authelia-auth-{site['id']}"
+    location_directive = f"location {location_modifier} {location_path}".replace("  ", " ")
 
     return dedent(
         f"""
-        location {location_modifier} {location_path} {{
+        {location_directive} {{
           auth_request {auth_location};
           error_page 401 =302 https://{portal_domain}/?rd=$scheme://$http_host$request_uri;
 

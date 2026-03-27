@@ -1,4 +1,5 @@
 #!/bin/bash
+source _common.sh
 source /usr/share/yunohost/helpers
 
 ynh_abort_if_errors
@@ -143,6 +144,8 @@ run__reload_runtime() {
     python3 "$install_dir/bin/stage_alpha_runtime.py" \
         "$install_dir/deploy/generated-alpha" /
 
+    _mfa_sidecar_sync_protected_domain_includes
+
     cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
     ynh_config_add_nginx
     ynh_systemctl --service=nginx --action=reload
@@ -160,10 +163,12 @@ run__emergency_disable() {
         python3 "$APP_INSTALL_DIR/bin/inject_protected_include.py" remove "$target_conf" || true
     fi
 
+    _mfa_sidecar_remove_protected_domain_includes
+
     ynh_systemctl --service=nginx --action=reload || true
     ynh_systemctl --service=mfa-sidecar-authelia --action=stop || true
     ynh_systemctl --service=mfa-sidecar-admin --action=stop || true
-    ynh_print_info "Emergency disable complete: primary include hook removed, nginx reloaded, and sidecar services stopped. Managed protected snippets remain on disk for later recovery."
+    ynh_print_info "Emergency disable complete: primary include hook and protected-domain include wrappers removed, nginx reloaded, and sidecar services stopped. Managed protected snippets remain on disk for later recovery."
 }
 
 run__restart_services() {
