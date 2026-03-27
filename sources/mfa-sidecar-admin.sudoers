@@ -1,1 +1,0 @@
-mfa_sidecar ALL=(root) NOPASSWD: /opt/yunohost/mfa_sidecar/bin/apply-runtime-as-root /opt/yunohost/mfa_sidecar
