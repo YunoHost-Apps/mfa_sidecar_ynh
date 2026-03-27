@@ -13,6 +13,8 @@ cp -R "$ROOT_DIR/package-base/assets" "$OUT_DIR/assets"
 cp -R "$ROOT_DIR/package-base/conf" "$OUT_DIR/conf"
 cp -R "$ROOT_DIR/package-base/scripts" "$OUT_DIR/scripts"
 cp -R "$ROOT_DIR/package-base/sources" "$OUT_DIR/sources"
+find "$OUT_DIR/sources" -type d -name '__pycache__' -prune -exec rm -rf {} +
+find "$OUT_DIR/sources" -type f -name '*.pyc' -delete
 
 find "$OUT_DIR" -type d -exec chmod 755 {} +
 find "$OUT_DIR" -type f -path '*/scripts/*' -exec chmod 755 {} +
