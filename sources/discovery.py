@@ -9,6 +9,7 @@ from pathlib import Path
 
 SERVER_NAME_RE = re.compile(r"\bserver_name\s+([^;]+);")
 LOCATION_RE = re.compile(r"^\s*location\s+(?:=|\^~|~\*|~)?\s*([^\s{]+)")
+PROXY_PASS_RE = re.compile(r"^\s*proxy_pass\s+([^;]+);")
 
 DEFAULT_NGINX_CONF_DIR = "/etc/nginx/conf.d"
 DEFAULT_YUNOHOST_BIN = "yunohost"
@@ -150,7 +151,7 @@ class Discovery:
                     "host": app["domain"],
                     "path": path,
                     "app_id": app["id"],
-                    "suggested_upstream": DEFAULT_UPSTREAM_FALLBACK,
+                    "suggested_upstream": self._discover_upstream(app["domain"], path, nginx_paths),
                     "nginx_present": (app["domain"], path) in nginx_paths,
                     "target_conf": nginx_paths.get((app["domain"], path), f"/etc/nginx/conf.d/{app['domain']}.d/{app['id']}.conf"),
                 }
@@ -166,6 +167,27 @@ class Discovery:
         path = normalize_path(path)
         nginx_paths = self._discover_nginx_paths()
         return nginx_paths.get((host, path), f"/etc/nginx/conf.d/{host}.d/default.conf")
+
+    def _discover_upstream(self, host: str, path: str, nginx_paths: dict[tuple[str, str], str] | None = None) -> str:
+        host = str(host).strip()
+        path = normalize_path(path)
+        nginx_paths = nginx_paths or self._discover_nginx_paths()
+        conf_path = nginx_paths.get((host, path))
+        if not conf_path:
+            return DEFAULT_UPSTREAM_FALLBACK
+        text = self._safe_read(Path(conf_path))
+        if not text:
+            return DEFAULT_UPSTREAM_FALLBACK
+        current_location = None
+        for line in text.splitlines():
+            match = LOCATION_RE.match(line)
+            if match:
+                current_location = normalize_path(match.group(1))
+                continue
+            proxy_match = PROXY_PASS_RE.match(line)
+            if proxy_match and current_location == path:
+                return proxy_match.group(1).strip()
+        return DEFAULT_UPSTREAM_FALLBACK
 
     def _run_json(self, command: list[str]) -> dict | list | None:
         if not shutil.which(command[0]):
