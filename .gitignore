@@ -1,5 +1,0 @@
-__pycache__/
-*.pyc
-tests/out/
-deploy/generated-alpha/
-*.log

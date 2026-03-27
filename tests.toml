@@ -1,0 +1,21 @@
+#:schema https://raw.githubusercontent.com/YunoHost/apps/master/schemas/tests.v1.schema.json
+
+test_format = 1.0
+
+[default]
+    args.domain = "auth.domain.tld"
+    args.path = "/"
+    args.portal_subdomain = "auth"
+    args.default_policy = "open"
+    args.session_duration = "24h"
+    args.upstream_scheme = "https"
+    args.upstream_host = "127.0.0.1"
+    args.upstream_port = 443
+
+    exclude = ["install.private", "install.multi", "change_url"]
+
+    [default.curl_tests]
+    home.path = "/"
+    home.expect_return_code = 302
+    home.headers = ["Host: auth.domain.tld"]
+    home.auto_test_assets = false

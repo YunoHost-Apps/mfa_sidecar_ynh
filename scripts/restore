@@ -1,0 +1,60 @@
+#!/bin/bash
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+_mfa_sidecar_resolve_paths
+
+ynh_restore "/etc/nginx/conf.d/${domain}.d/${app}.conf"
+ynh_restore "/etc/mfa-sidecar"
+ynh_restore "$install_dir/config/domain-policy.yaml"
+ynh_restore "$install_dir/README.alpha"
+
+install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
+install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
+install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
+install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
+install -D -m 755 ../sources/bootstrap_authelia_users.py "$install_dir/bin/bootstrap_authelia_users.py"
+install -D -m 755 ../sources/manage_authelia_users.py "$install_dir/bin/manage_authelia_users.py"
+install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
+install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
+install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
+
+_mfa_sidecar_write_env_file
+chown -R "$app:$app" "$install_dir" "$data_dir"
+chown -R "$app:$app" /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/secrets || true
+chown root:"$app" /etc/mfa-sidecar/mfa-sidecar.env || true
+chmod 750 "$install_dir" "$install_dir/bin" "$install_dir/config" "$install_dir/run" || true
+chmod 700 /etc/mfa-sidecar/secrets || true
+chmod 750 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/nginx/protected || true
+chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env || true
+chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml 2>/dev/null || true
+chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml 2>/dev/null || true
+
+mkdir -p "/etc/nginx/conf.d/${domain}.d"
+_mfa_sidecar_remove_primary_domain_include
+_mfa_sidecar_inject_primary_domain_include
+_mfa_sidecar_sync_protected_domain_includes
+
+ynh_script_progression "Reloading NGINX web server..."
+ynh_systemctl --service=nginx --action=reload
+
+ynh_script_progression "Reloading sidecar services if present..."
+ynh_systemctl --service=mfa-sidecar-authelia --action=restart || true
+_mfa_sidecar_assert_service_active mfa-sidecar-authelia
+
+ynh_systemctl --service=mfa-sidecar-admin --action=restart || true
+_mfa_sidecar_assert_service_active mfa-sidecar-admin
+
+if ! _mfa_sidecar_wait_for_local_http \
+    "http://127.0.0.1:9087/admin" 20 1 \
+    "X-MFA-Sidecar-Admin-Secret" "$(grep '^MFA_SIDECAR_ADMIN_GATE_SECRET=' /etc/mfa-sidecar/mfa-sidecar.env | cut -d= -f2-)"; then
+    _mfa_sidecar_dump_admin_diagnostics
+    ynh_die "Admin UI did not become reachable on 127.0.0.1:9087/admin after restore"
+fi
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression "Restoration completed for $app"

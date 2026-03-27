@@ -1,0 +1,224 @@
+#!/bin/bash
+source _common.sh
+source /usr/share/yunohost/helpers
+
+ynh_abort_if_errors
+
+APP_INSTALL_DIR="${install_dir:-}"
+APP_DATA_DIR="${data_dir:-}"
+
+if [[ -z "$APP_INSTALL_DIR" || "$APP_INSTALL_DIR" == *'$app'* || "$APP_INSTALL_DIR" == *'__APP__'* ]]; then
+    APP_INSTALL_DIR="$(ynh_app_setting_get --key=install_dir 2>/dev/null || true)"
+fi
+if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'__APP__'* ]]; then
+    APP_DATA_DIR="$(ynh_app_setting_get --key=data_dir 2>/dev/null || true)"
+fi
+if [[ -z "$APP_INSTALL_DIR" || "$APP_INSTALL_DIR" == *'$app'* || "$APP_INSTALL_DIR" == *'__APP__'* ]]; then
+    APP_INSTALL_DIR="/opt/yunohost/${app}"
+fi
+if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'__APP__'* ]]; then
+    APP_DATA_DIR="/var/lib/${app}"
+fi
+
+POLICY_FILE="$APP_INSTALL_DIR/config/domain-policy.yaml"
+RUNTIME_METADATA_FILE="/etc/mfa-sidecar/runtime-metadata.json"
+ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
+USERS_FILE="/etc/mfa-sidecar/authelia/users.yml"
+
+compose_upstream_url() {
+    echo "${1}://${2}:${3}"
+}
+
+get__operator_model() {
+    cat << EOF
+style: info
+ask:
+  en: Use this config panel for high-level defaults, service actions, and operator-safe introspection. Use /admin for detailed managed-site curation until a richer YunoHost-native abstraction exists.
+  fr: Utilisez ce panneau de configuration pour les paramètres de haut niveau, les actions sur les services et l’inspection sûre côté opérateur. Utilisez /admin pour la gestion détaillée des sites jusqu’à ce qu’une abstraction native YunoHost plus riche existe.
+EOF
+}
+
+get__runtime_summary() {
+    python3 - "$RUNTIME_METADATA_FILE" "$POLICY_FILE" "$USERS_FILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+runtime_path = Path(sys.argv[1])
+policy_path = Path(sys.argv[2])
+users_path = Path(sys.argv[3])
+
+portal_domain = "unknown"
+remember_me = "unknown"
+default_policy = "unknown"
+managed_count = 0
+enabled_count = 0
+users_state = "missing"
+
+if runtime_path.exists():
+    try:
+        data = json.loads(runtime_path.read_text(encoding='utf-8'))
+        portal_domain = data.get('portal_domain', portal_domain)
+        remember_me = data.get('session', {}).get('remember_me', remember_me)
+        default_policy = data.get('default_policy', default_policy)
+        managed_sites = data.get('managed_sites', []) or []
+        managed_count = len(managed_sites)
+        enabled_count = sum(1 for item in managed_sites if item.get('enabled'))
+    except Exception:
+        pass
+elif policy_path.exists():
+    try:
+        import yaml
+        data = yaml.safe_load(policy_path.read_text(encoding='utf-8')) or {}
+        portal_domain = data.get('portal', {}).get('domain', portal_domain)
+        remember_me = data.get('session', {}).get('remember_me', remember_me)
+        default_policy = data.get('access_control', {}).get('default_policy', default_policy)
+        managed_sites = data.get('access_control', {}).get('managed_sites', []) or []
+        managed_count = len(managed_sites)
+        enabled_count = sum(1 for item in managed_sites if item.get('enabled'))
+    except Exception:
+        pass
+
+if users_path.exists():
+    users_state = "present"
+
+print(f'''style: info
+ask:
+  en: "Portal: {portal_domain} | Remembered session: {remember_me} | Default policy: {default_policy} | Managed entries: {managed_count} total / {enabled_count} enabled | Users file: {users_state}"
+  fr: "Portail : {portal_domain} | Session mémorisée : {remember_me} | Politique par défaut : {default_policy} | Entrées gérées : {managed_count} total / {enabled_count} activées | Fichier utilisateurs : {users_state}"''')
+PY
+}
+
+get__upstream_scheme() {
+    ynh_app_setting_get --key=upstream_scheme
+}
+
+get__upstream_host() {
+    ynh_app_setting_get --key=upstream_host
+}
+
+get__upstream_port() {
+    ynh_app_setting_get --key=upstream_port
+}
+
+set__default_policy() {
+    ynh_app_setting_set --key=default_policy --value="$default_policy"
+}
+
+set__remember_me() {
+    case "$remember_me" in
+        8h|24h|168h|336h|720h) ;;
+        *) echo "Unsupported remembered session duration: $remember_me"; return 1 ;;
+    esac
+    ynh_app_setting_set --key=session_duration --value="$remember_me"
+}
+
+validate__upstream_scheme() {
+    [[ "$upstream_scheme" =~ ^(http|https)$ ]] || echo "Scheme must be http or https"
+}
+
+validate__upstream_host() {
+    [[ -n "$upstream_host" ]] || echo "Host cannot be empty"
+}
+
+validate__upstream_port() {
+    [[ "$upstream_port" =~ ^[0-9]+$ ]] && (( upstream_port >= 1 && upstream_port <= 65535 )) || echo "Port must be a valid TCP port"
+}
+
+run__save_upstream_defaults() {
+    ynh_app_setting_set --key=upstream_scheme --value="$upstream_scheme"
+    ynh_app_setting_set --key=upstream_host --value="$upstream_host"
+    ynh_app_setting_set --key=upstream_port --value="$upstream_port"
+    ynh_print_info "Saved default upstream seed to YunoHost app settings. Existing managed entries were not rewritten."
+}
+
+run__reload_runtime() {
+    local install_dir data_dir
+    install_dir="$APP_INSTALL_DIR"
+    data_dir="$APP_DATA_DIR"
+
+    python3 "$install_dir/bin/render_alpha_config.py" \
+        "$POLICY_FILE" \
+        "$install_dir/deploy/generated-alpha"
+
+    python3 "$install_dir/bin/stage_alpha_runtime.py" \
+        "$install_dir/deploy/generated-alpha" /
+
+    _mfa_sidecar_sync_protected_domain_includes
+
+    cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
+    ynh_config_add_nginx
+    ynh_systemctl --service=nginx --action=reload
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_systemctl --service=mfa-sidecar-admin --action=restart
+    ynh_print_info "Regenerated runtime assets and restarted MFA Sidecar services."
+}
+
+run__emergency_disable() {
+    local target_conf
+    target_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
+
+    if [[ -f "$target_conf" ]]; then
+        python3 "$APP_INSTALL_DIR/bin/inject_protected_include.py" remove "$target_conf" || true
+    fi
+
+    _mfa_sidecar_remove_protected_domain_includes
+
+    ynh_systemctl --service=nginx --action=reload || true
+    ynh_systemctl --service=mfa-sidecar-authelia --action=stop || true
+    ynh_systemctl --service=mfa-sidecar-admin --action=stop || true
+    ynh_print_info "Emergency disable complete: portal include hook removed, protected app-location injections removed, nginx reloaded, and sidecar services stopped. Generated auth-endpoint snippets and sidecar state remain on disk for later recovery."
+}
+
+run__restart_services() {
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_systemctl --service=mfa-sidecar-admin --action=restart
+    ynh_print_info "Restarted MFA Sidecar services without regenerating runtime assets."
+}
+
+run__show_admin_gate() {
+    local current_secret
+    current_secret="$(grep '^MFA_SIDECAR_ADMIN_GATE_SECRET=' "$ENV_FILE" | cut -d= -f2- || true)"
+    if [[ -z "$current_secret" ]]; then
+        echo "Admin gate secret was not found in $ENV_FILE"
+        return 1
+    fi
+    ynh_print_info "Current admin gate secret: $current_secret"
+}
+
+run__show_users_file() {
+    if [[ ! -f "$USERS_FILE" ]]; then
+        echo "Users file not found: $USERS_FILE"
+        return 1
+    fi
+    ynh_print_info "Current sidecar users file: $USERS_FILE"
+    cat "$USERS_FILE"
+}
+
+run__seed_first_user() {
+    if [[ -z "${first_username:-}" || -z "${first_display_name:-}" || -z "${first_email:-}" || -z "${first_password:-}" ]]; then
+        echo "first_username, first_display_name, first_email, and first_password are required"
+        return 1
+    fi
+    python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" ensure-user \
+        --users-file "$USERS_FILE" \
+        --authelia-bin /opt/yunohost/mfa_sidecar/bin/authelia \
+        --username "$first_username" \
+        --display-name "$first_display_name" \
+        --email "$first_email" \
+        --password "$first_password" \
+        --groups admins
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_print_info "Seeded/updated first sidecar user and restarted Authelia."
+}
+
+run__sync_users_from_yunohost() {
+    python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" sync-from-yunohost \
+        --users-file "$USERS_FILE" \
+        --yunohost-bin "${MFA_SIDECAR_SYNC_YUNOHOST_BIN:-yunohost}" \
+        --default-groups admins
+    ynh_systemctl --service=mfa-sidecar-authelia --action=restart
+    ynh_print_info "Synchronized sidecar users from YunoHost and restarted Authelia. Missing upstream users are disabled, not deleted."
+}
+
+ynh_app_config_run "$1"
