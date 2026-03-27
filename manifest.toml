@@ -7,14 +7,14 @@ name = "MFA Sidecar"
 description.en = "Browser-first MFA perimeter layer for selected YunoHost web apps"
 description.fr = "Couche périmétrique MFA orientée navigateur pour des applications web YunoHost sélectionnées"
 
-version = "0.1.2~ynh2"
+version = "0.1.2~ynh3"
 maintainers = []
 
 [upstream]
 license = "AGPL-3.0-or-later"
-website = "https://github.com/authelia/authelia"
-code = "https://github.com/authelia/authelia"
-documentation = "https://www.authelia.com/"
+website = "https://mfasidecar.com"
+code = "https://github.com/wonko6x9/mfa_sidecar_ynh"
+documentation = "https://mfasidecar.com"
 
 [integration]
 yunohost = ">= 11.2.30"
