@@ -2,19 +2,27 @@
 
 <img src="https://raw.githubusercontent.com/YunoHost/apps/main/logos/mfa_sidecar.png" width="32px" alt="Logo of MFA Sidecar">
 
-**MFA Sidecar** is an Authelia-backed **browser-first MFA perimeter** for selected YunoHost web apps.
+**MFA Sidecar** is a **browser-first MFA perimeter layer for YunoHost web apps**.
 
-It is meant to sit *in front of* chosen web targets, not replace YunoHost auth globally and not act like a generic protocol firewall. Think: protect a handful of browser-facing apps with an outer auth shell, while leaving YunoHost itself mostly alone.
+It is its own product and operator experience. The package happens to use **Authelia as its authentication/session engine**, but the thing an operator configures is **MFA Sidecar**: portal domain, managed entries, discovery, injection, reinjection, break-glass behavior, and YunoHost-native operations.
+
+Think of it like this:
+- **Product:** MFA Sidecar
+- **Engine:** Authelia
+- **Platform target:** YunoHost
+
+The operator should think in MFA Sidecar terms, not raw Authelia config terms.
 
 ## What it is
 
 Current shape:
 - dedicated **portal domain** for the sidecar itself
 - managed **host + path** entries for protected targets
-- **Authelia** for login, session, TOTP, and WebAuthn/passkeys
+- generated policy-driven auth behavior instead of hand-written engine config
 - separate **sidecar-owned credential + MFA store**
 - thin **admin/control plane** for managing targets
 - explicit **break-glass / emergency disable** path
+- YunoHost-native lifecycle and config-panel actions
 
 Current intended scope:
 - Homebox
@@ -34,7 +42,7 @@ The architecture pivot that matters most is this:
 
 **Protected targets are no longer implemented as generated replacement `location` blocks.**
 
-Instead, the package now does two things:
+Instead, MFA Sidecar now does two things:
 1. renders **auth-endpoint-only nginx snippets** (internal sibling locations such as `/authelia-auth-...`)
 2. injects a small managed block into the **existing app `location` block**:
    - `auth_request ...`
@@ -58,15 +66,37 @@ So MFA Sidecar treats reinjection as part of the design, not an accident:
 
 The admin UI runs as the app user, not root.
 
-When an operator changes managed targets in `/admin`, the package now completes the apply cycle by:
-- rendering updated config
+When an operator changes managed targets in `/admin`, MFA Sidecar now completes the apply cycle by:
+- rendering updated sidecar policy output
 - staging runtime files
 - running reinjection
 - validating nginx
 - reloading nginx
-- restarting Authelia
+- restarting the auth engine
 
 That last step is done through a **narrow sudo helper**, not broad service-control privileges.
+
+## Engine boundary
+
+Authelia is important, but it is not the product surface.
+
+Operators should not need to think in terms of:
+- hand-editing `configuration.yml`
+- writing raw Authelia access-control rules
+- owning authz endpoint wiring directly
+- treating the package like a thin wrapper around an upstream install
+
+Instead, operators should think in terms of:
+- portal domain
+- managed entries
+- host/path/upstream targeting
+- discovery
+- injection/reinjection
+- user bootstrap
+- break-glass behavior
+- YunoHost-native operations
+
+In other words: **Authelia is a dependency; MFA Sidecar is the tool.**
 
 ## Current status
 
@@ -74,12 +104,13 @@ This project is at a **production-hardened alpha candidate** checkpoint.
 
 What is already true:
 - local validation is strong
-- the auth model is sidecar-owned rather than coupled to YunoHost auth
+- the auth/MFA model is sidecar-owned rather than coupled to YunoHost auth
 - break-glass behavior exists
 - admin target management exists
 - injection/reinjection architecture is implemented
 - regen hooks exist
 - package/dev/publication branches are now aligned deliberately instead of by luck
+- first sidecar admin creation is now part of install, not an optional scavenger hunt afterward
 
 What is **not** yet true:
 - the current architecture is **not** yet live-proven end-to-end on wm3v after the injection pivot
@@ -109,18 +140,18 @@ If YunoHost is installing from GitHub, use the repo's **`main`** branch — not 
 
 ## Current package capabilities
 
-- vendored Authelia artifact with checksum verification
+- vendored auth-engine artifact with checksum verification
 - dedicated portal-domain install model
 - managed site policy generation for host/path entries
-- generated Authelia config + auth-endpoint nginx snippets
+- generated runtime config + auth-endpoint nginx snippets
 - runtime staging into `/etc/mfa-sidecar`
 - package lifecycle scripts for install / upgrade / backup / restore / remove
 - YunoHost config-panel surface for high-level settings and operator actions
 - bundled `/admin` control plane for managed host/path entries
-- mandatory first-user bootstrap during install via Authelia-generated Argon2 hashes
+- mandatory first-user bootstrap during install via generated Argon2 hashes
 - optional YunoHost-driven user sync that preserves sidecar password/MFA authority
 - emergency disable that removes the portal include hook, removes protected app-location injections, and stops sidecar services without destructive uninstall
-- repeated smoke coverage for renderer, staging, injector behavior, admin flow, vendored binary handling, user bootstrap/sync, break-glass behavior, and package export shape
+- repeated smoke coverage for renderer, staging, injector behavior, admin flow, vendored engine handling, user bootstrap/sync, break-glass behavior, and package export shape
 
 ## Important constraints
 
@@ -134,7 +165,7 @@ If YunoHost is installing from GitHub, use the repo's **`main`** branch — not 
 A few sharp edges are now explicit instead of hidden:
 - the injector is deliberately conservative; ambiguous matches should fail loudly instead of guessing
 - missing `target_conf` paths should be treated as operator-fixable discovery issues, not magic-recoverable state
-- admin UI uses a narrow sudo-assisted apply helper because full apply requires nginx reload + Authelia restart
+- admin UI uses a narrow sudo-assisted apply helper because full apply requires nginx reload + auth-engine restart
 - this is a browser-first perimeter shell, not a “protect everything” button
 
 ## Key references
@@ -152,5 +183,6 @@ Start here if you are actively validating or operating it:
 ## Branding
 
 - product name: **MFA Sidecar**
-- engine: **Authelia**
-- temporary logo/icon: official Authelia logo
+- primary colors: **true blue** and **black**
+- auth/session engine: **Authelia**
+- logo: in progress

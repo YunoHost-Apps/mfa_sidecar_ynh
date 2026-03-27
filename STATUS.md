@@ -4,13 +4,15 @@
 Browser-first v1 perimeter shell confirmed; local package hardening is strong, and the remaining meaningful uncertainty is live host validation plus operator UX polish
 
 ## Current recommendation
-Use **Authelia** as the sidecar auth engine for a **browser-first perimeter shell** in front of selected YunoHost-managed web apps, with:
+Use **MFA Sidecar** as a **browser-first MFA perimeter layer** in front of selected YunoHost-managed web apps, with:
 - passkeys / WebAuthn primary
 - TOTP fallback
 - separate sidecar-owned credential + MFA store
 - thin custom control plane for managed host/path entries and generated config
 - remembered-device/session behavior to reduce repeat prompts
 - explicit non-goal for v1: mail protocols, sync/mobile-client-first apps, and generic protocol-wide firewall behavior
+
+Implementation note: MFA Sidecar currently uses **Authelia as its auth/session engine**, but the operator model, policy model, and lifecycle are Sidecar-native.
 
 ## Why this path currently leads
 - cleanest fit to the gatekeeper model
@@ -30,7 +32,7 @@ The repo is now in a **documented alpha package state with strong local validati
 - policy seed + renderer + runtime staging are aligned
 - bundled admin UI works for add/edit/delete/toggle/apply
 - protected targets now use **location-block injection + reinjection hooks** instead of generated replacement `location` blocks, which better preserves app-specific nginx behavior
-- direct Authelia portal is live and reachable once bootstrap/user and permission bugs are corrected
+- direct MFA Sidecar portal is live and reachable once bootstrap/user and permission bugs are corrected
 - GitHub `main` is the installer-facing package branch, while GitLab mirrors that package view on `github-package`
 - browser-first perimeter-shell framing is the right v1 scope; protocol-wide/firewall-like behavior is out of scope for now
 - earlier install iterations exposed real operator-footgun classes: publish drift, runtime permission mistakes, bootstrap confusion, and nginx-shadowing semantics; the repo now contains fixes and regression coverage for those classes, but they still need live-host confirmation

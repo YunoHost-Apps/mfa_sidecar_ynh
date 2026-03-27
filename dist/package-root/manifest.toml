@@ -4,8 +4,8 @@ packaging_format = 2
 
 id = "mfa_sidecar"
 name = "MFA Sidecar"
-description.en = "Authelia-based MFA sidecar for selected YunoHost domains and paths"
-description.fr = "Sidecar MFA basé sur Authelia pour des domaines et chemins YunoHost sélectionnés"
+description.en = "Browser-first MFA perimeter layer for selected YunoHost web apps"
+description.fr = "Couche périmétrique MFA orientée navigateur pour des applications web YunoHost sélectionnées"
 
 version = "0.1.0~ynh1"
 maintainers = []
