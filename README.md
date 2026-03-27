@@ -117,7 +117,7 @@ If YunoHost is installing from GitHub, use the repo's **`main`** branch — not 
 - package lifecycle scripts for install / upgrade / backup / restore / remove
 - YunoHost config-panel surface for high-level settings and operator actions
 - bundled `/admin` control plane for managed host/path entries
-- first-user bootstrap via Authelia-generated Argon2 hashes
+- mandatory first-user bootstrap during install via Authelia-generated Argon2 hashes
 - optional YunoHost-driven user sync that preserves sidecar password/MFA authority
 - emergency disable that removes the portal include hook, removes protected app-location injections, and stops sidecar services without destructive uninstall
 - repeated smoke coverage for renderer, staging, injector behavior, admin flow, vendored binary handling, user bootstrap/sync, break-glass behavior, and package export shape
