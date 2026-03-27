@@ -185,4 +185,5 @@ Start here if you are actively validating or operating it:
 - product name: **MFA Sidecar**
 - primary colors: **true blue** and **black**
 - auth/session engine: **Authelia**
+- placeholder icon assets: `package-base/assets/logo-placeholders/` (`128`, `64`, `32`, `16`)
 - logo: in progress
