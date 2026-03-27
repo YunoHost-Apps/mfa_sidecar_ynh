@@ -123,14 +123,6 @@ set__session_duration() {
     ynh_app_setting_set --key=session_duration --value="$session_duration"
 }
 
-set__remember_me() {
-    case "$remember_me" in
-        8h|24h|168h|336h|720h) ;;
-        *) echo "Unsupported remembered session duration: $remember_me"; return 1 ;;
-    esac
-    ynh_app_setting_set --key=session_duration --value="$remember_me"
-}
-
 validate__upstream_scheme() {
     [[ "$upstream_scheme" =~ ^(http|https)$ ]] || echo "Scheme must be http or https"
 }
@@ -194,15 +186,6 @@ run__restart_services() {
     ynh_print_info "Restarted MFA Sidecar services without regenerating runtime assets."
 }
 
-run__show_admin_gate() {
-    local current_secret
-    current_secret="$(grep '^MFA_SIDECAR_ADMIN_GATE_SECRET=' "$ENV_FILE" | cut -d= -f2- || true)"
-    if [[ -z "$current_secret" ]]; then
-        echo "Admin gate secret was not found in $ENV_FILE"
-        return 1
-    fi
-    ynh_print_info "Current admin gate secret: $current_secret"
-}
 
 run__show_users_file() {
     if [[ ! -f "$USERS_FILE" ]]; then
