@@ -90,6 +90,36 @@ ram.runtime = "200M"
     help.en = "Plain numeric TCP port; validated during install"
     help.fr = "Port TCP numérique simple ; validé pendant l'installation"
 
+    [install.seed_first_user]
+    ask.en = "Create first sidecar admin user during install?"
+    ask.fr = "Créer le premier utilisateur admin du sidecar pendant l'installation ?"
+    type = "boolean"
+    default = false
+
+    [install.first_username]
+    ask.en = "First sidecar admin username"
+    ask.fr = "Nom d'utilisateur du premier admin du sidecar"
+    type = "string"
+    visible = "seed_first_user"
+
+    [install.first_display_name]
+    ask.en = "First sidecar admin display name"
+    ask.fr = "Nom affiché du premier admin du sidecar"
+    type = "string"
+    visible = "seed_first_user"
+
+    [install.first_email]
+    ask.en = "First sidecar admin email"
+    ask.fr = "E-mail du premier admin du sidecar"
+    type = "email"
+    visible = "seed_first_user"
+
+    [install.first_password]
+    ask.en = "First sidecar admin password"
+    ask.fr = "Mot de passe du premier admin du sidecar"
+    type = "password"
+    visible = "seed_first_user"
+
     [install.init_main_permission]
     type = "group"
     default = "visitors"
