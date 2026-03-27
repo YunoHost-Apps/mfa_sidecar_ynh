@@ -73,6 +73,11 @@ _mfa_sidecar_write_alpha_notes
 #=================================================
 ynh_script_progression "Refreshing NGINX entrypoint for MFA sidecar..."
 
+if [[ ! -f "/etc/nginx/conf.d/${domain}.conf" ]]; then
+    ynh_script_progression "Portal domain nginx parent config missing before NGINX refresh; forcing regen-conf for nginx..."
+    yunohost tools regen-conf nginx --force 2>/dev/null || true
+fi
+
 mkdir -p "/etc/nginx/conf.d/${domain}.d"
 cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
 ynh_config_add_nginx

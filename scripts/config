@@ -24,7 +24,6 @@ fi
 
 POLICY_FILE="$APP_INSTALL_DIR/config/domain-policy.yaml"
 RUNTIME_METADATA_FILE="/etc/mfa-sidecar/runtime-metadata.json"
-ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
 USERS_FILE="/etc/mfa-sidecar/authelia/users.yml"
 
 compose_upstream_url() {
