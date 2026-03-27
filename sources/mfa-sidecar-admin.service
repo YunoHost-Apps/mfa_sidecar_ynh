@@ -19,7 +19,6 @@ Environment=MFA_SIDECAR_ADMIN_PORT=9087
 ExecStart=/usr/bin/python3 /opt/yunohost/mfa_sidecar/bin/admin_ui_app.py
 Restart=on-failure
 RestartSec=5s
-NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
