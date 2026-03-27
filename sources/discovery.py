@@ -119,7 +119,7 @@ class Discovery:
             if not match:
                 continue
             loc = normalize_path(match.group(1))
-            if loc == '/' or loc.startswith('/.well-known'):
+            if loc.startswith('/.well-known'):
                 continue
             found.append(loc)
         return found
@@ -142,8 +142,6 @@ class Discovery:
 
         for app in apps:
             path = app["path"]
-            if path == '/':
-                continue
             suggestions.append(
                 {
                     "kind": "app-path",
