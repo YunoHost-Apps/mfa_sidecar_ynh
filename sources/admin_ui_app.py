@@ -27,7 +27,7 @@ DEFAULT_INSTALL_DIR = os.environ.get("MFA_SIDECAR_INSTALL_DIR", "/opt/yunohost/m
 BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
-DISCOVERY_YUNOHOST_BIN = os.environ.get("MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN", "yunohost")
+DISCOVERY_YUNOHOST_BIN = os.environ.get("MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN", "/usr/bin/yunohost")
 
 
 def h(value: object) -> str:

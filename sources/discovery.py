@@ -12,7 +12,7 @@ LOCATION_RE = re.compile(r"^\s*location\s+(?:=|\^~|~\*|~)?\s*([^\s{]+)")
 PROXY_PASS_RE = re.compile(r"^\s*proxy_pass\s+([^;]+);")
 
 DEFAULT_NGINX_CONF_DIR = "/etc/nginx/conf.d"
-DEFAULT_YUNOHOST_BIN = "yunohost"
+DEFAULT_YUNOHOST_BIN = "/usr/bin/yunohost"
 DEFAULT_UPSTREAM_FALLBACK = "https://127.0.0.1:443"
 
 
@@ -192,7 +192,7 @@ class Discovery:
         if not shutil.which(command[0]):
             return None
         try:
-            proc = subprocess.run(command, check=True, capture_output=True, text=True)
+            proc = subprocess.run(["sudo", *command], check=True, capture_output=True, text=True)
         except (subprocess.CalledProcessError, OSError):
             return None
         try:
