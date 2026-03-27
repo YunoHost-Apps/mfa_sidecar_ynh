@@ -166,7 +166,7 @@ def build_authelia_values(policy: dict) -> dict:
         },
         "notifier": {
             "smtp": {
-                "address": "smtp://127.0.0.1:25",
+                "address": "smtp://localhost:25",
                 "sender": f"MFA Sidecar <mfa-sidecar@{extract_cookie_domain(portal['domain'])}>",
                 "identifier": portal["domain"],
             }

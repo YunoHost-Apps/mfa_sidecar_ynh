@@ -98,9 +98,12 @@ class AdminApp:
         try:
             discovered = self.discovery.discover()
             managed_pairs = {(entry['host'], normalize_path(entry.get('path', '/'))) for entry in self.policy.list_entries()}
+            portal_domain = self.policy.portal_summary().get('portal_domain', '')
             suggestions = [
                 item for item in discovered.get('suggestions', [])
-                if item['kind'] == 'app-path' and (item['host'], normalize_path(item.get('path', '/'))) not in managed_pairs
+                if item['kind'] in {'app-path', 'domain'}
+                and item.get('host') != portal_domain
+                and (item['host'], normalize_path(item.get('path', '/'))) not in managed_pairs
             ]
             return suggestions, ""
         except Exception as exc:
