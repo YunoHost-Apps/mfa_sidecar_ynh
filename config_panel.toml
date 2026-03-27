@@ -142,8 +142,8 @@ services = ["nginx"]
         [main.operations.users_file_note]
         type = "alert"
         style = "warning"
-        ask.en = "The sidecar now uses its own Authelia users file at /etc/mfa-sidecar/authelia/users.yml. Installation bootstraps a disabled placeholder only; you still need to create a real first sidecar user before meaningful auth testing. Portal access is broader, but operator/admin actions remain separate."
-        ask.fr = "Le sidecar utilise maintenant son propre fichier utilisateurs Authelia dans /etc/mfa-sidecar/authelia/users.yml. L’installation initialise uniquement un espace réservé désactivé ; vous devez toujours créer un vrai premier utilisateur du sidecar avant des tests d’authentification utiles. L’accès au portail est plus large, mais les actions opérateur/admin restent séparées."
+        ask.en = "MFA Sidecar keeps its own users file at /etc/mfa-sidecar/authelia/users.yml. The first sidecar admin should now be created during install; this action remains available for recovery or later changes. Portal access is broader, but operator/admin actions remain separate."
+        ask.fr = "MFA Sidecar conserve son propre fichier utilisateurs dans /etc/mfa-sidecar/authelia/users.yml. Le premier admin du sidecar doit désormais être créé pendant l’installation ; cette action reste disponible pour la récupération ou les modifications ultérieures. L’accès au portail est plus large, mais les actions opérateur/admin restent séparées."
 
         [main.operations.seed_first_user]
         type = "button"
@@ -183,5 +183,5 @@ services = ["nginx"]
         [main.operations.admin_note]
         type = "alert"
         style = "info"
-        ask.en = "The portal on / is the user-facing outer login shell and should be broadly reachable. Detailed managed-site editing still lives in the sidecar admin UI on /admin, and config-panel / operational actions remain for sidecar admins/operators. YunoHost-driven user sync disables missing upstream users instead of deleting them."
-        ask.fr = "Le portail sur / est la coque de connexion externe destinée aux utilisateurs et doit être largement accessible. L’édition détaillée des sites gérés reste dans l’interface d’administration du sidecar sur /admin, et les actions du panneau de configuration / opérationnelles restent réservées aux admins/opérateurs du sidecar. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."
+        ask.en = "The portal on / is the user-facing outer login shell and should be broadly reachable. Detailed managed-site editing still lives in the MFA Sidecar admin UI on /admin, and config-panel / operational actions remain for sidecar admins/operators. YunoHost-driven user sync disables missing upstream users instead of deleting them."
+        ask.fr = "Le portail sur / est la coque de connexion externe destinée aux utilisateurs et doit être largement accessible. L’édition détaillée des sites gérés reste dans l’interface d’administration MFA Sidecar sur /admin, et les actions du panneau de configuration / opérationnelles restent réservées aux admins/opérateurs du sidecar. La synchronisation pilotée par YunoHost désactive les utilisateurs amont manquants au lieu de les supprimer."
