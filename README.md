@@ -53,6 +53,7 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - pre-install checklist: `docs/PRE-INSTALL-CHECKLIST.md`
 - final pre-install status: `docs/FINAL-PREINSTALL-STATUS.md`
 - morning install handoff: `docs/2026-03-26-INSTALL-HANDOFF.md`
+- wm3v injection live plan: `docs/WM3V-INJECTION-LIVE-PLAN.md`
 
 ## Branding
 - product name: **MFA Sidecar**

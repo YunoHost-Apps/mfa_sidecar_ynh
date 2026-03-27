@@ -38,4 +38,4 @@ The repo is now in a **documented alpha package state with strong local validati
 - the injector is deliberately conservative and tested against a few uglier nginx shapes, but it is still not a full nginx parser; ambiguous or missing targets should fail loudly rather than guess
 
 ## Immediate next step
-Run live-host validation against a compatible browser-first target app, with special attention to discovery/target-conf accuracy, reinjection survival after regen-conf/app upgrade, and emergency-disable recovery behavior.
+Run the wm3v live validation plan against `home.wm3v.com` first, with special attention to discovery/target-conf accuracy, clean location injection into the Homebox nginx file, reinjection survival after `regen-conf`, and emergency-disable recovery behavior. See `docs/WM3V-INJECTION-LIVE-PLAN.md`.
