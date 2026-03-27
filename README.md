@@ -28,7 +28,7 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - dedicated portal-domain install model
 - managed site policy generation for host/path entries
 - portal install no longer seeds itself as a managed target entry
-- generated Authelia config and nginx snippets
+- generated Authelia config and auth-endpoint nginx snippets
 - runtime staging into `/etc/mfa-sidecar`
 - package lifecycle scripts for install/upgrade/backup/restore/remove
 - first YunoHost-native config surface via `config_panel.toml` + `scripts/config` for high-level settings and operator actions
@@ -39,7 +39,7 @@ If YunoHost is installing from GitHub, use the repo's `main` branch. Do not poin
 - explicit package-root export script at `scripts/export_package_root.sh`
 - sidecar-owned users file bootstrap and managed first-user helper using Authelia-generated Argon2 hashes
 - YunoHost-driven user sync that preserves separate password/MFA authority while disabling users removed upstream
-- emergency disable path that drops the primary include hook and stops sidecar services without destructive uninstall
+- emergency disable path that removes the portal include hook, removes protected app-location injections, and stops sidecar services without destructive uninstall
 
 ## Important constraints
 - the sidecar portal must be installed on its own dedicated domain at `/`

@@ -3,7 +3,8 @@
 If MFA Sidecar is interfering with access and you need the fastest non-destructive rollback path, use the **Emergency disable sidecar protection** action from the YunoHost config panel.
 
 ## What it does
-- removes the primary include hook from the protected domain nginx file
+- removes the **portal include hook** from the sidecar portal nginx file
+- removes **managed MFA Sidecar blocks** previously injected into protected app `location` blocks
 - reloads nginx
 - stops `mfa-sidecar-authelia`
 - stops `mfa-sidecar-admin`
@@ -13,10 +14,11 @@ If MFA Sidecar is interfering with access and you need the fastest non-destructi
 - does not uninstall the package
 - does not delete `/etc/mfa-sidecar`
 - does not delete the users file or MFA state
-- does not remove every generated protected snippet from disk
+- does not delete generated auth-endpoint snippets from disk
+- does not try to guess or rewrite arbitrary nginx logic beyond removing the managed MFA Sidecar blocks it owns
 
 ## Why this is the right break-glass behavior
-This is meant to restore primary access quickly without forcing immediate destructive cleanup. If the sidecar caused trouble, you want the front door unhooked first and the forensic cleanup second.
+This is meant to restore primary access quickly without forcing immediate destructive cleanup. If the sidecar caused trouble, you want the auth hook removed first and the forensic cleanup second.
 
 ## After emergency disable
 Choose one of these paths:
@@ -31,9 +33,10 @@ Choose one of these paths:
 If the config panel is not reachable, the equivalent rough shell behavior is:
 
 ```bash
-sudo python3 /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py remove /etc/nginx/conf.d/<primary-domain>.d/mfa_sidecar.conf || true
-sudo systemctl reload nginx || true
+sudo python3 /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py remove /etc/nginx/conf.d/<portal-domain>.d/mfa_sidecar.conf || true
+sudo python3 /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py remove /etc/nginx/conf.d/<target-domain>.d/<target-app>.conf || true
+sudo nginx -t && sudo systemctl reload nginx || true
 sudo systemctl stop mfa-sidecar-authelia mfa-sidecar-admin || true
 ```
 
-Adjust `<primary-domain>` to the main protected domain where the sidecar include was injected.
+Adjust `<portal-domain>` and `<target-domain>/<target-app>.conf` to the actual files on the host. The important part is: remove only the **managed MFA Sidecar blocks** from target files, not the rest of the app nginx configuration.

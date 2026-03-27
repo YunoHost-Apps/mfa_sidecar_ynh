@@ -6,7 +6,7 @@
 - [ ] Validate runtime ownership/permission behavior on a real host after the stager-side hardening so generated live assets stay readable by the service user across install/upgrade/restore
 - [ ] Validate publish/installer-branch discipline on a fresh install path so dev/package drift prevention is proven operationally, not just by local smoke coverage
 - [ ] Reconcile MFA Sidecar package/admin approach against YunoHost guidance, especially installer-facing repo shape, app icon/admin presentation, and whether `/admin` is the right model
-- [ ] Validate first managed-site target end to end (`home.wm3v.com` first)
+- [ ] Validate first managed-site target end to end (`home.wm3v.com` first), including: correct `target_conf` discovery, clean location injection, `nginx -t`, auth redirect behavior, emergency disable recovery, and reinjection survival after `yunohost tools regen-conf nginx`
 - [ ] Validate upgrade/remove/restore behavior on the real host
 - [x] Add emergency global disable / rollback path
 - [ ] Decide exact production recovery/operator recovery stance

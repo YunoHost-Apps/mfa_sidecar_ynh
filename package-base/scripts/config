@@ -155,9 +155,8 @@ run__reload_runtime() {
 }
 
 run__emergency_disable() {
-    local target_conf include_glob
+    local target_conf
     target_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
-    include_glob="/etc/mfa-sidecar/nginx/protected/*.conf"
 
     if [[ -f "$target_conf" ]]; then
         python3 "$APP_INSTALL_DIR/bin/inject_protected_include.py" remove "$target_conf" || true
@@ -168,7 +167,7 @@ run__emergency_disable() {
     ynh_systemctl --service=nginx --action=reload || true
     ynh_systemctl --service=mfa-sidecar-authelia --action=stop || true
     ynh_systemctl --service=mfa-sidecar-admin --action=stop || true
-    ynh_print_info "Emergency disable complete: primary include hook and protected-domain include wrappers removed, nginx reloaded, and sidecar services stopped. Managed protected snippets remain on disk for later recovery."
+    ynh_print_info "Emergency disable complete: portal include hook removed, protected app-location injections removed, nginx reloaded, and sidecar services stopped. Generated auth-endpoint snippets and sidecar state remain on disk for later recovery."
 }
 
 run__restart_services() {

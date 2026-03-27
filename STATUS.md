@@ -25,15 +25,17 @@ Use **Authelia** as the sidecar auth engine for a **browser-first perimeter shel
 - how the operator bootstrap/config story should look so a fresh install does not strand the user at a login page with no obvious way to create users or define protected targets
 
 ## Current checkpoint
-The repo is now in a **documented alpha package state with strong local validation**, and wm3v live proof established several truths:
+The repo is now in a **documented alpha package state with strong local validation**, and the nginx protection model has been materially corrected:
 - package lifecycle scripts are in place
 - policy seed + renderer + runtime staging are aligned
 - bundled admin UI works for add/edit/delete/toggle/apply
+- protected targets now use **location-block injection + reinjection hooks** instead of generated replacement `location` blocks, which better preserves app-specific nginx behavior
 - direct Authelia portal is live and reachable once bootstrap/user and permission bugs are corrected
 - GitHub `main` is the installer-facing package branch, while GitLab mirrors that package view on `github-package`
 - browser-first perimeter-shell framing is the right v1 scope; protocol-wide/firewall-like behavior is out of scope for now
-- earlier install iterations exposed real operator-footgun classes: publish drift, runtime permission mistakes, and bootstrap confusion; the repo now contains fixes and regression coverage for those classes, but they still need live-host confirmation
+- earlier install iterations exposed real operator-footgun classes: publish drift, runtime permission mistakes, bootstrap confusion, and nginx-shadowing semantics; the repo now contains fixes and regression coverage for those classes, but they still need live-host confirmation
 - first-run UX is improved but still rough around the edges: the operator path exists in config actions/docs, yet it still needs live validation to prove a fresh admin will not get stranded at the login page
+- the injector is deliberately conservative and tested against a few uglier nginx shapes, but it is still not a full nginx parser; ambiguous or missing targets should fail loudly rather than guess
 
 ## Immediate next step
-Fix the operator/bootstrap UX and remaining package footguns, then re-validate the intended v1 flow on a compatible browser-first target app.
+Run live-host validation against a compatible browser-first target app, with special attention to discovery/target-conf accuracy, reinjection survival after regen-conf/app upgrade, and emergency-disable recovery behavior.
