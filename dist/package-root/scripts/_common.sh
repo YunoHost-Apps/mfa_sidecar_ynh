@@ -222,23 +222,29 @@ _mfa_sidecar_wait_for_local_http() {
     local sleep_seconds="${3:-1}"
     local header_name="${4:-}"
     local header_value="${5:-}"
+    local expected_status="${6:-200}"
     local i
 
     for ((i=1; i<=attempts; i++)); do
-        if python3 - "$url" "$header_name" "$header_value" <<'PY' >/dev/null 2>&1
+        if python3 - "$url" "$header_name" "$header_value" "$expected_status" <<'PY' >/dev/null 2>&1
 import sys
 import urllib.request
+import urllib.error
 
 url = sys.argv[1]
 header_name = sys.argv[2]
 header_value = sys.argv[3]
+expected_status = int(sys.argv[4])
 request = urllib.request.Request(url)
 if header_name and header_value:
     request.add_header(header_name, header_value)
-with urllib.request.urlopen(request, timeout=2) as response:
-    if response.status < 500:
-        raise SystemExit(0)
-raise SystemExit(1)
+try:
+    with urllib.request.urlopen(request, timeout=2) as response:
+        raise SystemExit(0 if response.status == expected_status else 1)
+except urllib.error.HTTPError as exc:
+    raise SystemExit(0 if exc.code == expected_status else 1)
+except Exception:
+    raise SystemExit(1)
 PY
         then
             return 0
