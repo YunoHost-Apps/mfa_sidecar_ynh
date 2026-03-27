@@ -89,6 +89,7 @@ ynh_systemctl --service=nginx --action=reload || true
 # ENABLE SERVICE (ALPHA DRAFT)
 #=================================================
 ynh_script_progression "Registering sidecar services..."
+systemctl daemon-reload || true
 ynh_systemctl --service=mfa-sidecar-authelia --action=enable
 ynh_systemctl --service=mfa-sidecar-authelia --action=restart
 _mfa_sidecar_assert_service_active mfa-sidecar-authelia
