@@ -1,5 +1,29 @@
 #!/bin/bash
 
+_mfa_sidecar_resolve_paths() {
+    local resolved_install_dir resolved_data_dir
+
+    resolved_install_dir="${install_dir:-}"
+    resolved_data_dir="${data_dir:-}"
+
+    if [[ -z "$resolved_install_dir" || "$resolved_install_dir" == *'$app'* || "$resolved_install_dir" == *'__APP__'* ]]; then
+        resolved_install_dir="$(ynh_app_setting_get --key=install_dir 2>/dev/null || true)"
+    fi
+    if [[ -z "$resolved_data_dir" || "$resolved_data_dir" == *'$app'* || "$resolved_data_dir" == *'__APP__'* ]]; then
+        resolved_data_dir="$(ynh_app_setting_get --key=data_dir 2>/dev/null || true)"
+    fi
+
+    if [[ -z "$resolved_install_dir" || "$resolved_install_dir" == *'$app'* || "$resolved_install_dir" == *'__APP__'* ]]; then
+        resolved_install_dir="/opt/yunohost/${app}"
+    fi
+    if [[ -z "$resolved_data_dir" || "$resolved_data_dir" == *'$app'* || "$resolved_data_dir" == *'__APP__'* ]]; then
+        resolved_data_dir="/var/lib/${app}"
+    fi
+
+    install_dir="$resolved_install_dir"
+    data_dir="$resolved_data_dir"
+}
+
 _mfa_sidecar_validate_inputs() {
     if [[ "$path" != "/" ]]; then
         ynh_die "Portal app must be installed at '/' on its own dedicated domain."
@@ -48,11 +72,13 @@ _mfa_sidecar_install_layout() {
         "$install_dir/deploy/generated-alpha" \
         "$install_dir/cache/authelia" \
         "$install_dir/sources/vendor" \
+        "$install_dir/run" \
         "$data_dir" \
         "/etc/mfa-sidecar/authelia" \
         "/etc/mfa-sidecar/nginx/protected" \
         "/etc/mfa-sidecar/secrets"
 }
+
 
 _mfa_sidecar_secret_file() {
     local name="$1"
@@ -69,31 +95,21 @@ _mfa_sidecar_write_secret_if_missing() {
 
 _mfa_sidecar_write_env_file() {
     local admin_gate_secret_file
-    local ldap_password_file
     admin_gate_secret_file="$(_mfa_sidecar_secret_file admin_gate_secret)"
-    ldap_password_file="$(_mfa_sidecar_secret_file ldap_bind_password)"
     _mfa_sidecar_write_secret_if_missing "$admin_gate_secret_file"
-
-    if [[ -n "${ldap_bind_password:-}" ]]; then
-        umask 077
-        printf '%s\n' "$ldap_bind_password" > "$ldap_password_file"
-    elif [[ ! -f "$ldap_password_file" ]]; then
-        umask 077
-        printf '%s\n' 'CHANGEME_LDAP_BIND_PASSWORD' > "$ldap_password_file"
-    fi
 
     cat > /etc/mfa-sidecar/mfa-sidecar.env <<EOF
 AUTHELIA_SESSION_SECRET=$(cat "$(_mfa_sidecar_secret_file session_secret)")
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(cat "$(_mfa_sidecar_secret_file storage_encryption_key)")
 AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET=$(cat "$(_mfa_sidecar_secret_file identity_validation_reset_secret)")
-AUTHELIA_LDAP_PASSWORD=$(cat "$ldap_password_file")
 MFA_SIDECAR_ADMIN_GATE_SECRET=$(cat "$admin_gate_secret_file")
+MFA_SIDECAR_RUNTIME_DIR=$install_dir/run
 EOF
-    chmod 600 /etc/mfa-sidecar/mfa-sidecar.env
+    chmod 640 /etc/mfa-sidecar/mfa-sidecar.env
 }
 
-_mfa_sidecar_ldap_password_is_placeholder() {
-    [[ "$(cat "$(_mfa_sidecar_secret_file ldap_bind_password)" 2>/dev/null || true)" == 'CHANGEME_LDAP_BIND_PASSWORD' ]]
+_mfa_sidecar_authelia_bin() {
+    echo "$install_dir/bin/authelia"
 }
 
 _mfa_sidecar_install_authelia_binary() {
@@ -102,12 +118,27 @@ _mfa_sidecar_install_authelia_binary() {
         "$install_dir/sources/vendor" \
         "$install_dir/cache/authelia" > "$install_dir/cache/authelia/install-result.json"
 
-    install -D -m 755 "$install_dir/cache/authelia/authelia" /usr/local/bin/authelia
+    install -D -m 755 "$install_dir/cache/authelia/authelia" "$(_mfa_sidecar_authelia_bin)"
+}
+
+_mfa_sidecar_users_file() {
+    echo "/etc/mfa-sidecar/authelia/users.yml"
+}
+
+_mfa_sidecar_ensure_users_file_template() {
+    local users_file
+    users_file="$(_mfa_sidecar_users_file)"
+    if [[ ! -f "$users_file" ]]; then
+        python3 "$install_dir/bin/bootstrap_authelia_users.py" "$users_file"
+    fi
 }
 
 _mfa_sidecar_write_policy_seed() {
     local remember_me
+    local seeded_default_policy
+
     remember_me="$(_mfa_sidecar_session_remember_me)"
+    seeded_default_policy="${default_policy:-open}"
 
     cat > "$install_dir/config/domain-policy.yaml" <<EOF
 version: 1
@@ -121,30 +152,35 @@ portal:
 session:
   name: mfa_sidecar_session
   secret_file: $(_mfa_sidecar_secret_file session_secret)
+  cookie_domain: ""
   expiration: ${remember_me}
   inactivity: 1h
   remember_me: ${remember_me}
 storage:
   encryption_key_file: $(_mfa_sidecar_secret_file storage_encryption_key)
 identity:
-  display_name: YunoHost LDAP
-  ldap:
-    address: ldap://127.0.0.1:389
-    implementation: custom
-    start_tls: false
-    permit_referrals: false
-    permit_unauthenticated_bind: false
-    base_dn: dc=yunohost,dc=org
-    additional_users_dn: ou=users
-    additional_groups_dn: ou=groups
-    users_filter: (&({username_attribute}={input})(objectClass=inetOrgPerson))
-    groups_filter: (&(member={dn})(objectClass=groupOfNamesYnh))
-    group_search_mode: filter
-    username_attribute: uid
-    display_name_attribute: cn
-    mail_attribute: mail
-    user: uid=authelia,ou=users,dc=yunohost,dc=org
-    password_env: AUTHELIA_LDAP_PASSWORD
+  display_name: MFA Sidecar
+  local:
+    path: /etc/mfa-sidecar/authelia/users.yml
+    watch: false
+    search:
+      email: true
+      case_insensitive: true
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+  sync:
+    enabled: false
+    source: yunohost-ldap-readonly
+    fields:
+      - username
+      - email
 mfa:
   issuer: MFA Sidecar
   webauthn:
@@ -157,7 +193,7 @@ mfa:
     enabled: true
     issuer: MFA Sidecar
 access_control:
-  default_policy: bypass
+  default_policy: ${seeded_default_policy}
   managed_sites: []
 recovery:
   mode: authelia-reset-password-and-enrollment
@@ -175,22 +211,31 @@ _mfa_sidecar_sync_runtime_assets() {
         "$install_dir/deploy/generated-alpha"
 
     python3 "$install_dir/bin/stage_alpha_runtime.py" \
-        "$install_dir/deploy/generated-alpha" /
+        "$install_dir/deploy/generated-alpha" / \
+        --owner "$app" \
+        --group "$app"
 }
 
 _mfa_sidecar_wait_for_local_http() {
     local url="$1"
     local attempts="${2:-20}"
     local sleep_seconds="${3:-1}"
+    local header_name="${4:-}"
+    local header_value="${5:-}"
     local i
 
     for ((i=1; i<=attempts; i++)); do
-        if python3 - "$url" <<'PY' >/dev/null 2>&1
+        if python3 - "$url" "$header_name" "$header_value" <<'PY' >/dev/null 2>&1
 import sys
 import urllib.request
 
 url = sys.argv[1]
-with urllib.request.urlopen(url, timeout=2) as response:
+header_name = sys.argv[2]
+header_value = sys.argv[3]
+request = urllib.request.Request(url)
+if header_name and header_value:
+    request.add_header(header_name, header_value)
+with urllib.request.urlopen(request, timeout=2) as response:
     if response.status < 500:
         raise SystemExit(0)
 raise SystemExit(1)
@@ -201,6 +246,12 @@ PY
         sleep "$sleep_seconds"
     done
     return 1
+}
+
+_mfa_sidecar_dump_admin_diagnostics() {
+    systemctl status mfa-sidecar-admin --no-pager >&2 || true
+    journalctl -u mfa-sidecar-admin --since '-2 minutes' --no-pager >&2 || true
+    ss -ltnp 2>/dev/null | grep ':9087' >&2 || true
 }
 
 _mfa_sidecar_assert_service_active() {
@@ -227,42 +278,90 @@ _mfa_sidecar_remove_primary_domain_include() {
     fi
 }
 
+_mfa_sidecar_sync_protected_domain_includes() {
+    local render_index="$install_dir/deploy/generated-alpha/render-index.json"
+    if [[ ! -f "$render_index" ]]; then
+        return 0
+    fi
+
+    python3 "$install_dir/bin/inject_protected_include.py" reinject-all "$render_index"
+}
+
+_mfa_sidecar_remove_protected_domain_includes() {
+    local render_index="$install_dir/deploy/generated-alpha/render-index.json"
+    if [[ ! -f "$render_index" ]]; then
+        find /etc/nginx/conf.d -name '*.conf' -print0 2>/dev/null | while IFS= read -r -d '' conf; do
+            python3 "$install_dir/bin/inject_protected_include.py" remove "$conf" || true
+        done
+        return 0
+    fi
+
+    python3 - "$render_index" "$install_dir/bin/inject_protected_include.py" <<'PYEOF'
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+render_index = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+injector = sys.argv[2]
+seen = set()
+for bucket in ('enabled', 'disabled'):
+    for entry in render_index.get(bucket, []):
+        target = entry.get('target_conf')
+        if not target or target in seen:
+            continue
+        seen.add(target)
+        subprocess.run(['python3', injector, 'remove', target], check=False)
+PYEOF
+}
+
+_mfa_sidecar_install_reinject_hooks() {
+    install -D -m 755 ../sources/hooks/post_app_upgrade-reinject /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
+    install -D -m 755 ../sources/hooks/conf_regen-reinject /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
+}
+
+_mfa_sidecar_remove_reinject_hooks() {
+    rm -f /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
+    rm -f /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
+}
+
 _mfa_sidecar_write_alpha_notes() {
-    cat > "$install_dir/README.alpha" <<EOF
-MFA Sidecar alpha package
-=========================
-
-This alpha package seeds a managed-sites policy file, installs a vendored pinned
-Authelia release, generates Authelia/nginx runtime artifacts, and stages them
-into live runtime paths.
-
-Current install choices:
-- portal domain: ${domain}
-- portal path: /
-- default initial rule state: ${default_policy}
-- remembered session: ${session_duration}
-- default upstream seed: ${upstream_scheme}://${upstream_host}:${upstream_port}
-
-Generated/staged paths:
-- policy seed: $install_dir/config/domain-policy.yaml
-- generated artifacts: $install_dir/deploy/generated-alpha/
-- authelia config: /etc/mfa-sidecar/authelia/configuration.yml
-- nginx portal include: /etc/mfa-sidecar/nginx/portal.conf
-- nginx protected includes: /etc/mfa-sidecar/nginx/protected/*.conf
-- env file: /etc/mfa-sidecar/mfa-sidecar.env
-- vendored authelia source: $install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz
-- installed authelia binary: /usr/local/bin/authelia
-
-Current beta-shaped improvements:
-- dedicated portal domain enforced
-- managed host+path entries with longest-match-wins semantics
-- vendored pinned Authelia artifact with sha256 verification
-- host-aligned LDAP defaults for wm3v-style YunoHost LDAP
-
-Remaining operator tasks:
-- replace the placeholder LDAP bind password in /etc/mfa-sidecar/secrets/ldap_bind_password, then rerun `yunohost app upgrade mfa_sidecar --debug` or restart sidecar services
-- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env to access /admin during alpha validation
-- validate live auth flow after install
-- add and tune managed site entries from the admin control plane
-EOF
+    {
+        printf '%s\n' 'MFA Sidecar alpha package'
+        printf '%s\n' '========================='
+        printf '\n'
+        printf '%s\n' 'This alpha package seeds a managed-sites policy file, installs a vendored pinned'
+        printf '%s\n' 'Authelia release, generates Authelia/nginx runtime artifacts, and stages them'
+        printf '%s\n' 'into live runtime paths.'
+        printf '\n'
+        printf '%s\n' 'Current install choices:'
+        printf '%s\n' "- portal domain: ${domain}"
+        printf '%s\n' '- portal path: /'
+        printf '%s\n' "- default initial rule state: ${default_policy}"
+        printf '%s\n' "- remembered session: ${session_duration}"
+        printf '%s\n' "- default upstream seed: ${upstream_scheme}://${upstream_host}:${upstream_port}"
+        printf '\n'
+        printf '%s\n' 'Generated/staged paths:'
+        printf '%s\n' "- policy seed: $install_dir/config/domain-policy.yaml"
+        printf '%s\n' "- generated artifacts: $install_dir/deploy/generated-alpha/"
+        printf '%s\n' '- authelia config: /etc/mfa-sidecar/authelia/configuration.yml'
+        printf '%s\n' '- nginx portal include: /etc/mfa-sidecar/nginx/portal.conf'
+        printf '%s\n' '- nginx protected includes: /etc/mfa-sidecar/nginx/protected/*.conf'
+        printf '%s\n' '- env file: /etc/mfa-sidecar/mfa-sidecar.env'
+        printf '%s\n' "- vendored authelia source: $install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
+        printf '%s\n' "- installed authelia binary: $install_dir/bin/authelia"
+        printf '\n'
+        printf '%s\n' 'Current beta-shaped improvements:'
+        printf '%s\n' '- dedicated portal domain enforced'
+        printf '%s\n' '- managed host+path entries with longest-match-wins semantics'
+        printf '%s\n' '- vendored pinned Authelia artifact with sha256 verification'
+        printf '%s\n' '- separate sidecar-owned credential/MFA store with file-backed Authelia auth model'
+        printf '\n'
+        printf '%s\n' 'Remaining operator tasks:'
+        printf '%s\n' '- bootstrap or import the initial sidecar users file at /etc/mfa-sidecar/authelia/users.yml with hashed passwords before real auth validation'
+        printf '%s\n' '- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection'
+        printf '%s\n' '- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation'
+        printf '%s\n' '- validate live auth flow after install'
+        printf '%s\n' '- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls'
+    } > "$install_dir/README.alpha"
 }

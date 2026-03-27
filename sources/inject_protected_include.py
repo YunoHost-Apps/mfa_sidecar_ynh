@@ -1,46 +1,190 @@
 #!/usr/bin/env python3
-"""Inject or remove MFA sidecar include lines in nginx conf files."""
+"""Inject or remove MFA Sidecar managed blocks in nginx conf files."""
 
 from __future__ import annotations
 
 import argparse
+import json
+import re
 from pathlib import Path
 
 MARK_START = "# BEGIN mfa-sidecar managed block"
 MARK_END = "# END mfa-sidecar managed block"
+AUTH_ENDPOINT_MARKER = "# mfa-sidecar-auth-endpoint"
 
 
-def managed_block(include_path: str) -> str:
+class InjectionError(RuntimeError):
+    pass
+
+
+def _newline(text: str) -> str:
+    return "\r\n" if "\r\n" in text else "\n"
+
+
+def managed_include_block(include_path: str, newline: str = "\n") -> str:
     return (
-        f"{MARK_START}\n"
-        f"include {include_path};\n"
-        f"{MARK_END}\n"
+        f"{MARK_START}{newline}"
+        f"include {include_path};{newline}"
+        f"{MARK_END}{newline}"
+    )
+
+
+def managed_auth_block(auth_location: str, portal_domain: str, newline: str = "\n") -> str:
+    return (
+        f"{MARK_START}{newline}"
+        f"  auth_request {auth_location};{newline}"
+        f"  error_page 401 =302 https://{portal_domain}/?rd=$scheme://$http_host$request_uri;{newline}"
+        f"{MARK_END}{newline}"
     )
 
 
 def inject(conf_path: Path, include_path: str) -> None:
     text = conf_path.read_text(encoding="utf-8")
-    block = managed_block(include_path)
+    newline = _newline(text)
+    block = managed_include_block(include_path, newline)
     if MARK_START in text and MARK_END in text:
         start = text.index(MARK_START)
         end = text.index(MARK_END) + len(MARK_END)
-        text = text[:start] + block.rstrip("\n") + text[end:]
+        if end < len(text) and text[end:end+len(newline)] == newline:
+            end += len(newline)
+        text = text[:start] + block + text[end:]
     else:
-        stripped = text.rstrip() + "\n\n" + block
+        stripped = text.rstrip() + f"{newline}{newline}" + block
         text = stripped
     conf_path.write_text(text, encoding="utf-8")
 
 
 def remove(conf_path: Path) -> None:
     text = conf_path.read_text(encoding="utf-8")
+    updated = _remove_all_managed_blocks(text)
+    if updated != text:
+        conf_path.write_text(updated, encoding="utf-8")
+
+
+def _remove_all_managed_blocks(text: str) -> str:
     if MARK_START not in text or MARK_END not in text:
-        return
-    start = text.index(MARK_START)
-    end = text.index(MARK_END) + len(MARK_END)
-    if end < len(text) and text[end:end+1] == "\n":
-        end += 1
-    text = (text[:start] + text[end:]).rstrip() + "\n"
-    conf_path.write_text(text, encoding="utf-8")
+        return text
+    newline = _newline(text)
+    pattern = re.compile(
+        rf"[ \t]*{re.escape(MARK_START)}\r?\n.*?[ \t]*{re.escape(MARK_END)}\r?\n?",
+        re.DOTALL,
+    )
+    updated = pattern.sub("", text)
+    updated = re.sub(r"\n{3,}", "\n\n", updated)
+    return updated.rstrip("\n") + newline
+
+
+def _find_location_block_ranges(text: str) -> list[dict]:
+    line_pattern = re.compile(r"^(?P<indent>[ \t]*)location\s+(?P<body>[^\n{]+)(?P<brace>\{)?[ \t]*(?:#.*)?$", re.MULTILINE)
+    matches: list[dict] = []
+    for match in line_pattern.finditer(text):
+        body = match.group("body").strip()
+        brace_index = text.find("{", match.start(), len(text))
+        if brace_index == -1:
+            continue
+        # Ensure brace occurs before next non-empty directive line if brace not inline.
+        next_newline = text.find("\n", match.end())
+        search_end = len(text) if next_newline == -1 else next_newline + 1
+        if match.group("brace") is None:
+            cursor = search_end
+            while cursor < len(text):
+                line_end = text.find("\n", cursor)
+                if line_end == -1:
+                    line_end = len(text)
+                candidate = text[cursor:line_end].strip()
+                if not candidate:
+                    cursor = line_end + 1
+                    continue
+                if candidate.startswith("#"):
+                    cursor = line_end + 1
+                    continue
+                if candidate == "{":
+                    brace_index = cursor + text[cursor:line_end].index("{")
+                break
+        depth = 0
+        close_index = None
+        i = brace_index
+        while i < len(text):
+            char = text[i]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    close_index = i
+                    break
+            i += 1
+        if close_index is None:
+            continue
+        matches.append(
+            {
+                "start": match.start(),
+                "line_end": match.end(),
+                "brace_index": brace_index,
+                "close_index": close_index,
+                "body": body,
+                "text": text[match.start():close_index + 1],
+            }
+        )
+    return matches
+
+
+def _location_matches(body: str, target_path: str) -> bool:
+    body = body.strip()
+    body = re.sub(r"\s+#.*$", "", body)
+    tokens = body.split()
+    if not tokens:
+        return False
+    path_token = tokens[-1].strip('"\'')
+    return path_token == target_path
+
+
+def inject_into_location(conf_path: Path, target_path: str, auth_location: str, portal_domain: str) -> None:
+    text = conf_path.read_text(encoding="utf-8")
+    newline = _newline(text)
+    locations = [loc for loc in _find_location_block_ranges(text) if _location_matches(loc["body"], target_path)]
+    if not locations:
+        raise InjectionError(f"no matching location block for path {target_path} in {conf_path}")
+    if len(locations) > 1:
+        raise InjectionError(f"ambiguous location match for path {target_path} in {conf_path}")
+
+    loc = locations[0]
+    loc_text = text[loc["start"]:loc["close_index"] + 1]
+    auth_block = managed_auth_block(auth_location, portal_domain, newline)
+
+    if MARK_START in loc_text and MARK_END in loc_text:
+        updated_loc_text = _remove_all_managed_blocks(loc_text)
+        insert_pos = updated_loc_text.find("\n")
+        if insert_pos == -1:
+            insert_pos = updated_loc_text.find("{") + 1
+        else:
+            insert_pos += 1
+        updated_loc_text = updated_loc_text[:insert_pos] + auth_block + updated_loc_text[insert_pos:]
+    else:
+        insert_pos = loc["brace_index"] - loc["start"] + 1
+        updated_loc_text = loc_text[:insert_pos] + newline + auth_block + loc_text[insert_pos:]
+
+    updated = text[:loc["start"]] + updated_loc_text + text[loc["close_index"] + 1:]
+    conf_path.write_text(updated, encoding="utf-8")
+
+
+def reinject_all(render_index_path: Path, protected_dir: Path, validate_cmd: list[str] | None = None) -> None:
+    render_index = json.loads(render_index_path.read_text(encoding="utf-8"))
+    managed_targets: set[Path] = set()
+
+    for bucket in ("enabled", "disabled"):
+        for entry in render_index.get(bucket, []):
+            target_conf = Path(entry["target_conf"])
+            target_conf.parent.mkdir(parents=True, exist_ok=True)
+            auth_location = entry["auth_location"]
+            portal_domain = entry["portal_domain"]
+            target_path = entry["path"]
+            inject_into_location(target_conf, target_path, auth_location, portal_domain)
+            managed_targets.add(target_conf)
+
+    if validate_cmd:
+        import subprocess
+        subprocess.run(validate_cmd, check=True)
 
 
 def main() -> None:
@@ -54,13 +198,28 @@ def main() -> None:
     p_remove = sub.add_parser("remove")
     p_remove.add_argument("conf")
 
+    p_loc = sub.add_parser("inject-into-location")
+    p_loc.add_argument("conf")
+    p_loc.add_argument("target_path")
+    p_loc.add_argument("auth_location")
+    p_loc.add_argument("portal_domain")
+
+    p_reinject = sub.add_parser("reinject-all")
+    p_reinject.add_argument("render_index")
+    p_reinject.add_argument("--protected-dir", default="/etc/mfa-sidecar/nginx/protected")
+    p_reinject.add_argument("--validate-cmd", nargs=argparse.REMAINDER)
+
     args = parser.parse_args()
-    conf = Path(args.conf)
 
     if args.cmd == "inject":
-        inject(conf, args.include_path)
+        inject(Path(args.conf), args.include_path)
+    elif args.cmd == "remove":
+        remove(Path(args.conf))
+    elif args.cmd == "inject-into-location":
+        inject_into_location(Path(args.conf), args.target_path, args.auth_location, args.portal_domain)
     else:
-        remove(conf)
+        validate_cmd = args.validate_cmd if args.validate_cmd else None
+        reinject_all(Path(args.render_index), Path(args.protected_dir), validate_cmd)
 
 
 if __name__ == "__main__":

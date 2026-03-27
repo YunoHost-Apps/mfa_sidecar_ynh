@@ -10,6 +10,8 @@ from textwrap import dedent
 
 import yaml
 
+AUTH_ENDPOINT_MARKER = "# mfa-sidecar-auth-endpoint"
+
 
 def load_policy(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as fh:
@@ -39,12 +41,6 @@ def rule_sort_key(rule: dict) -> tuple[int, int, str, str]:
     return (0 if rule.get("enabled", False) else 1, -len(path), host, path)
 
 
-def get_bind_password_expression(ldap_cfg: dict) -> str:
-    if ldap_cfg.get("password_file"):
-        return f"{{{{ secret {ldap_cfg['password_file']} }}}}"
-    return "${%s}" % ldap_cfg["password_env"]
-
-
 def get_storage_key_expression(storage_cfg: dict) -> str:
     if storage_cfg.get("encryption_key_file"):
         return f"{{{{ secret {storage_cfg['encryption_key_file']} }}}}"
@@ -61,10 +57,69 @@ def managed_sites(policy: dict) -> list[dict]:
     return sorted(policy["access_control"].get("managed_sites", []), key=rule_sort_key)
 
 
+def extract_cookie_domain(fqdn: str) -> str:
+    parts = fqdn.strip(".").split(".")
+    if len(parts) <= 2:
+        return fqdn.strip(".")
+    return ".".join(parts[1:])
+
+
+def collect_cookie_domains(policy: dict) -> list[dict]:
+    portal = policy["portal"]
+    session = policy["session"]
+    explicit = str(session.get("cookie_domain", "")).strip().strip(".")
+    portal_cookie_domain = explicit or extract_cookie_domain(portal["domain"])
+
+    cookies_by_domain: dict[str, dict] = {
+        portal_cookie_domain: {
+            "domain": portal_cookie_domain,
+            "authelia_url": f"https://{portal['domain']}{portal['path']}",
+        }
+    }
+    for site in policy["access_control"].get("managed_sites", []):
+        site_cookie_domain = extract_cookie_domain(site["host"])
+        if site_cookie_domain not in cookies_by_domain:
+            cookies_by_domain[site_cookie_domain] = {
+                "domain": site_cookie_domain,
+                "authelia_url": f"https://{portal['domain']}{portal['path']}",
+            }
+    return list(cookies_by_domain.values())
+
+
+def map_default_policy(policy_name: str) -> str:
+    mapping = {
+        "open": "bypass",
+        "protected": "two_factor",
+        "bypass": "bypass",
+        "one_factor": "one_factor",
+        "two_factor": "two_factor",
+        "deny": "deny",
+    }
+    return mapping.get(policy_name, "deny")
+
+
+def build_authentication_backend(policy: dict) -> dict:
+    identity = policy["identity"]
+    local = identity["local"]
+    search = local.get("search", {})
+    backend = {
+        "file": {
+            "path": local["path"],
+            "watch": bool(local.get("watch", False)),
+            "search": {
+                "email": bool(search.get("email", False)),
+                "case_insensitive": bool(search.get("case_insensitive", False)),
+            },
+        }
+    }
+    if local.get("password"):
+        backend["file"]["password"] = local["password"]
+    return backend
+
+
 def build_authelia_values(policy: dict) -> dict:
     portal = policy["portal"]
     session = policy["session"]
-    identity = policy["identity"]["ldap"]
     mfa = policy["mfa"]
     access = policy["access_control"]
     storage = policy["storage"]
@@ -81,32 +136,9 @@ def build_authelia_values(policy: dict) -> dict:
             rule["resources"] = [f"^{path}([/?].*)?$"]
         rules.append(rule)
 
-    ldap_backend = {
-        "address": identity["address"],
-        "implementation": identity.get("implementation", "custom"),
-        "base_dn": identity["base_dn"],
-        "additional_users_dn": identity["additional_users_dn"],
-        "additional_groups_dn": identity["additional_groups_dn"],
-        "users_filter": identity["users_filter"],
-        "groups_filter": identity["groups_filter"],
-        "group_search_mode": identity.get("group_search_mode", "filter"),
-        "user": identity["user"],
-        "password": get_bind_password_expression(identity),
-        "attributes": {
-            "username": identity["username_attribute"],
-            "display_name": identity["display_name_attribute"],
-            "mail": identity["mail_attribute"],
-        },
-    }
-
-    if identity.get("start_tls") is not None:
-        ldap_backend["start_tls"] = bool(identity["start_tls"])
-    if identity.get("permit_referrals") is not None:
-        ldap_backend["permit_referrals"] = bool(identity["permit_referrals"])
-    if identity.get("permit_unauthenticated_bind") is not None:
-        ldap_backend["permit_unauthenticated_bind"] = bool(identity["permit_unauthenticated_bind"])
-    if identity.get("tls"):
-        ldap_backend["tls"] = identity["tls"]
+    rendered_default_policy = map_default_policy(access.get("default_policy", "deny"))
+    if not rules and rendered_default_policy in {"bypass", "deny"}:
+        rendered_default_policy = "one_factor"
 
     authelia = {
         "theme": "auto",
@@ -115,9 +147,9 @@ def build_authelia_values(policy: dict) -> dict:
         "identity_validation": {
             "reset_password": {"jwt_secret": "${AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET}"}
         },
-        "authentication_backend": {"ldap": ldap_backend},
+        "authentication_backend": build_authentication_backend(policy),
         "access_control": {
-            "default_policy": access.get("default_policy", "deny"),
+            "default_policy": rendered_default_policy,
             "rules": rules,
         },
         "session": {
@@ -126,13 +158,7 @@ def build_authelia_values(policy: dict) -> dict:
             "expiration": session["expiration"],
             "inactivity": session["inactivity"],
             "remember_me": session["remember_me"],
-            "cookies": [
-                {
-                    "domain": portal["domain"],
-                    "authelia_url": f"https://{portal['domain']}{portal['path']}",
-                    "default_redirection_url": portal["default_redirect_url"],
-                }
-            ],
+            "cookies": collect_cookie_domains(policy),
         },
         "storage": {
             "encryption_key": get_storage_key_expression(storage),
@@ -169,35 +195,29 @@ def build_nginx_portal_conf(policy: dict) -> str:
           proxy_set_header X-Forwarded-For $remote_addr;
           proxy_set_header X-Real-IP $remote_addr;
         }}
+
+        location ^~ /admin {{
+          if ($http_x_mfa_sidecar_admin_secret = "") {{ return 403; }}
+          proxy_set_header X-MFA-Sidecar-Admin-Secret $http_x_mfa_sidecar_admin_secret;
+          proxy_pass http://127.0.0.1:9087;
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Forwarded-Host $host;
+          proxy_set_header X-Forwarded-URI $request_uri;
+          proxy_set_header X-Forwarded-For $remote_addr;
+          proxy_set_header X-Real-IP $remote_addr;
+        }}
         """
     ).strip() + "\n"
 
 
-def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: str) -> str:
-    upstream = site["upstream"]
-    host = site["host"]
-    path = normalize_path(site.get("path", "/"))
-    location_modifier = "=" if path == "/" else "^~"
-    location_path = "/" if path == "/" else path
+def build_nginx_auth_endpoint_conf(site: dict, authz_endpoint: str) -> str:
     auth_location = f"/authelia-auth-{site['id']}"
-
     return dedent(
         f"""
-        location {location_modifier} {location_path} {{
-          auth_request {auth_location};
-          error_page 401 =302 https://{portal_domain}/?rd=$scheme://$http_host$request_uri;
-
-          proxy_pass {upstream};
-          proxy_set_header Host $host;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Host $server_name;
-          proxy_set_header X-Forwarded-Uri $request_uri;
-          proxy_set_header X-Real-IP $remote_addr;
-        }}
-
         location = {auth_location} {{
           internal;
+          {AUTH_ENDPOINT_MARKER}
           proxy_pass {authz_endpoint};
           proxy_pass_request_body off;
           proxy_set_header Content-Length "";
@@ -209,8 +229,8 @@ def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: s
         }}
 
         # id: {site['id']}
-        # host: {host}
-        # path: {path}
+        # host: {site['host']}
+        # path: {normalize_path(site.get('path', '/'))}
         # enabled: {str(site.get('enabled', False)).lower()}
         """
     ).strip() + "\n"
@@ -219,37 +239,46 @@ def build_nginx_protected_conf(site: dict, portal_domain: str, authz_endpoint: s
 def build_index(policy: dict) -> dict:
     enabled = []
     disabled = []
+    portal_domain = policy["portal"]["domain"]
     for site in managed_sites(policy):
         target = enabled if site.get("enabled", False) else disabled
+        normalized_path = normalize_path(site.get("path", "/"))
+        host = site["host"]
+        target_conf = str(site.get("target_conf") or f"/etc/nginx/conf.d/{host}.d/default.conf")
         target.append(
             {
                 "id": site["id"],
-                "host": site["host"],
-                "path": normalize_path(site.get("path", "/")),
+                "host": host,
+                "path": normalized_path,
                 "upstream": site["upstream"],
-                "label": site.get("label", site["host"]),
+                "label": site.get("label", host),
+                "portal_domain": portal_domain,
+                "auth_location": f"/authelia-auth-{site['id']}",
+                "auth_snippet": f"/etc/mfa-sidecar/nginx/protected/{site['id']}.conf",
+                "target_conf": target_conf,
+                "injection_mode": "location-inject",
             }
         )
     return {
-        "portal_domain": policy["portal"]["domain"],
+        "portal_domain": portal_domain,
         "enabled": enabled,
         "disabled": disabled,
     }
 
 
 def build_runtime_metadata(policy: dict) -> dict:
-    ldap = policy["identity"]["ldap"]
+    local = policy["identity"]["local"]
+    sync = policy["identity"].get("sync", {})
     return {
         "portal_domain": policy["portal"]["domain"],
         "portal_listen": policy["portal"]["listen"],
-        "ldap": {
-            "address": ldap["address"],
-            "base_dn": ldap["base_dn"],
-            "additional_users_dn": ldap["additional_users_dn"],
-            "additional_groups_dn": ldap["additional_groups_dn"],
-            "group_search_mode": ldap.get("group_search_mode", "filter"),
-            "bind_user": ldap["user"],
-            "bind_password_via": "file" if ldap.get("password_file") else "env",
+        "identity": {
+            "backend": "file",
+            "user_database_path": local["path"],
+            "watch": bool(local.get("watch", False)),
+            "password_algorithm": local.get("password", {}).get("algorithm", "argon2"),
+            "sync_enabled": bool(sync.get("enabled", False)),
+            "sync_source": sync.get("source", "none"),
         },
         "secrets": {
             "session": "file" if policy["session"].get("secret_file") else "env",
@@ -300,7 +329,7 @@ def render(policy_path: Path, out_dir: Path) -> None:
     portal_domain = policy["portal"]["domain"]
     for site in managed_sites(policy):
         target_file = nginx_dir / f"{site['id']}.generated.conf"
-        target_file.write_text(build_nginx_protected_conf(site, portal_domain, authz_endpoint), encoding="utf-8")
+        target_file.write_text(build_nginx_auth_endpoint_conf(site, authz_endpoint), encoding="utf-8")
 
     (out_dir / "render-index.json").write_text(json.dumps(build_index(policy), indent=2) + "\n", encoding="utf-8")
     (out_dir / "runtime-metadata.json").write_text(json.dumps(build_runtime_metadata(policy), indent=2) + "\n", encoding="utf-8")

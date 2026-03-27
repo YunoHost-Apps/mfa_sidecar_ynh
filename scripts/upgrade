@@ -3,6 +3,7 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
+_mfa_sidecar_resolve_paths
 _mfa_sidecar_validate_inputs
 
 #=================================================
@@ -15,6 +16,8 @@ install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alp
 install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
 install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
 install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
+install -D -m 755 ../sources/bootstrap_authelia_users.py "$install_dir/bin/bootstrap_authelia_users.py"
+install -D -m 755 ../sources/manage_authelia_users.py "$install_dir/bin/manage_authelia_users.py"
 install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
 install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
 install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
@@ -30,16 +33,30 @@ _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file storage_encrypt
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file identity_validation_reset_secret)"
 
 _mfa_sidecar_write_env_file
+ynh_app_setting_set_default --key=portal_subdomain --value="${portal_subdomain:-auth}"
+ynh_app_setting_set_default --key=default_policy --value="${default_policy:-open}"
+ynh_app_setting_set_default --key=session_duration --value="${session_duration:-24h}"
+ynh_app_setting_set_default --key=upstream_scheme --value="${upstream_scheme:-https}"
+ynh_app_setting_set_default --key=upstream_host --value="${upstream_host:-127.0.0.1}"
+ynh_app_setting_set_default --key=upstream_port --value="${upstream_port:-443}"
 
 if [[ ! -f "$install_dir/config/domain-policy.yaml" ]]; then
     _mfa_sidecar_write_policy_seed
 fi
 
-chown -R root:root /etc/mfa-sidecar "$install_dir"
+chown -R "$app:$app" "$install_dir" "$data_dir"
+chown -R "$app:$app" /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/secrets
+chown root:"$app" /etc/mfa-sidecar/mfa-sidecar.env
+chmod 750 "$install_dir" "$install_dir/bin" "$install_dir/config" "$install_dir/run"
 chmod 700 /etc/mfa-sidecar/secrets
-chmod 600 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env
+chmod 750 /etc/mfa-sidecar /etc/mfa-sidecar/authelia /etc/mfa-sidecar/nginx /etc/mfa-sidecar/nginx/protected
+chmod 640 /etc/mfa-sidecar/secrets/* /etc/mfa-sidecar/mfa-sidecar.env
 
 _mfa_sidecar_sync_runtime_assets
+_mfa_sidecar_sync_protected_domain_includes
+_mfa_sidecar_install_reinject_hooks
+chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
+chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
 _mfa_sidecar_write_alpha_notes
 
 #=================================================
@@ -47,6 +64,7 @@ _mfa_sidecar_write_alpha_notes
 #=================================================
 ynh_script_progression "Refreshing NGINX entrypoint for MFA sidecar..."
 
+mkdir -p "/etc/nginx/conf.d/${domain}.d"
 cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
 ynh_config_add_nginx
 _mfa_sidecar_inject_primary_domain_include
@@ -59,8 +77,10 @@ _mfa_sidecar_assert_service_active mfa-sidecar-authelia
 ynh_systemctl --service=mfa-sidecar-admin --action=restart || true
 _mfa_sidecar_assert_service_active mfa-sidecar-admin
 
-if ! _mfa_sidecar_wait_for_local_http "http://127.0.0.1:9087/admin" 20 1; then
-    journalctl -u mfa-sidecar-admin -n 80 --no-pager >&2 || true
+if ! _mfa_sidecar_wait_for_local_http \
+    "http://127.0.0.1:9087/admin" 20 1 \
+    "X-MFA-Sidecar-Admin-Secret" "$(grep '^MFA_SIDECAR_ADMIN_GATE_SECRET=' /etc/mfa-sidecar/mfa-sidecar.env | cut -d= -f2-)"; then
+    _mfa_sidecar_dump_admin_diagnostics
     ynh_die "Admin UI did not become reachable on 127.0.0.1:9087/admin after upgrade"
 fi
 

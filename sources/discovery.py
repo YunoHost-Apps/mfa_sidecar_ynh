@@ -78,8 +78,8 @@ class Discovery:
             )
         return sorted(found, key=lambda item: (item["domain"], item["path"], item["id"]))
 
-    def _discover_nginx_paths(self) -> dict[tuple[str, str], bool]:
-        found: dict[tuple[str, str], bool] = {}
+    def _discover_nginx_paths(self) -> dict[tuple[str, str], str]:
+        found: dict[tuple[str, str], str] = {}
         if not self.nginx_conf_dir.exists():
             return found
 
@@ -89,14 +89,14 @@ class Discovery:
             domain = domain_dir.name[:-2]
             for conf in sorted(domain_dir.glob('*.conf')):
                 for path in self._paths_from_conf(conf):
-                    found[(domain, path)] = True
+                    found.setdefault((domain, path), str(conf))
 
         for conf in self.nginx_conf_dir.glob('*.conf'):
             domains = self._domains_from_conf(conf)
             paths = self._paths_from_conf(conf)
             for domain in domains:
                 for path in paths:
-                    found[(domain, path)] = True
+                    found.setdefault((domain, path), str(conf))
 
         return found
 
@@ -123,7 +123,7 @@ class Discovery:
             found.append(loc)
         return found
 
-    def _build_suggestions(self, domains: list[str], apps: list[dict], nginx_paths: dict[tuple[str, str], bool]) -> list[dict]:
+    def _build_suggestions(self, domains: list[str], apps: list[dict], nginx_paths: dict[tuple[str, str], str]) -> list[dict]:
         suggestions = []
 
         domain_set = set(domains)
@@ -134,7 +134,8 @@ class Discovery:
                     "label": domain,
                     "host": domain,
                     "path": "/",
-                    "nginx_present": (domain, "/") in nginx_paths or True,
+                    "nginx_present": True,
+                    "target_conf": nginx_paths.get((domain, "/"), f"/etc/nginx/conf.d/{domain}.d/default.conf"),
                 }
             )
 
@@ -150,13 +151,21 @@ class Discovery:
                     "path": path,
                     "app_id": app["id"],
                     "suggested_upstream": DEFAULT_UPSTREAM_FALLBACK,
-                    "nginx_present": nginx_paths.get((app["domain"], path), False),
+                    "nginx_present": (app["domain"], path) in nginx_paths,
+                    "target_conf": nginx_paths.get((app["domain"], path), f"/etc/nginx/conf.d/{app['domain']}.d/{app['id']}.conf"),
                 }
             )
             domain_set.add(app["domain"])
 
         suggestions.sort(key=lambda item: (item["host"], item["path"], item["kind"]))
         return suggestions
+
+
+    def discover_target_conf(self, host: str, path: str) -> str:
+        host = str(host).strip()
+        path = normalize_path(path)
+        nginx_paths = self._discover_nginx_paths()
+        return nginx_paths.get((host, path), f"/etc/nginx/conf.d/{host}.d/default.conf")
 
     def _run_json(self, command: list[str]) -> dict | list | None:
         if not shutil.which(command[0]):

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hmac
 import html
+import json
 import os
 import subprocess
 import sys
@@ -20,10 +21,11 @@ from discovery import Discovery
 from policy_admin import PolicyAdmin, PolicyError, normalize_path, validate_upstream, validate_entry_id
 
 DEFAULT_POLICY_PATH = os.environ.get("MFA_SIDECAR_POLICY_PATH", "/etc/mfa-sidecar/config/domain-policy.yaml")
-DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR.parent / "config-render" / "render_alpha_config.py"))
-DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR.parent.parent / "scripts" / "stage_alpha_runtime.py"))
+DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR / "render_alpha_config.py"))
+DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_alpha_runtime.py"))
 DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
 DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
+DEFAULT_PROTECTED_NGINX_DIR = os.environ.get("MFA_SIDECAR_PROTECTED_NGINX_DIR", str(Path(DEFAULT_STAGE_ROOT) / "etc/mfa-sidecar/nginx/protected"))
 BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
@@ -49,8 +51,39 @@ class AdminApp:
     def apply_runtime(self) -> None:
         subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
         subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
+        self._sync_protected_domain_includes()
 
-    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool) -> None:
+    def _sync_protected_domain_includes(self) -> None:
+        render_index_path = self.generated_dir / "render-index.json"
+        if not render_index_path.exists():
+            return
+        render_index = json.loads(render_index_path.read_text(encoding="utf-8"))
+        marker_prefix = "mfa-sidecar-"
+        nginx_conf_dir = Path(DISCOVERY_NGINX_CONF_DIR)
+        desired: dict[str, str] = {}
+        for bucket in ("enabled", "disabled"):
+            for entry in render_index.get(bucket, []):
+                site_id = entry["id"]
+                host = entry["host"]
+                snippet = Path(DEFAULT_PROTECTED_NGINX_DIR) / f"{site_id}.conf"
+                if not snippet.exists():
+                    continue
+                nginx_dir = nginx_conf_dir / f"{host}.d"
+                if not nginx_dir.is_dir():
+                    continue
+                target = nginx_dir / f"{marker_prefix}{site_id}.conf"
+                desired[str(target)] = f"include {snippet};\n"
+        for target_path, content in desired.items():
+            target = Path(target_path)
+            existing = target.read_text(encoding="utf-8") if target.exists() else ""
+            if existing != content:
+                target.write_text(content, encoding="utf-8")
+        for domain_dir in nginx_conf_dir.glob("*.d"):
+            for conf in domain_dir.glob(f"{marker_prefix}*.conf"):
+                if str(conf) not in desired:
+                    conf.unlink()
+
+    def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         entry_id = PolicyAdmin.slugify(f"{host}-{path}")
         with self.lock:
             self.policy.add_entry(
@@ -60,10 +93,11 @@ class AdminApp:
                 path=path,
                 upstream=upstream,
                 enabled=enabled,
+                target_conf=(target_conf or self.discovery.discover_target_conf(host, path)),
             )
             self.apply_runtime()
 
-    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool) -> None:
+    def update_entry_and_apply(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         with self.lock:
             self.policy.update_entry(
                 entry_id=entry_id,
@@ -72,6 +106,7 @@ class AdminApp:
                 path=path,
                 upstream=upstream,
                 enabled=enabled,
+                target_conf=(target_conf or self.discovery.discover_target_conf(host, path)),
             )
             self.apply_runtime()
 
@@ -143,7 +178,7 @@ class AdminApp:
                 f"<td>{h(item.get('label', ''))}</td>"
                 f"<td><code>{h(item['host'])}</code></td>"
                 f"<td><code>{h(normalize_path(item.get('path', '/')))}</code></td>"
-                f"<td><code>{h(item.get('app_id', ''))}</code></td>"
+                f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
                 f"<td>{h(nginx_state)}</td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
                 f"<td>"
@@ -153,6 +188,7 @@ class AdminApp:
                 f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
                 f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
                 f"<input type='hidden' name='enabled' value='false' />"
+                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
                 f"<button type='submit'>Add</button>"
                 f"</form>"
                 f"</td>"
@@ -172,6 +208,7 @@ class AdminApp:
             form_path = normalize_path(edit_entry.get('path', '/'))
             form_upstream = edit_entry['upstream']
             form_enabled = 'true' if edit_entry.get('enabled') else 'false'
+            form_target_conf = edit_entry.get('target_conf', '')
             cancel_html = "<p><a href='/admin'>Cancel edit</a></p>"
         else:
             form_title = "Add managed entry"
@@ -182,6 +219,7 @@ class AdminApp:
             form_path = "/"
             form_upstream = ""
             form_enabled = 'false'
+            form_target_conf = ''
             cancel_html = ""
         return f"""<!doctype html>
 <html lang='en'>
@@ -254,6 +292,7 @@ class AdminApp:
           <option value='true' {'selected' if form_enabled == 'true' else ''}>Protected</option>
         </select>
       </label>
+      <label><span>Target nginx conf</span><input type='text' name='target_conf' value='{h(form_target_conf)}' placeholder='/etc/nginx/conf.d/wm3v.com.d/nextcloud.conf' /></label>
     </div>
     <p><button type='submit'>{h(submit_label)}</button></p>
   </form>
@@ -303,7 +342,8 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                target_conf = form.get("target_conf", [""])[0].strip()
+                APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
                 return
             if parsed.path.startswith("/entries/") and parsed.path.endswith("/toggle"):
@@ -318,7 +358,8 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled)
+                target_conf = form.get("target_conf", [""])[0].strip()
+                APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
                 return
             if parsed.path.startswith("/entries/") and parsed.path.endswith("/delete"):

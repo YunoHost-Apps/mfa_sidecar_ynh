@@ -91,6 +91,7 @@ class PolicyAdmin:
             item["path"] = normalize_path(item.get("path", "/"))
             item.setdefault("label", item["host"])
             item.setdefault("enabled", False)
+            item.setdefault("target_conf", "")
             entries.append(item)
         return sorted(entries, key=lambda e: (e["host"], e["path"], e["id"]))
 
@@ -103,7 +104,7 @@ class PolicyAdmin:
             "default_policy": policy.get("access_control", {}).get("default_policy", "bypass"),
         }
 
-    def add_entry(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool) -> dict:
+    def add_entry(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool, target_conf: str = "") -> dict:
         policy = self.load()
         entry = {
             "id": validate_entry_id(entry_id),
@@ -112,6 +113,7 @@ class PolicyAdmin:
             "path": normalize_path(path),
             "enabled": bool(enabled),
             "upstream": validate_upstream(upstream),
+            "target_conf": (target_conf or "").strip(),
         }
 
         entries = copy.deepcopy(policy["access_control"]["managed_sites"])
@@ -135,7 +137,7 @@ class PolicyAdmin:
                 return entry
         raise PolicyError("entry not found")
 
-    def update_entry(self, entry_id: str, *, label: str, host: str, path: str, upstream: str, enabled: bool) -> dict:
+    def update_entry(self, entry_id: str, *, label: str, host: str, path: str, upstream: str, enabled: bool, target_conf: str = "") -> dict:
         policy = self.load()
         entries = copy.deepcopy(policy["access_control"]["managed_sites"])
         updated_entry = {
@@ -145,6 +147,7 @@ class PolicyAdmin:
             "path": normalize_path(path),
             "enabled": bool(enabled),
             "upstream": validate_upstream(upstream),
+            "target_conf": (target_conf or "").strip(),
         }
 
         found = False
