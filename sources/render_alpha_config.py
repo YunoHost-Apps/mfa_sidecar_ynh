@@ -170,6 +170,9 @@ def build_authelia_values(policy: dict) -> dict:
                 "sender": f"MFA Sidecar <mfa-sidecar@{extract_cookie_domain(portal['domain'])}>",
                 "identifier": portal["domain"],
                 "disable_require_tls": True,
+                "tls": {
+                    "skip_verify": True,
+                },
             }
         },
         "totp": {"issuer": mfa["totp"]["issuer"]},
