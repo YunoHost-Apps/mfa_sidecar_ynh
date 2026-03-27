@@ -37,14 +37,14 @@ services = ["nginx"]
         [main.portal.portal_domain]
         ask.en = "Portal domain"
         ask.fr = "Domaine du portail"
-        type = "domain"
+        type = "string"
         readonly = true
         bind = "domain"
 
         [main.portal.portal_path]
         ask.en = "Portal path"
         ask.fr = "Chemin du portail"
-        type = "path"
+        type = "string"
         readonly = true
         bind = "portal>path:__INSTALL_DIR__/config/domain-policy.yaml"
 
