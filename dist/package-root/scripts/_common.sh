@@ -152,6 +152,7 @@ portal:
 session:
   name: mfa_sidecar_session
   secret_file: $(_mfa_sidecar_secret_file session_secret)
+  cookie_domain: ""
   expiration: ${remember_me}
   inactivity: 1h
   remember_me: ${remember_me}
@@ -275,6 +276,51 @@ _mfa_sidecar_remove_primary_domain_include() {
     if [[ -f "$target_conf" ]]; then
         python3 "$install_dir/bin/inject_protected_include.py" remove "$target_conf"
     fi
+}
+
+_mfa_sidecar_sync_protected_domain_includes() {
+    local render_index="$install_dir/deploy/generated-alpha/render-index.json"
+    if [[ ! -f "$render_index" ]]; then
+        return 0
+    fi
+
+    python3 - "$render_index" <<'PYEOF'
+import json
+import sys
+from pathlib import Path
+
+MARKER_PREFIX = "mfa-sidecar-"
+render_index = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+desired = {}
+
+for bucket in ("enabled", "disabled"):
+    for entry in render_index.get(bucket, []):
+        site_id = entry["id"]
+        host = entry["host"]
+        snippet = Path(f"/etc/mfa-sidecar/nginx/protected/{site_id}.conf")
+        if not snippet.exists():
+            continue
+        nginx_dir = Path(f"/etc/nginx/conf.d/{host}.d")
+        if not nginx_dir.is_dir():
+            continue
+        target = nginx_dir / f"{MARKER_PREFIX}{site_id}.conf"
+        desired[str(target)] = f"include {snippet};\n"
+
+for target_path, content in desired.items():
+    target = Path(target_path)
+    current = target.read_text(encoding="utf-8") if target.exists() else ""
+    if current != content:
+        target.write_text(content, encoding="utf-8")
+
+for domain_dir in Path("/etc/nginx/conf.d").glob("*.d"):
+    for conf in domain_dir.glob(f"{MARKER_PREFIX}*.conf"):
+        if str(conf) not in desired:
+            conf.unlink()
+PYEOF
+}
+
+_mfa_sidecar_remove_protected_domain_includes() {
+    find /etc/nginx/conf.d -path '*/mfa-sidecar-*.conf' -delete 2>/dev/null || true
 }
 
 _mfa_sidecar_write_alpha_notes() {
