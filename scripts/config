@@ -3,6 +3,7 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 ynh_abort_if_errors
+app="${app:-mfa_sidecar}"
 
 APP_INSTALL_DIR="${install_dir:-}"
 APP_DATA_DIR="${data_dir:-}"
