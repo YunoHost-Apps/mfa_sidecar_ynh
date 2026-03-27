@@ -147,6 +147,13 @@ class AdminApp:
             except PolicyError:
                 upstream_value = 'https://127.0.0.1:443'
             nginx_state = 'yes' if item.get('nginx_present') else 'no'
+            common_inputs = (
+                f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
+                f"<input type='hidden' name='host' value='{h(item['host'])}' />"
+                f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
+                f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
+                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
+            )
             suggestion_rows.append(
                 f"<tr>"
                 f"<td>{h(item.get('label', ''))}</td>"
@@ -156,19 +163,20 @@ class AdminApp:
                 f"<td>{h(nginx_state)}</td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
                 f"<td>"
-                f"<form method='post' action='/admin/discoveries/add'>"
-                f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
-                f"<input type='hidden' name='host' value='{h(item['host'])}' />"
-                f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
-                f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
+                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block; margin-right: 0.4rem;'>"
+                f"{common_inputs}"
+                f"<input type='hidden' name='enabled' value='true' />"
+                f"<button type='submit'>Protect</button>"
+                f"</form>"
+                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
+                f"{common_inputs}"
                 f"<input type='hidden' name='enabled' value='false' />"
-                f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
-                f"<button type='submit'>Add</button>"
+                f"<button type='submit'>Bypass</button>"
                 f"</form>"
                 f"</td>"
                 f"</tr>"
             )
-        suggestion_rows_html = "\n".join(suggestion_rows) or "<tr><td colspan='7'><em>No root-domain app paths discovered right now.</em></td></tr>"
+        suggestion_rows_html = "\n".join(suggestion_rows) or "<tr><td colspan='7'><em>No discovered YunoHost app locations need onboarding right now.</em></td></tr>"
 
         error_html = f"<div class='error'>{h(error)}</div>" if error else ""
         notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
@@ -228,8 +236,8 @@ class AdminApp:
     <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
   </ul>
 
-  <h2>Discovered app paths</h2>
-  <p class='muted'>Only app paths from YunoHost are listed here. If nginx does not show the path, that just means it needs a quick sanity check before trusting it. Manual add remains the escape hatch for anything custom.</p>
+  <h2>Discovered app locations</h2>
+  <p class='muted'>Known YunoHost app locations, including root-path apps, show up here for one-click onboarding. If nginx does not show the path, that just means it needs a quick sanity check before trusting it. Manual add remains the escape hatch for anything custom.</p>
   <table>
     <thead>
       <tr>
