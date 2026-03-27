@@ -1,5 +1,6 @@
 #!/bin/bash
-source _common.sh
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_common.sh"
 source /usr/share/yunohost/helpers
 
 ynh_abort_if_errors
