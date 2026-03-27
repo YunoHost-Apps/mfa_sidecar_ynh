@@ -124,14 +124,14 @@ class AdminApp:
                 f"<td><code>{h(entry['upstream'])}</code></td>"
                 f"<td>{h(state)}</td>"
                 f"<td>"
-                f"<form method='post' action='/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
+                f"<form method='post' action='/admin/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
                 f"<button type='submit'>{h(action)}</button>"
                 f"</form>"
                 f"<form method='get' action='/admin' style='display:inline-block; margin-right: 0.4rem;'>"
                 f"<input type='hidden' name='edit' value='{h(entry['id'])}' />"
                 f"<button type='submit'>Edit</button>"
                 f"</form>"
-                f"<form method='post' action='/entries/{h(entry['id'])}/delete' style='display:inline-block;'>"
+                f"<form method='post' action='/admin/entries/{h(entry['id'])}/delete' style='display:inline-block;'>"
                 f"<button type='submit' onclick=\"return confirm('Delete this managed entry?');\">Delete</button>"
                 f"</form>"
                 f"</td>"
@@ -156,7 +156,7 @@ class AdminApp:
                 f"<td>{h(nginx_state)}</td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
                 f"<td>"
-                f"<form method='post' action='/discoveries/add'>"
+                f"<form method='post' action='/admin/discoveries/add'>"
                 f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
                 f"<input type='hidden' name='host' value='{h(item['host'])}' />"
                 f"<input type='hidden' name='path' value='{h(normalize_path(item.get('path', '/')))}' />"
@@ -175,7 +175,7 @@ class AdminApp:
         discovery_html = f"<div class='error'>Discovery degraded: {h(discovery_error)}</div>" if discovery_error else ""
         if edit_entry:
             form_title = f"Edit managed entry: {edit_entry['id']}"
-            form_action = f"/entries/{edit_entry['id']}/update"
+            form_action = f"/admin/entries/{edit_entry['id']}/update"
             submit_label = "Update entry and apply"
             form_label = edit_entry.get('label', '')
             form_host = edit_entry['host']
@@ -186,7 +186,7 @@ class AdminApp:
             cancel_html = "<p><a href='/admin'>Cancel edit</a></p>"
         else:
             form_title = "Add managed entry"
-            form_action = "/entries"
+            form_action = "/admin/entries"
             submit_label = "Add entry and apply"
             form_label = ""
             form_host = ""
@@ -310,7 +310,7 @@ class Handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length).decode("utf-8")
         form = parse_qs(raw)
         try:
-            if parsed.path in {"/entries", "/discoveries/add"}:
+            if parsed.path in {"/admin/entries", "/admin/discoveries/add"}:
                 host = form.get("host", [""])[0]
                 path = form.get("path", ["/"])[0]
                 label = form.get("label", [""])[0]
@@ -320,13 +320,13 @@ class Handler(BaseHTTPRequestHandler):
                 APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
                 return
-            if parsed.path.startswith("/entries/") and parsed.path.endswith("/toggle"):
-                entry_id = validate_entry_id(parsed.path.split("/")[2])
+            if parsed.path.startswith("/admin/entries/") and parsed.path.endswith("/toggle"):
+                entry_id = validate_entry_id(parsed.path.split("/")[3])
                 APP.toggle_entry_and_apply(entry_id)
                 self._redirect("/admin?notice=" + quote_plus("Entry toggled and runtime applied"))
                 return
-            if parsed.path.startswith("/entries/") and parsed.path.endswith("/update"):
-                entry_id = validate_entry_id(parsed.path.split("/")[2])
+            if parsed.path.startswith("/admin/entries/") and parsed.path.endswith("/update"):
+                entry_id = validate_entry_id(parsed.path.split("/")[3])
                 host = form.get("host", [""])[0]
                 path = form.get("path", ["/"])[0]
                 label = form.get("label", [""])[0]
@@ -336,8 +336,8 @@ class Handler(BaseHTTPRequestHandler):
                 APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
                 return
-            if parsed.path.startswith("/entries/") and parsed.path.endswith("/delete"):
-                entry_id = validate_entry_id(parsed.path.split("/")[2])
+            if parsed.path.startswith("/admin/entries/") and parsed.path.endswith("/delete"):
+                entry_id = validate_entry_id(parsed.path.split("/")[3])
                 APP.delete_entry_and_apply(entry_id)
                 self._redirect("/admin?notice=" + quote_plus("Entry deleted and runtime applied"))
                 return
