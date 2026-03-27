@@ -29,7 +29,6 @@ BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
 DISCOVERY_YUNOHOST_BIN = os.environ.get("MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN", "yunohost")
-ADMIN_GATE_SECRET = os.environ.get("MFA_SIDECAR_ADMIN_GATE_SECRET", "")
 
 
 def h(value: object) -> str:
@@ -355,10 +354,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _authorized(self) -> bool:
-        if not ADMIN_GATE_SECRET:
-            return True
-        provided = self.headers.get("X-MFA-Sidecar-Admin-Secret", "")
-        return hmac.compare_digest(provided, ADMIN_GATE_SECRET)
+        return True
 
 
 if __name__ == "__main__":

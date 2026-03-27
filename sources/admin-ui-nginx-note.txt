@@ -1,2 +1,2 @@
-Alpha admin gate: `/admin` requires header `X-MFA-Sidecar-Admin-Secret` matching `MFA_SIDECAR_ADMIN_GATE_SECRET` from `/etc/mfa-sidecar/mfa-sidecar.env`.
+`/admin` is intended to sit behind YunoHost operator auth/permissions rather than a custom sidecar header gate.
 This is an interim hardening step, not the final operator auth model.
