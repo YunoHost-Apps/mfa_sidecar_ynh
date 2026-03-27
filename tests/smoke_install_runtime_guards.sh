@@ -15,13 +15,16 @@ grep -q 'urllib.request.urlopen' "$COMMON"
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-authelia' "$INSTALL_SCRIPT"
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-admin' "$INSTALL_SCRIPT"
 grep -q '127.0.0.1:9087/admin' "$INSTALL_SCRIPT"
+grep -q 'mkdir -p "/etc/nginx/conf.d/\${domain}.d"' "$INSTALL_SCRIPT"
 
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-authelia' "$UPGRADE_SCRIPT"
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-admin' "$UPGRADE_SCRIPT"
 grep -q '127.0.0.1:9087/admin after upgrade' "$UPGRADE_SCRIPT"
+grep -q 'mkdir -p "/etc/nginx/conf.d/\${domain}.d"' "$UPGRADE_SCRIPT"
 
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-authelia' "$RESTORE_SCRIPT"
 grep -q '_mfa_sidecar_assert_service_active mfa-sidecar-admin' "$RESTORE_SCRIPT"
 grep -q '127.0.0.1:9087/admin after restore' "$RESTORE_SCRIPT"
+grep -q 'mkdir -p "/etc/nginx/conf.d/\${domain}.d"' "$RESTORE_SCRIPT"
 
 echo "smoke_install_runtime_guards: ok"
