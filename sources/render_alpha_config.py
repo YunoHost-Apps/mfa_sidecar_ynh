@@ -145,7 +145,7 @@ def build_authelia_values(policy: dict) -> dict:
         "server": {"address": f"tcp://{portal['listen']['host']}:{portal['listen']['port']}"},
         "log": {"level": "info"},
         "identity_validation": {
-            "reset_password": {"jwt_secret": "${AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET}"}
+            "reset_password": {"jwt_secret": "${AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET}"}
         },
         "authentication_backend": build_authentication_backend(policy),
         "access_control": {
@@ -164,13 +164,21 @@ def build_authelia_values(policy: dict) -> dict:
             "encryption_key": get_storage_key_expression(storage),
             "local": {"path": "/var/lib/mfa_sidecar/db.sqlite3"},
         },
-        "notifier": {"filesystem": {"filename": "/var/lib/mfa_sidecar/notification.txt"}},
+        "notifier": {
+            "smtp": {
+                "address": "smtp://127.0.0.1:25",
+                "sender": f"MFA Sidecar <mfa-sidecar@{extract_cookie_domain(portal['domain'])}>",
+                "identifier": portal["domain"],
+            }
+        },
         "totp": {"issuer": mfa["totp"]["issuer"]},
         "webauthn": {
             "disable": not bool(mfa["webauthn"].get("enabled", True)),
             "display_name": mfa["webauthn"]["display_name"],
             "attestation_conveyance_preference": mfa["webauthn"].get("attestation_conveyance_preference", "indirect"),
-            "user_verification": mfa["webauthn"].get("user_verification", "preferred"),
+            "selection_criteria": {
+                "user_verification": mfa["webauthn"].get("user_verification", "preferred"),
+            },
             "timeout": mfa["webauthn"].get("timeout", "60s"),
         },
     }
