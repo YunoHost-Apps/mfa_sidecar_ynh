@@ -90,35 +90,33 @@ ram.runtime = "200M"
     help.en = "Plain numeric TCP port; validated during install"
     help.fr = "Port TCP numérique simple ; validé pendant l'installation"
 
-    [install.seed_first_user]
-    ask.en = "Create first sidecar admin user during install?"
-    ask.fr = "Créer le premier utilisateur admin du sidecar pendant l'installation ?"
-    type = "boolean"
-    default = false
-
     [install.first_username]
     ask.en = "First sidecar admin username"
     ask.fr = "Nom d'utilisateur du premier admin du sidecar"
     type = "string"
-    visible = "seed_first_user"
+    help.en = "Required. This user is created during install so the portal is immediately usable."
+    help.fr = "Obligatoire. Cet utilisateur est créé pendant l'installation afin que le portail soit immédiatement utilisable."
 
     [install.first_display_name]
     ask.en = "First sidecar admin display name"
     ask.fr = "Nom affiché du premier admin du sidecar"
     type = "string"
-    visible = "seed_first_user"
+    help.en = "Required. Human-friendly display name for the first sidecar admin."
+    help.fr = "Obligatoire. Nom affiché lisible pour le premier admin du sidecar."
 
     [install.first_email]
     ask.en = "First sidecar admin email"
     ask.fr = "E-mail du premier admin du sidecar"
     type = "email"
-    visible = "seed_first_user"
+    help.en = "Required. Email address for the first sidecar admin."
+    help.fr = "Obligatoire. Adresse e-mail du premier admin du sidecar."
 
     [install.first_password]
     ask.en = "First sidecar admin password"
     ask.fr = "Mot de passe du premier admin du sidecar"
     type = "password"
-    visible = "seed_first_user"
+    help.en = "Required. Password used to create the first sidecar admin during install."
+    help.fr = "Obligatoire. Mot de passe utilisé pour créer le premier admin du sidecar pendant l'installation."
 
     [install.init_main_permission]
     type = "group"
