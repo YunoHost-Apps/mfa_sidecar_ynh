@@ -318,11 +318,24 @@ PYEOF
 _mfa_sidecar_install_reinject_hooks() {
     install -D -m 755 ../sources/hooks/post_app_upgrade-reinject /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
     install -D -m 755 ../sources/hooks/conf_regen-reinject /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
+    install -D -m 755 ../sources/hooks/apply-runtime-as-root "$install_dir/bin/apply-runtime-as-root"
 }
 
 _mfa_sidecar_remove_reinject_hooks() {
     rm -f /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
     rm -f /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
+}
+
+_mfa_sidecar_write_sudoers() {
+    cat > /etc/sudoers.d/mfa-sidecar <<SUDOEOF
+# MFA Sidecar: allow admin UI to complete the apply cycle
+${app} ALL=(root) NOPASSWD: $install_dir/bin/apply-runtime-as-root $install_dir
+SUDOEOF
+    chmod 0440 /etc/sudoers.d/mfa-sidecar
+}
+
+_mfa_sidecar_remove_sudoers() {
+    rm -f /etc/sudoers.d/mfa-sidecar
 }
 
 _mfa_sidecar_write_alpha_notes() {

@@ -13,6 +13,7 @@ Environment=MFA_SIDECAR_RENDER_SCRIPT=/opt/yunohost/mfa_sidecar/bin/render_alpha
 Environment=MFA_SIDECAR_STAGE_SCRIPT=/opt/yunohost/mfa_sidecar/bin/stage_alpha_runtime.py
 Environment=MFA_SIDECAR_GENERATED_DIR=/opt/yunohost/mfa_sidecar/deploy/generated-alpha
 Environment=MFA_SIDECAR_STAGE_ROOT=/
+Environment=MFA_SIDECAR_INSTALL_DIR=/opt/yunohost/mfa_sidecar
 Environment=MFA_SIDECAR_ADMIN_BIND=127.0.0.1
 Environment=MFA_SIDECAR_ADMIN_PORT=9087
 ExecStart=/usr/bin/python3 /opt/yunohost/mfa_sidecar/bin/admin_ui_app.py
