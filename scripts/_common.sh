@@ -101,7 +101,7 @@ _mfa_sidecar_write_env_file() {
     cat > /etc/mfa-sidecar/mfa-sidecar.env <<EOF
 AUTHELIA_SESSION_SECRET=$(cat "$(_mfa_sidecar_secret_file session_secret)")
 AUTHELIA_STORAGE_ENCRYPTION_KEY=$(cat "$(_mfa_sidecar_secret_file storage_encryption_key)")
-AUTHELIA_IDENTITY_VALIDATION_RESET_SECRET=$(cat "$(_mfa_sidecar_secret_file identity_validation_reset_secret)")
+AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=$(cat "$(_mfa_sidecar_secret_file identity_validation_reset_secret)")
 MFA_SIDECAR_RUNTIME_DIR=$install_dir/run
 EOF
     chmod 640 /etc/mfa-sidecar/mfa-sidecar.env
