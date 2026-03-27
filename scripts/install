@@ -34,6 +34,8 @@ _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file identity_valida
 _mfa_sidecar_write_env_file
 _mfa_sidecar_ensure_users_file_template
 _mfa_sidecar_write_policy_seed
+ynh_app_setting_set --key=install_dir --value="$install_dir"
+ynh_app_setting_set --key=data_dir --value="$data_dir"
 ynh_app_setting_set --key=portal_subdomain --value="$portal_subdomain"
 ynh_app_setting_set --key=default_policy --value="$default_policy"
 ynh_app_setting_set --key=session_duration --value="$session_duration"
