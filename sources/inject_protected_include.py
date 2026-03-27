@@ -170,17 +170,22 @@ def inject_into_location(conf_path: Path, target_path: str, auth_location: str, 
 
 def reinject_all(render_index_path: Path, protected_dir: Path, validate_cmd: list[str] | None = None) -> None:
     render_index = json.loads(render_index_path.read_text(encoding="utf-8"))
-    managed_targets: set[Path] = set()
-
-    for bucket in ("enabled", "disabled"):
+    for bucket in ("enabled",):
         for entry in render_index.get(bucket, []):
             target_conf = Path(entry["target_conf"])
-            target_conf.parent.mkdir(parents=True, exist_ok=True)
+            if not target_conf.exists():
+                import sys
+                print(f"reinject-all: skipping {entry['id']} — target conf does not exist: {target_conf}", file=sys.stderr)
+                continue
             auth_location = entry["auth_location"]
             portal_domain = entry["portal_domain"]
             target_path = entry["path"]
-            inject_into_location(target_conf, target_path, auth_location, portal_domain)
-            managed_targets.add(target_conf)
+            try:
+                inject_into_location(target_conf, target_path, auth_location, portal_domain)
+            except InjectionError as exc:
+                import sys
+                print(f"reinject-all: skipping {entry['id']} — {exc}", file=sys.stderr)
+                continue
 
     if validate_cmd:
         import subprocess
