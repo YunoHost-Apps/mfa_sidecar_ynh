@@ -169,6 +169,18 @@ def build_nginx_portal_conf(policy: dict) -> str:
           proxy_set_header X-Forwarded-For $remote_addr;
           proxy_set_header X-Real-IP $remote_addr;
         }}
+
+        location ^~ /admin {{
+          if ($http_x_mfa_sidecar_admin_secret = "") {{ return 403; }}
+          proxy_set_header X-MFA-Sidecar-Admin-Secret $http_x_mfa_sidecar_admin_secret;
+          proxy_pass http://127.0.0.1:9087;
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Forwarded-Host $host;
+          proxy_set_header X-Forwarded-URI $request_uri;
+          proxy_set_header X-Forwarded-For $remote_addr;
+          proxy_set_header X-Real-IP $remote_addr;
+        }}
         """
     ).strip() + "\n"
 
