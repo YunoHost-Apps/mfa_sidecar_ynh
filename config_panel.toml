@@ -92,11 +92,6 @@ services = ["nginx"]
         ask.en = "Restart services"
         ask.fr = "Redémarrer les services"
 
-        [main.operations.show_admin_gate]
-        type = "button"
-        ask.en = "Show admin gate secret"
-        ask.fr = "Afficher le secret du portail admin"
-
         [main.operations.show_users_file]
         type = "button"
         ask.en = "Show current sidecar users file"

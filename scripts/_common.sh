@@ -379,7 +379,7 @@ _mfa_sidecar_write_alpha_notes() {
         printf '%s\n' 'Remaining operator tasks:'
         printf '%s\n' '- if you did not create the first sidecar admin during install, do it immediately from the config panel before real auth validation'
         printf '%s\n' '- use the YunoHost config panel first for high-level settings, service actions, and admin-gate introspection'
-        printf '%s\n' '- retrieve the generated MFA_SIDECAR_ADMIN_GATE_SECRET from /etc/mfa-sidecar/mfa-sidecar.env or the config-panel action when you need `/admin` access during alpha validation'
+        printf '%s\n' '- use YunoHost operator/admin auth to reach `/admin`; the admin UI is no longer intended to depend on a custom sidecar header secret'
         printf '%s\n' '- validate live auth flow after install'
         printf '%s\n' '- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls'
     } > "$install_dir/README.alpha"

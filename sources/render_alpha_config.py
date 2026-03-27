@@ -197,8 +197,6 @@ def build_nginx_portal_conf(policy: dict) -> str:
         }}
 
         location ^~ /admin {{
-          if ($http_x_mfa_sidecar_admin_secret = "") {{ return 403; }}
-          proxy_set_header X-MFA-Sidecar-Admin-Secret $http_x_mfa_sidecar_admin_secret;
           proxy_pass http://127.0.0.1:9087;
           proxy_set_header Host $host;
           proxy_set_header X-Forwarded-Proto $scheme;
