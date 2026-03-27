@@ -292,6 +292,7 @@ class AdminApp:
           <option value='true' {'selected' if form_enabled == 'true' else ''}>Protected</option>
         </select>
       </label>
+      <label><span>Target nginx conf</span><input type='text' name='target_conf' value='{h(form_target_conf)}' placeholder='/etc/nginx/conf.d/wm3v.com.d/nextcloud.conf' /></label>
     </div>
     <p><button type='submit'>{h(submit_label)}</button></p>
   </form>
@@ -341,7 +342,7 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                target_conf = fields.get("target_conf", [""])[0].strip()
+                target_conf = form.get("target_conf", [""])[0].strip()
                 APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
                 return
@@ -357,7 +358,7 @@ class Handler(BaseHTTPRequestHandler):
                 label = form.get("label", [""])[0]
                 upstream = form.get("upstream", [""])[0]
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
-                target_conf = fields.get("target_conf", [""])[0].strip()
+                target_conf = form.get("target_conf", [""])[0].strip()
                 APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
                 return
