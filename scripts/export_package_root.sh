@@ -9,6 +9,7 @@ mkdir -p "$OUT_DIR"
 
 cp "$ROOT_DIR/package-base/manifest.toml" "$OUT_DIR/manifest.toml"
 cp "$ROOT_DIR/package-base/tests.toml" "$OUT_DIR/tests.toml"
+cp "$ROOT_DIR/package-base/config_panel.toml" "$OUT_DIR/config_panel.toml"
 cp -R "$ROOT_DIR/package-base/assets" "$OUT_DIR/assets"
 cp -R "$ROOT_DIR/package-base/conf" "$OUT_DIR/conf"
 cp -R "$ROOT_DIR/package-base/scripts" "$OUT_DIR/scripts"
