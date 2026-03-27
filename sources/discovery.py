@@ -66,9 +66,18 @@ class Discovery:
             if not isinstance(app, dict):
                 continue
             domain = str(app.get("domain") or "").strip()
+            path = str(app.get("path") or "").strip()
+            if not domain:
+                domain_path = str(app.get("domain_path") or "").strip()
+                if "/" in domain_path:
+                    domain, path = domain_path.split("/", 1)
+                    path = "/" + path
+                elif domain_path:
+                    domain = domain_path
+                    path = "/"
             if not domain:
                 continue
-            path = normalize_path(str(app.get("path") or "/"))
+            path = normalize_path(path or "/")
             found.append(
                 {
                     "id": str(app.get("id") or app.get("name") or "").strip(),
