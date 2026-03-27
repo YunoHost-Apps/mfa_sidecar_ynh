@@ -12,6 +12,11 @@ _mfa_sidecar_validate_inputs
 #=================================================
 ynh_script_progression "Refreshing MFA sidecar alpha runtime..."
 
+if [[ ! -f "/etc/nginx/conf.d/${domain}.conf" ]]; then
+    ynh_script_progression "Portal domain nginx parent config missing; forcing regen-conf for nginx..."
+    yunohost tools regen-conf nginx --force 2>/dev/null || true
+fi
+
 _mfa_sidecar_install_layout
 install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
 install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
