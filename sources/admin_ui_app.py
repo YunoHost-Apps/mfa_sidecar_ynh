@@ -204,6 +204,7 @@ class AdminApp:
             form_enabled = 'true' if edit_entry.get('enabled') else 'false'
             form_target_conf = edit_entry.get('target_conf', '')
             cancel_html = "<p><a href='/admin'>Cancel edit</a></p>"
+            advanced_summary = "Editing advanced values is available if auto-detection needs help."
         else:
             form_title = "Add managed entry"
             form_action = "/admin/entries"
@@ -215,6 +216,7 @@ class AdminApp:
             form_enabled = 'false'
             form_target_conf = ''
             cancel_html = ""
+            advanced_summary = "Advanced overrides are optional. Leave them hidden unless discovery is wrong or nginx is weird."
         return f"""<!doctype html>
 <html lang='en'>
 <head>
@@ -267,15 +269,21 @@ class AdminApp:
       <label><span>Label</span><input type='text' name='label' placeholder='Homebox' value='{h(form_label)}' /></label>
       <label><span>Host</span><input type='text' name='host' placeholder='home.wm3v.com' value='{h(form_host)}' required /></label>
       <label><span>Path</span><input type='text' name='path' value='{h(form_path)}' required /></label>
-      <label><span>Upstream</span><input type='text' name='upstream' placeholder='http://127.0.0.1:3000' value='{h(form_upstream)}' required /></label>
       <label><span>Initial state</span>
         <select name='enabled'>
           <option value='false' {'selected' if form_enabled == 'false' else ''}>Bypass</option>
           <option value='true' {'selected' if form_enabled == 'true' else ''}>Protected</option>
         </select>
       </label>
-      <label><span>Target nginx conf</span><input type='text' name='target_conf' value='{h(form_target_conf)}' placeholder='/etc/nginx/conf.d/wm3v.com.d/nextcloud.conf' /></label>
     </div>
+    <details style='margin-top: 1rem;'>
+      <summary>{h(advanced_summary)}</summary>
+      <div class='grid' style='margin-top: 0.75rem;'>
+        <label><span>Upstream override</span><input type='text' name='upstream' placeholder='Auto-detect from nginx when blank' value='{h(form_upstream)}' /></label>
+        <label><span>Target nginx conf override</span><input type='text' name='target_conf' value='{h(form_target_conf)}' placeholder='Auto-detect from host/path when blank' /></label>
+      </div>
+      <p class='muted'>Most installs should leave these blank. Sidecar will infer them from existing YunoHost/nginx state.</p>
+    </details>
     <p><button type='submit'>{h(submit_label)}</button></p>
   </form>
   {cancel_html}
@@ -322,9 +330,11 @@ class Handler(BaseHTTPRequestHandler):
                 host = form.get("host", [""])[0]
                 path = form.get("path", ["/"])[0]
                 label = form.get("label", [""])[0]
-                upstream = form.get("upstream", [""])[0]
+                upstream = form.get("upstream", [""])[0].strip()
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
                 target_conf = form.get("target_conf", [""])[0].strip()
+                if not upstream:
+                    upstream = APP.discovery._discover_upstream(host, path)
                 APP.add_entry_and_apply(host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry added and runtime applied"))
                 return
@@ -338,9 +348,11 @@ class Handler(BaseHTTPRequestHandler):
                 host = form.get("host", [""])[0]
                 path = form.get("path", ["/"])[0]
                 label = form.get("label", [""])[0]
-                upstream = form.get("upstream", [""])[0]
+                upstream = form.get("upstream", [""])[0].strip()
                 enabled = form.get("enabled", ["false"])[0].lower() == "true"
                 target_conf = form.get("target_conf", [""])[0].strip()
+                if not upstream:
+                    upstream = APP.discovery._discover_upstream(host, path)
                 APP.update_entry_and_apply(entry_id=entry_id, host=host, path=path, label=label, upstream=upstream, enabled=enabled, target_conf=target_conf)
                 self._redirect("/admin?notice=" + quote_plus("Entry updated and runtime applied"))
                 return
