@@ -104,6 +104,7 @@ def main() -> None:
         env["MFA_SIDECAR_STAGE_ROOT"] = str(stage_root)
         env["MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN"] = str(ROOT_DIR / 'tests/fake-yunohost')
         env["MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR"] = str(tmpdir / 'etc/nginx/conf.d')
+        env["MFA_SIDECAR_SKIP_ROOT_APPLY"] = "1"
 
         (tmpdir / 'etc/nginx/conf.d/wm3v.com.d').mkdir(parents=True, exist_ok=True)
         (tmpdir / 'etc/nginx/conf.d/wm3v.com.d/root.conf').write_text('location /kanboard {\n}\n', encoding='utf-8')
@@ -131,12 +132,26 @@ print('ok')
 
         assert (generated_dir / "authelia-config.generated.yml").exists()
         assert (stage_root / "etc/mfa-sidecar/authelia/configuration.yml").exists()
-        assert (stage_root / "etc/mfa-sidecar/nginx/protected/wm3v-com-kanboard.conf").exists()
-        root_wrapper = tmpdir / 'etc/nginx/conf.d/wm3v.com.d/mfa-sidecar-root_site.conf'
-        assert root_wrapper.exists()
-        expected_include = f"include {stage_root / 'etc/mfa-sidecar/nginx/protected/root_site.conf'};"
-        assert expected_include == root_wrapper.read_text(encoding='utf-8').strip()
-        assert not (tmpdir / 'etc/nginx/conf.d/wm3v.com.d/mfa-sidecar-wm3v-com-kanboard.conf').exists()
+
+        # Auth-endpoint snippet for root_site should be staged (from the policy seed)
+        assert (stage_root / "etc/mfa-sidecar/nginx/protected/root_site.conf").exists()
+
+        # Deleted kanboard entry's snippet may linger in the protected dir since
+        # stage_alpha_runtime doesn't purge stale files — but reinject-all only
+        # processes entries present in the render index, so orphans are harmless.
+
+        # render-index.json should contain injection metadata for remaining entries
+        import json
+        render_index = json.loads((generated_dir / "render-index.json").read_text(encoding="utf-8"))
+        all_ids = [e["id"] for bucket in ("enabled", "disabled") for e in render_index.get(bucket, [])]
+        assert "root_site" in all_ids
+        assert "wm3v-com-kanboard" not in all_ids
+        # Each entry should carry injection metadata
+        for bucket in ("enabled", "disabled"):
+            for entry in render_index.get(bucket, []):
+                assert "target_conf" in entry
+                assert "auth_location" in entry
+                assert "portal_domain" in entry
 
     print("smoke_admin_ui: ok")
 

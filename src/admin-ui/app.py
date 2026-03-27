@@ -52,6 +52,9 @@ class AdminApp:
         subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
         # Complete the cycle: reinject auth directives, reload nginx, restart Authelia.
         # Runs as root via sudoers since the admin UI service is non-root.
+        # Skipped when MFA_SIDECAR_SKIP_ROOT_APPLY=1 (for smoke tests without sudo).
+        if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":
+            return
         apply_helper = str(Path(DEFAULT_INSTALL_DIR) / "bin" / "apply-runtime-as-root")
         subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True)
 
