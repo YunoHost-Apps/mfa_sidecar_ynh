@@ -129,14 +129,16 @@ class Discovery:
 
         domain_set = set(domains)
         for domain in domains:
+            root_target_conf = nginx_paths.get((domain, "/"), f"/etc/nginx/conf.d/{domain}.d/default.conf")
             suggestions.append(
                 {
                     "kind": "domain",
                     "label": domain,
                     "host": domain,
                     "path": "/",
-                    "nginx_present": True,
-                    "target_conf": nginx_paths.get((domain, "/"), f"/etc/nginx/conf.d/{domain}.d/default.conf"),
+                    "nginx_present": (domain, "/") in nginx_paths,
+                    "target_conf": root_target_conf,
+                    "suggested_upstream": self._discover_upstream(domain, "/", nginx_paths),
                 }
             )
 
