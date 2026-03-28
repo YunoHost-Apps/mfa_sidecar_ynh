@@ -8,9 +8,9 @@ _mfa_sidecar_resolve_paths
 _mfa_sidecar_validate_inputs
 
 #=================================================
-# ENSURE ALPHA CONFIG MATERIAL EXISTS
+# ENSURE CONFIG MATERIAL EXISTS
 #=================================================
-ynh_script_progression "Refreshing MFA sidecar alpha runtime..."
+ynh_script_progression "Refreshing MFA Sidecar runtime..."
 
 if [[ ! -f "/etc/nginx/conf.d/${domain}.conf" ]]; then
     ynh_script_progression "Portal domain nginx parent config missing; forcing regen-conf for nginx..."
@@ -69,7 +69,7 @@ _mfa_sidecar_install_reinject_hooks
 _mfa_sidecar_write_sudoers
 chown "$app:$app" /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
 chmod 640 /etc/mfa-sidecar/authelia/configuration.yml /etc/mfa-sidecar/authelia/users.yml
-_mfa_sidecar_write_alpha_notes
+_mfa_sidecar_write_runtime_notes
 
 #=================================================
 # CONFIGURE NGINX

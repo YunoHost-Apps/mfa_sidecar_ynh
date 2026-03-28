@@ -9,7 +9,7 @@ _mfa_sidecar_resolve_paths
 ynh_restore "/etc/nginx/conf.d/${domain}.d/${app}.conf"
 ynh_restore "/etc/mfa-sidecar"
 ynh_restore "$install_dir/config/domain-policy.yaml"
-ynh_restore "$install_dir/README.alpha"
+ynh_restore "$install_dir/README.package"
 
 install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
 install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"

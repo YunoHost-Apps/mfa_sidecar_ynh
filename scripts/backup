@@ -7,13 +7,13 @@ source /usr/share/yunohost/helpers
 _mfa_sidecar_resolve_paths
 
 #=================================================
-# BACKUP THE NGINX CONFIGURATION + ALPHA RUNTIME STATE
+# BACKUP THE NGINX CONFIGURATION + RUNTIME STATE
 #=================================================
 
 ynh_backup "/etc/nginx/conf.d/${domain}.d/${app}.conf"
 ynh_backup "/etc/mfa-sidecar"  # includes generated admin gate secret/env/runtime assets
 ynh_backup "$install_dir/config/domain-policy.yaml"
-ynh_backup "$install_dir/README.alpha"
+ynh_backup "$install_dir/README.package"
 
 #=================================================
 # END OF SCRIPT

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render alpha Authelia + nginx config from a policy YAML file."""
+"""Render Authelia + nginx config from a policy YAML file."""
 
 from __future__ import annotations
 
