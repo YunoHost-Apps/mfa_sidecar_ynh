@@ -86,6 +86,10 @@ class AdminApp:
         subprocess.run(["python3", DEFAULT_MANAGE_USERS_SCRIPT, *args], check=True)
         subprocess.run(["sudo", "/usr/bin/systemctl", "restart", "mfa-sidecar-authelia"], check=True)
 
+    def clear_active_sessions(self) -> None:
+        with self.lock:
+            subprocess.run(["sudo", "/usr/bin/systemctl", "restart", "mfa-sidecar-authelia"], check=True)
+
     def load_users(self) -> list[dict]:
         if not self.users_file.exists():
             return []
@@ -466,8 +470,11 @@ class AdminApp:
     <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
     <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled'}</code></li>
   </ul>
-  <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 1rem;'>
+  <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 0.5rem;'>
     <button type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');">{'Disable sidecar globally' if enforcement_enabled else 'Re-enable sidecar globally'}</button>
+  </form>
+  <form method='post' action='/admin/global/clear-sessions' style='margin-bottom: 1rem;'>
+    <button type='submit' onclick="return confirm('Clear all active MFA Sidecar sessions? This restarts Authelia and forces users to log in again on next access.');">Clear active sessions (force re-login)</button>
   </form>
 
   <h2>Targets</h2>
@@ -591,6 +598,10 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/admin/global/enable":
                 APP.set_enforcement_enabled_and_apply(True)
                 self._redirect("/admin?notice=" + quote_plus("MFA Sidecar re-enabled globally and runtime applied"))
+                return
+            if parsed.path == "/admin/global/clear-sessions":
+                APP.clear_active_sessions()
+                self._redirect("/admin?notice=" + quote_plus("Cleared active sessions by restarting Authelia; users will need to log in again"))
                 return
             if parsed.path == "/admin/users/ensure":
                 username = form.get("username", [""])[0].strip()
