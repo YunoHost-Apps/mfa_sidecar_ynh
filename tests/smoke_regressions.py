@@ -297,9 +297,10 @@ class ApplyRuntimeHookTests(unittest.TestCase):
         self.assertIn('if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":', text)
         self.assertIn('subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True, capture_output=True, text=True)', text)
 
-    def test_admin_service_allows_run_access_for_nginx_validation(self):
+    def test_admin_service_allows_nginx_runtime_paths_under_systemd_sandbox(self):
         text = (SOURCES / 'mfa-sidecar-admin.service').read_text(encoding='utf-8')
         self.assertIn('/run', text)
+        self.assertIn('/var/log/nginx', text)
         self.assertIn('ProtectSystem=strict', text)
 
 
