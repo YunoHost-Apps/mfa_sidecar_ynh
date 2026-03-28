@@ -28,6 +28,7 @@ If something is broken or you need a break-glass path:
 - **Troubleshooting / Recovery** → `docs/TROUBLESHOOTING.md`
 - **Testing / smoke regressions** → `docs/TESTING.md`
 - **Live-box verification** → `docs/LIVE-BOX-VERIFICATION.md`
+- **Security / trust-boundary notes** → `docs/SECURITY-NOTES.md`
 
 ## Core idea
 
