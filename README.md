@@ -2,161 +2,139 @@
 
 MFA Sidecar is a browser-first MFA perimeter for selected YunoHost web apps.
 
-It gives you a dedicated authentication portal, a sidecar-owned user store, and an operator control plane for deciding **which host/path combinations are protected** and which are intentionally bypassed.
+It gives you:
 
-This package is designed for people who want a practical MFA layer in front of existing YunoHost web apps **without pretending every app natively understands MFA**.
+- a dedicated authentication portal
+- a sidecar-owned user store
+- an operator control plane for deciding which host/path combinations are **Protect** vs **Bypass**
+- a break-glass model that is explicit and reversible
 
-## What this package does
+This package exists for the very practical problem of putting MFA in front of existing web apps **without pretending every app natively understands MFA**.
 
-- installs a dedicated **portal** on its own domain, typically something like `auth.example.tld`
-- installs a vendored, pinned **Authelia** binary
-- keeps a separate **sidecar users file** for authentication and MFA enrollment
-- discovers YunoHost app locations and exposes them in an admin UI
-- lets operators choose whether each location is:
-  - **Protect** — requires sidecar auth/MFA
-  - **Bypass** — visible without sidecar enforcement
-- supports a global **enforcement_enabled** safety switch so the whole protection layer can be bypassed without destroying config
+## Start here
 
-## What this package does not do
+This package now documents itself around the three surfaces people actually care about:
 
-- it does **not** magically make every downstream app MFA-aware
-- it does **not** replace YunoHost’s own admin model
-- it does **not** assume every root domain should be protected immediately
-- it does **not** treat “more secure” and “less likely to lock you out” as the same thing
+- **Install** → `docs/INSTALL.md`
+- **Admin** → `docs/ADMIN.md`
+- **Users** → `docs/USERS.md`
 
-This package is intentionally operator-biased. It assumes you want safety rails and reversibility.
+If something is broken or you need a break-glass path:
 
-## Core surfaces
+- **Troubleshooting / Recovery** → `docs/TROUBLESHOOTING.md`
 
-### 1. The portal
+## Core idea
+
+MFA Sidecar protects YunoHost web apps at the **host + path** level.
+
+Examples:
+
+- `home.example.tld /`
+- `example.tld /nextcloud`
+- `git.example.tld /gitlab`
+
+Each target is either:
+
+- **Protect** → require sidecar authentication/MFA before the downstream app
+- **Bypass** → allow normal access without sidecar enforcement
+
+Bypass is not failure. It is the intentionally safe default until you explicitly choose otherwise.
+
+## Main surfaces
+
+### Portal
 
 Example:
 
 - `https://auth.example.tld/`
 
-This is the sidecar login/MFA portal.
+This is where end users authenticate and complete MFA.
 
-### 2. The admin UI
+### Admin UI
 
-Example:
+Examples:
 
 - `https://auth.example.tld/admin`
 - `https://auth.example.tld/admin/users`
 
-This is the operator control plane.
+This is where operators manage targets, users, sessions, and enforcement state.
 
-Use it to:
+### YunoHost config panel
 
-- review discovered targets
-- protect/bypass targets
-- manage sidecar users
-- reset passwords
-- reset MFA enrollment
-- clear active sessions
-- disable/re-enable enforcement globally
+This is for higher-level configuration and operational actions:
 
-### 3. The YunoHost config panel
-
-Use the YunoHost config panel for:
-
-- high-level settings
-- session duration
 - default policy
+- session duration
 - upstream defaults
-- service actions
-- operator-safe recovery actions
+- reload/runtime actions
+- recovery-oriented controls
 
-Use the **admin UI** for detailed day-to-day control.
+## What this package intentionally does
 
-## Mental model
+- installs a dedicated portal on its own domain
+- installs a vendored pinned Authelia binary
+- keeps a sidecar-specific users file for auth and MFA enrollment
+- discovers YunoHost app locations and presents them in an operator UI
+- supports a global `enforcement_enabled` safety switch
+- aims to be operable by a human under stress
 
-Think of MFA Sidecar as three layers:
+## What it intentionally does not do
 
-1. **Operator settings**
-   - install choices
-   - upstream defaults
-   - remembered session duration
-   - global enforcement state
+- it does not magically make downstream apps MFA-aware
+- it does not replace YunoHost’s own admin model
+- it does not assume every root-domain target should be protected immediately
+- it does not conflate “more secure” with “less likely to lock you out”
 
-2. **Protected targets**
-   - host/path entries that are either **Protect** or **Bypass**
-   - examples:
-     - `home.example.tld /`
-     - `example.tld /nextcloud`
-     - `git.example.tld /gitlab`
+## Safety model
 
-3. **Sidecar users**
-   - users who authenticate to the sidecar itself
-   - separate from app-local users
-   - can be synced from YunoHost or managed manually
-
-## Recommended rollout order
-
-Do **not** start with the portal domain or the root domain.
-
-Recommended order:
-
-1. install sidecar on a dedicated portal domain
-2. verify the admin UI loads
-3. create/verify your first admin user
-4. protect **one non-root app first**
-   - a good candidate is a dedicated subdomain app like HomeBox
-5. validate the full login/MFA/return flow in an incognito window
-6. only then consider protecting root-domain paths or more important apps
-7. only after that consider protecting especially sensitive/root-level targets
-
-## Safety rules this package intentionally follows
+This package intentionally leans conservative:
 
 - default mindset: **Bypass unless explicitly enabled**
-- unmanaged discoveries should be treated as **not yet protected**
-- root domain and portal domain are **danger targets** and deserve extra confirmation
-- global disable should be easy
-- recovery should be obvious enough for a human under stress
-
-## Documentation map
-
-- **Operator/Admin guide:** `docs/OPERATOR-GUIDE.md`
-- **User guide:** `docs/USER-GUIDE.md`
-- **Recovery + troubleshooting:** `docs/TROUBLESHOOTING.md`
+- root domain and portal domain are danger targets
+- global disable is meant to be easy and documented
+- recovery should be obvious, not clever
 
 ## Important recovery setting
 
-The package policy file includes:
+The policy file contains:
 
 ```yaml
 access_control:
   enforcement_enabled: true
 ```
 
-If you set this to `false` and reload runtime, sidecar protection is globally bypassed while keeping the rest of the config intact.
+If you set this to `false` and reload runtime, sidecar protection is bypassed globally while the rest of the configuration stays intact.
 
-This is the primary break-glass control.
+This is the primary break-glass mechanism.
 
 ## Important paths
 
 - install dir: `/opt/yunohost/mfa_sidecar`
 - data dir: `/var/lib/mfa_sidecar`
 - policy file: `/opt/yunohost/mfa_sidecar/config/domain-policy.yaml`
-- Authelia config: `/etc/mfa-sidecar/authelia/configuration.yml`
 - sidecar users: `/etc/mfa-sidecar/authelia/users.yml`
+- Authelia config: `/etc/mfa-sidecar/authelia/configuration.yml`
 - portal/nginx assets: `/etc/mfa-sidecar/nginx/`
 
 ## Versioning
 
-This package uses the YunoHost convention:
+This package uses the normal YunoHost versioning convention:
 
-- `0.1.3` = package/app release line
-- `~ynhN` = YunoHost packaging revision
+- package/app line: `0.2.0`
+- YunoHost revision: `~ynhN`
 
 Example:
 
-- `0.1.3~ynh4`
+- `0.2.0~ynh1`
 
-## Status
+## Tone / intent
 
-This package is currently in active operator-hardening. Expect iteration, but the intent is clear:
+The goal is not to make people say:
 
-- fewer surprises
-- better recovery
-- better admin ergonomics
-- documentation that explains the system like the authors actually use it
+> wow, cool program
+
+The goal is to make them say:
+
+> wow, these people actually know how this should be operated
+
+That means the docs are part of the product, not garnish.
