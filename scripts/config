@@ -52,6 +52,7 @@ users_path = Path(sys.argv[3])
 portal_domain = "unknown"
 remember_me = "unknown"
 default_policy = "unknown"
+enforcement_enabled = True
 managed_count = 0
 enabled_count = 0
 users_state = "missing"
@@ -62,6 +63,7 @@ if runtime_path.exists():
         portal_domain = data.get('portal_domain', portal_domain)
         remember_me = data.get('session', {}).get('remember_me', remember_me)
         default_policy = data.get('default_policy', default_policy)
+        enforcement_enabled = bool(data.get('enforcement_enabled', enforcement_enabled))
         managed_sites = data.get('managed_sites', []) or []
         managed_count = len(managed_sites)
         enabled_count = sum(1 for item in managed_sites if item.get('enabled'))
@@ -74,6 +76,7 @@ elif policy_path.exists():
         portal_domain = data.get('portal', {}).get('domain', portal_domain)
         remember_me = data.get('session', {}).get('remember_me', remember_me)
         default_policy = data.get('access_control', {}).get('default_policy', default_policy)
+        enforcement_enabled = bool(data.get('access_control', {}).get('enforcement_enabled', enforcement_enabled))
         managed_sites = data.get('access_control', {}).get('managed_sites', []) or []
         managed_count = len(managed_sites)
         enabled_count = sum(1 for item in managed_sites if item.get('enabled'))
@@ -83,10 +86,42 @@ elif policy_path.exists():
 if users_path.exists():
     users_state = "present"
 
+enforcement = 'enabled' if enforcement_enabled else 'DISABLED'
+
 print(f'''style: info
 ask:
-  en: "Portal: {portal_domain} | Remembered session: {remember_me} | Default policy: {default_policy} | Managed entries: {managed_count} total / {enabled_count} enabled | Users file: {users_state}"
-  fr: "Portail : {portal_domain} | Session mémorisée : {remember_me} | Politique par défaut : {default_policy} | Entrées gérées : {managed_count} total / {enabled_count} activées | Fichier utilisateurs : {users_state}"''')
+  en: "Portal: {portal_domain} | Remembered session: {remember_me} | Default policy: {default_policy} | Enforcement: {enforcement} | Managed entries: {managed_count} total / {enabled_count} enabled | Users file: {users_state}"
+  fr: "Portail : {portal_domain} | Session mémorisée : {remember_me} | Politique par défaut : {default_policy} | Enforcement : {enforcement} | Entrées gérées : {managed_count} total / {enabled_count} activées | Fichier utilisateurs : {users_state}"''')
+PY
+}
+
+get__admin_url() {
+    python3 - "$RUNTIME_METADATA_FILE" "$POLICY_FILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+runtime_path = Path(sys.argv[1])
+policy_path = Path(sys.argv[2])
+portal_domain = 'unknown'
+if runtime_path.exists():
+    try:
+        data = json.loads(runtime_path.read_text(encoding='utf-8'))
+        portal_domain = data.get('portal_domain', portal_domain)
+    except Exception:
+        pass
+elif policy_path.exists():
+    try:
+        import yaml
+        data = yaml.safe_load(policy_path.read_text(encoding='utf-8')) or {}
+        portal_domain = data.get('portal', {}).get('domain', portal_domain)
+    except Exception:
+        pass
+url = f"https://{portal_domain}/admin" if portal_domain != 'unknown' else '/admin'
+print(f'''style: warning
+ask:
+  en: "Open this app's admin UI: {url}"
+  fr: "Ouvrir l'interface d'administration de cette app : {url}"''')
 PY
 }
 

@@ -189,6 +189,7 @@ mfa:
     issuer: MFA Sidecar
 access_control:
   default_policy: ${seeded_default_policy}
+  enforcement_enabled: true
   managed_sites: []
 recovery:
   mode: authelia-reset-password-and-enrollment

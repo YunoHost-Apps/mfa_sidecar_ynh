@@ -25,6 +25,14 @@ services = ["nginx"]
         bind = "null"
         readonly = true
 
+        [main.portal.admin_url]
+        ask.en = "Admin UI"
+        ask.fr = "Interface d'administration"
+        type = "alert"
+        style = "warning"
+        bind = "null"
+        readonly = true
+
         [main.portal.default_policy]
         ask.en = "Default policy for newly added sites"
         ask.fr = "Politique par défaut pour les nouveaux sites ajoutés"
