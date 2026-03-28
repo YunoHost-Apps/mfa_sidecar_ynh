@@ -32,6 +32,9 @@ install -D -m 644 ../sources/mfa-sidecar-admin.service /etc/systemd/system/mfa-s
 install -D -m 644 ../sources/authelia-release.json "$install_dir/sources/authelia-release.json"
 install -D -m 644 ../sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
 install -D -m 644 ../assets/logo.png "$install_dir/www/logo.png"
+install -D -m 644 ../manifest.toml "$install_dir/manifest.toml"
+
+find "$install_dir" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 
 _mfa_sidecar_install_authelia_binary
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file session_secret)"
