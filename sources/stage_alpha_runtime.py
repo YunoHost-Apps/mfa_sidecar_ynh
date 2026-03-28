@@ -38,6 +38,7 @@ def apply_tree_permissions(prefix: Path, owner: str | None, group: str | None) -
     file_modes = {
         prefix / "etc/mfa-sidecar/authelia/configuration.yml": 0o640,
         prefix / "etc/mfa-sidecar/runtime-metadata.json": 0o640,
+        prefix / "etc/mfa-sidecar/render-index.json": 0o640,
         prefix / "etc/mfa-sidecar/nginx/portal.conf": 0o640,
     }
 
@@ -74,10 +75,12 @@ def main() -> None:
 
     authelia_cfg = generated / "authelia-config.generated.yml"
     metadata = generated / "runtime-metadata.json"
+    render_index = generated / "render-index.json"
     nginx_dir = generated / "nginx"
 
     copy_file(authelia_cfg, prefix / "etc/mfa-sidecar/authelia/configuration.yml")
     copy_file(metadata, prefix / "etc/mfa-sidecar/runtime-metadata.json")
+    copy_file(render_index, prefix / "etc/mfa-sidecar/render-index.json")
 
     portal_src = nginx_dir / "portal.generated.conf"
     copy_file(portal_src, prefix / "etc/mfa-sidecar/nginx/portal.conf")
