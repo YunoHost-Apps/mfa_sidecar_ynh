@@ -463,7 +463,9 @@ class AdminApp:
     input[type=text], input[type=password], input[type=email], select {{ width: 100%; padding: 0.45rem; box-sizing: border-box; }}
     .muted {{ color: #555; font-size: 0.92em; }}
     .danger-text {{ color: #900; font-weight: 600; }}
-    nav a {{ margin-right: 0.8rem; }}
+    nav {{ margin: 0.75rem 0 1rem; }}
+    nav a {{ margin-right: 0.8rem; display: inline-block; padding: 0.5rem 0.8rem; border: 1px solid #888; border-radius: 0.35rem; text-decoration: none; color: #111; background: #f5f5f5; font-weight: 600; }}
+    nav a:hover {{ background: #e9e9e9; }}
   </style>
 </head>
 <body>
