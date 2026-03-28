@@ -243,6 +243,7 @@ def build_nginx_auth_endpoint_conf(site: dict, authz_endpoint: str, *, enforceme
         f"""
         location = {auth_location} {{
           internal;
+          access_by_lua_block {{ return; }}
           {auth_body}
         }}
 
