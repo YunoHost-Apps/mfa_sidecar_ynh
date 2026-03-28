@@ -11,6 +11,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote_plus, urlparse
 
+import yaml
+
 BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
@@ -25,12 +27,16 @@ def extract_root_domain(host: str) -> str:
         return str(host or '').strip('.')
     return '.'.join(parts[1:])
 
+
 DEFAULT_POLICY_PATH = os.environ.get("MFA_SIDECAR_POLICY_PATH", "/etc/mfa-sidecar/config/domain-policy.yaml")
 DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR / "render_alpha_config.py"))
 DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_alpha_runtime.py"))
 DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
 DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
 DEFAULT_INSTALL_DIR = os.environ.get("MFA_SIDECAR_INSTALL_DIR", "/opt/yunohost/mfa_sidecar")
+DEFAULT_USERS_FILE = os.environ.get("MFA_SIDECAR_USERS_FILE", "/etc/mfa-sidecar/authelia/users.yml")
+DEFAULT_AUTHELIA_BIN = os.environ.get("MFA_SIDECAR_AUTHELIA_BIN", "/opt/yunohost/mfa_sidecar/bin/authelia")
+DEFAULT_MANAGE_USERS_SCRIPT = os.environ.get("MFA_SIDECAR_MANAGE_USERS_SCRIPT", str(BASE_DIR / "manage_authelia_users.py"))
 BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
@@ -60,6 +66,7 @@ class AdminApp:
     def __init__(self) -> None:
         self.policy_path = Path(DEFAULT_POLICY_PATH)
         self.generated_dir = Path(DEFAULT_GENERATED_DIR)
+        self.users_file = Path(DEFAULT_USERS_FILE)
         self.policy = PolicyAdmin(self.policy_path)
         self.discovery = Discovery(
             nginx_conf_dir=DISCOVERY_NGINX_CONF_DIR,
@@ -70,13 +77,80 @@ class AdminApp:
     def apply_runtime(self) -> None:
         subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
         subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
-        # Complete the cycle: reinject auth directives, reload nginx, restart Authelia.
-        # Runs as root via sudoers since the admin UI service is non-root.
-        # Skipped when MFA_SIDECAR_SKIP_ROOT_APPLY=1 (for smoke tests without sudo).
         if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":
             return
         apply_helper = str(Path(DEFAULT_INSTALL_DIR) / "bin" / "apply-runtime-as-root")
         subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True)
+
+    def _run_manage_users(self, *args: str) -> None:
+        subprocess.run(["python3", DEFAULT_MANAGE_USERS_SCRIPT, *args], check=True)
+        subprocess.run(["sudo", "/usr/bin/systemctl", "restart", "mfa-sidecar-authelia"], check=True)
+
+    def load_users(self) -> list[dict]:
+        if not self.users_file.exists():
+            return []
+        data = yaml.safe_load(self.users_file.read_text(encoding="utf-8")) or {}
+        users = data.get("users", {}) if isinstance(data, dict) else {}
+        rows = []
+        for username, meta in sorted(users.items()):
+            if not isinstance(meta, dict):
+                continue
+            rows.append(
+                {
+                    "username": username,
+                    "displayname": meta.get("displayname", username),
+                    "email": meta.get("email", ""),
+                    "groups": meta.get("groups", []) or [],
+                    "disabled": bool(meta.get("disabled", False)),
+                    "managed": bool(meta.get("managed_by_mfa_sidecar_sync", False)),
+                    "has_password": bool(meta.get("password")),
+                    "mfa_fields": [
+                        key for key in ["totp_secret", "webauthn", "webauthn_credentials", "one_time_password", "mobile_push"]
+                        if key in meta
+                    ],
+                }
+            )
+        return rows
+
+    def ensure_user(self, *, username: str, display_name: str, email: str, password: str, groups: list[str]) -> None:
+        with self.lock:
+            self._run_manage_users(
+                "ensure-user",
+                "--users-file", str(self.users_file),
+                "--authelia-bin", DEFAULT_AUTHELIA_BIN,
+                "--username", username,
+                "--display-name", display_name,
+                "--email", email,
+                "--password", password,
+                "--groups", *groups,
+            )
+
+    def set_user_password(self, *, username: str, password: str) -> None:
+        with self.lock:
+            self._run_manage_users(
+                "set-password",
+                "--users-file", str(self.users_file),
+                "--authelia-bin", DEFAULT_AUTHELIA_BIN,
+                "--username", username,
+                "--password", password,
+            )
+
+    def set_user_disabled(self, *, username: str, disabled: bool) -> None:
+        with self.lock:
+            self._run_manage_users(
+                "set-disabled",
+                "--users-file", str(self.users_file),
+                "--username", username,
+                "--disabled" if disabled else "--enabled",
+            )
+
+    def reset_user_mfa(self, *, username: str) -> None:
+        with self.lock:
+            self._run_manage_users(
+                "reset-mfa",
+                "--users-file", str(self.users_file),
+                "--username", username,
+            )
 
     def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         entry_id = PolicyAdmin.slugify(f"{host}-{path}")
@@ -132,6 +206,94 @@ class AdminApp:
             return suggestions, ""
         except Exception as exc:
             return [], str(exc)
+
+    def render_users_page(self, error: str = "", notice: str = "") -> str:
+        package_version = load_package_version()
+        users = self.load_users()
+        rows = []
+        for user in users:
+            groups = ", ".join(user["groups"]) or "(none)"
+            state = "Disabled" if user["disabled"] else "Enabled"
+            managed = "YunoHost-synced" if user["managed"] else "Sidecar-local"
+            mfa_state = ", ".join(user["mfa_fields"]) if user["mfa_fields"] else "none recorded"
+            rows.append(
+                f"<tr>"
+                f"<td><code>{h(user['username'])}</code></td>"
+                f"<td>{h(user['displayname'])}</td>"
+                f"<td>{h(user['email'])}</td>"
+                f"<td>{h(groups)}</td>"
+                f"<td>{h(state)}<br><span class='muted'>{h(managed)}</span></td>"
+                f"<td><span class='muted'>{h(mfa_state)}</span></td>"
+                f"<td>"
+                f"<form method='post' action='/admin/users/{h(user['username'])}/password' style='display:inline-block; margin:0 0.4rem 0.4rem 0;'>"
+                f"<input type='password' name='password' placeholder='New password' required /> "
+                f"<button type='submit' onclick=\"return confirm('Reset password for this user?');\">Set password</button>"
+                f"</form>"
+                f"<form method='post' action='/admin/users/{h(user['username'])}/mfa-reset' style='display:inline-block; margin:0 0.4rem 0.4rem 0;'>"
+                f"<button type='submit' onclick=\"return confirm('Clear stored MFA enrollment data for this user? They will need to enroll again.');\">Reset MFA</button>"
+                f"</form>"
+                f"<form method='post' action='/admin/users/{h(user['username'])}/{'enable' if user['disabled'] else 'disable'}' style='display:inline-block; margin:0 0.4rem 0.4rem 0;'>"
+                f"<button type='submit' onclick=\"return confirm('{'Enable' if user['disabled'] else 'Disable'} this user?');\">{'Enable' if user['disabled'] else 'Disable'}</button>"
+                f"</form>"
+                f"</td>"
+                f"</tr>"
+            )
+        users_html = "\n".join(rows) or "<tr><td colspan='7'><em>No sidecar users found.</em></td></tr>"
+        error_html = f"<div class='error'>{h(error)}</div>" if error else ""
+        notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
+        return f"""<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>MFA Sidecar users</title>
+  <style>
+    body {{ font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.4; }}
+    table {{ border-collapse: collapse; width: 100%; margin-top: 1rem; }}
+    th, td {{ border: 1px solid #ccc; padding: 0.5rem; text-align: left; vertical-align: top; }}
+    code {{ white-space: nowrap; }}
+    .error {{ background: #fee; color: #900; padding: 0.75rem; margin: 1rem 0; border: 1px solid #d99; }}
+    .notice {{ background: #efe; color: #060; padding: 0.75rem; margin: 1rem 0; border: 1px solid #9d9; }}
+    .grid {{ display: grid; grid-template-columns: repeat(2, minmax(16rem, 1fr)); gap: 0.75rem 1rem; }}
+    label span {{ display: block; font-weight: 600; margin-bottom: 0.25rem; }}
+    input[type=text], input[type=password], input[type=email] {{ width: 100%; padding: 0.45rem; box-sizing: border-box; }}
+    .muted {{ color: #555; font-size: 0.92em; }}
+  </style>
+</head>
+<body>
+  <h1>MFA Sidecar users</h1>
+  <p class='muted'>Version <code>{h(package_version)}</code> · Admin recovery surface for sidecar users. End users should still manage their own MFA from their normal login flow.</p>
+  <p><a href='/admin'>← Back to targets</a></p>
+  {notice_html}
+  {error_html}
+
+  <h2>Existing users</h2>
+  <p class='muted'>This page is for admin visibility and recovery. Password reset and MFA reset are intentionally explicit because both can ruin somebody's afternoon.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Username</th><th>Display name</th><th>Email</th><th>Groups</th><th>Status</th><th>MFA data</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {users_html}
+    </tbody>
+  </table>
+
+  <h2>Add or update user</h2>
+  <form method='post' action='/admin/users/ensure'>
+    <div class='grid'>
+      <label><span>Username</span><input type='text' name='username' required /></label>
+      <label><span>Display name</span><input type='text' name='display_name' required /></label>
+      <label><span>Email</span><input type='email' name='email' required /></label>
+      <label><span>Password</span><input type='password' name='password' required /></label>
+      <label><span>Groups</span><input type='text' name='groups' value='admins' /></label>
+    </div>
+    <p class='muted'>Comma-separated groups. Default is <code>admins</code>. This action creates the user if missing or updates the record if it already exists.</p>
+    <p><button type='submit'>Create or update user</button></p>
+  </form>
+</body>
+</html>
+"""
 
     def render_index(self, error: str = "", notice: str = "", edit_entry_id: str = "") -> str:
         summary = self.policy.portal_summary()
@@ -278,13 +440,18 @@ class AdminApp:
     .notice {{ background: #efe; color: #060; padding: 0.75rem; margin: 1rem 0; border: 1px solid #9d9; }}
     .grid {{ display: grid; grid-template-columns: repeat(2, minmax(16rem, 1fr)); gap: 0.75rem 1rem; }}
     label span {{ display: block; font-weight: 600; margin-bottom: 0.25rem; }}
-    input[type=text], select {{ width: 100%; padding: 0.45rem; }}
+    input[type=text], input[type=password], input[type=email], select {{ width: 100%; padding: 0.45rem; box-sizing: border-box; }}
     .muted {{ color: #555; font-size: 0.92em; }}
     .danger-text {{ color: #900; font-weight: 600; }}
+    nav a {{ margin-right: 0.8rem; }}
   </style>
 </head>
 <body>
   <h1>MFA Sidecar admin</h1>
+  <nav>
+    <a href='/admin'>Targets</a>
+    <a href='/admin/users'>Users</a>
+  </nav>
   <p class='muted'>Version <code>{h(package_version)}</code> · Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
   {disabled_bar}
   {notice_html}
@@ -354,12 +521,15 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.FORBIDDEN)
             return
         parsed = urlparse(self.path)
-        if parsed.path not in {"/", "/admin"}:
+        qs = parse_qs(parsed.query)
+        if parsed.path in {"/", "/admin"}:
+            edit_entry_id = qs.get("edit", [""])[0]
+            body = APP.render_index(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0], edit_entry_id=edit_entry_id)
+        elif parsed.path == "/admin/users":
+            body = APP.render_users_page(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0])
+        else:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
-        qs = parse_qs(parsed.query)
-        edit_entry_id = qs.get("edit", [""])[0]
-        body = APP.render_index(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0], edit_entry_id=edit_entry_id)
         payload = body.encode("utf-8")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -422,9 +592,40 @@ class Handler(BaseHTTPRequestHandler):
                 APP.set_enforcement_enabled_and_apply(True)
                 self._redirect("/admin?notice=" + quote_plus("MFA Sidecar re-enabled globally and runtime applied"))
                 return
+            if parsed.path == "/admin/users/ensure":
+                username = form.get("username", [""])[0].strip()
+                display_name = form.get("display_name", [""])[0].strip()
+                email = form.get("email", [""])[0].strip()
+                password = form.get("password", [""])[0]
+                groups = [chunk.strip() for chunk in form.get("groups", ["admins"])[0].split(",") if chunk.strip()]
+                APP.ensure_user(username=username, display_name=display_name, email=email, password=password, groups=groups or ["admins"])
+                self._redirect("/admin/users?notice=" + quote_plus(f"User '{username}' created or updated"))
+                return
+            if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/password"):
+                username = parsed.path.split("/")[3]
+                password = form.get("password", [""])[0]
+                APP.set_user_password(username=username, password=password)
+                self._redirect("/admin/users?notice=" + quote_plus(f"Password reset for '{username}'"))
+                return
+            if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/mfa-reset"):
+                username = parsed.path.split("/")[3]
+                APP.reset_user_mfa(username=username)
+                self._redirect("/admin/users?notice=" + quote_plus(f"Cleared MFA enrollment fields for '{username}'"))
+                return
+            if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/disable"):
+                username = parsed.path.split("/")[3]
+                APP.set_user_disabled(username=username, disabled=True)
+                self._redirect("/admin/users?notice=" + quote_plus(f"Disabled '{username}'"))
+                return
+            if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/enable"):
+                username = parsed.path.split("/")[3]
+                APP.set_user_disabled(username=username, disabled=False)
+                self._redirect("/admin/users?notice=" + quote_plus(f"Enabled '{username}'"))
+                return
             self.send_error(HTTPStatus.NOT_FOUND)
         except (PolicyError, subprocess.CalledProcessError) as exc:
-            self._redirect("/admin?error=" + quote_plus(str(exc)))
+            target = "/admin/users" if parsed.path.startswith("/admin/users") else "/admin"
+            self._redirect(target + "?error=" + quote_plus(str(exc)))
 
     def log_message(self, format: str, *args) -> None:
         return

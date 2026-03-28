@@ -13,6 +13,13 @@ import yaml
 DEFAULT_GROUPS = ["admins"]
 MANAGED_MARKER = "managed_by_mfa_sidecar_sync"
 DEFAULT_PLACEHOLDER_HASH = "$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$2M9QGyGynl3CE4Yd7sQ0Jd0N1k1fA0sQO9L5H5lYv3o"
+MFA_FIELDS = [
+    "totp_secret",
+    "webauthn",
+    "webauthn_credentials",
+    "one_time_password",
+    "mobile_push",
+]
 
 
 def ensure_parent(path: Path) -> None:
@@ -195,6 +202,49 @@ def command_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_set_password(args: argparse.Namespace) -> int:
+    path = Path(args.users_file)
+    data = load_users(path)
+    users = data["users"]
+    user, _ = ensure_user_record(users, args.username)
+    password_hash = hash_password(args.authelia_bin, args.password)
+    user["password"] = password_hash
+    user["disabled"] = bool(user.get("disabled", False))
+    save_users(path, data)
+    print(f"Reset password for '{args.username}' in {path}")
+    return 0
+
+
+def command_set_disabled(args: argparse.Namespace) -> int:
+    path = Path(args.users_file)
+    data = load_users(path)
+    users = data["users"]
+    if args.username not in users:
+        raise SystemExit(f"User not found: {args.username}")
+    users[args.username]["disabled"] = bool(args.disabled)
+    save_users(path, data)
+    state = "disabled" if args.disabled else "enabled"
+    print(f"Marked '{args.username}' as {state} in {path}")
+    return 0
+
+
+def command_reset_mfa(args: argparse.Namespace) -> int:
+    path = Path(args.users_file)
+    data = load_users(path)
+    users = data["users"]
+    if args.username not in users:
+        raise SystemExit(f"User not found: {args.username}")
+    user = users[args.username]
+    removed = []
+    for field in MFA_FIELDS:
+        if field in user:
+            user.pop(field, None)
+            removed.append(field)
+    save_users(path, data)
+    print(f"Cleared MFA enrollment fields for '{args.username}' in {path}: {','.join(removed) or 'none-found'}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -218,6 +268,25 @@ def build_parser() -> argparse.ArgumentParser:
     list_cmd = sub.add_parser("list-users")
     list_cmd.add_argument("--users-file", required=True)
     list_cmd.set_defaults(func=command_list)
+
+    password_cmd = sub.add_parser("set-password")
+    password_cmd.add_argument("--users-file", required=True)
+    password_cmd.add_argument("--authelia-bin", default="/opt/yunohost/mfa_sidecar/bin/authelia")
+    password_cmd.add_argument("--username", required=True)
+    password_cmd.add_argument("--password", required=True)
+    password_cmd.set_defaults(func=command_set_password)
+
+    disabled_cmd = sub.add_parser("set-disabled")
+    disabled_cmd.add_argument("--users-file", required=True)
+    disabled_cmd.add_argument("--username", required=True)
+    disabled_cmd.add_argument("--disabled", action="store_true")
+    disabled_cmd.add_argument("--enabled", dest="disabled", action="store_false")
+    disabled_cmd.set_defaults(func=command_set_disabled, disabled=False)
+
+    reset_mfa_cmd = sub.add_parser("reset-mfa")
+    reset_mfa_cmd.add_argument("--users-file", required=True)
+    reset_mfa_cmd.add_argument("--username", required=True)
+    reset_mfa_cmd.set_defaults(func=command_reset_mfa)
 
     return parser
 
