@@ -4,14 +4,26 @@
 set -euo pipefail
 
 INSTALL_DIR="${1:-/opt/yunohost/mfa_sidecar}"
+POLICY_PATH="$INSTALL_DIR/config/domain-policy.yaml"
+GENERATED_DIR="$INSTALL_DIR/deploy/generated-alpha"
+RENDER_SCRIPT="$INSTALL_DIR/bin/render_alpha_config.py"
+STAGE_SCRIPT="$INSTALL_DIR/bin/stage_alpha_runtime.py"
 RENDER_INDEX="/etc/mfa-sidecar/render-index.json"
 INJECTOR="$INSTALL_DIR/bin/inject_protected_include.py"
 PROTECTED_DIR="/etc/mfa-sidecar/nginx/protected"
+
+if [[ ! -f "$POLICY_PATH" ]]; then
+    echo "mfa-sidecar apply-runtime: policy missing: $POLICY_PATH" >&2
+    exit 1
+fi
 
 if [[ ! -x "$INJECTOR" ]]; then
     echo "mfa-sidecar apply-runtime: injector missing or not executable: $INJECTOR" >&2
     exit 1
 fi
+
+python3 "$RENDER_SCRIPT" "$POLICY_PATH" "$GENERATED_DIR"
+python3 "$STAGE_SCRIPT" "$GENERATED_DIR" /
 
 if [[ ! -f "$RENDER_INDEX" ]]; then
     echo "mfa-sidecar apply-runtime: staged render index missing: $RENDER_INDEX" >&2
