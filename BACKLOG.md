@@ -20,9 +20,8 @@ High-value checklist from live operator validation:
   - No broken behavior with multi-domain common setups
   - `tests.toml` reflects current install arguments and package reality
 
-- [ ] Review whether `show_users_file` should remain exposed in the config panel.
-  - It is useful, but potentially sensitive
-  - Re-evaluate from a safe-by-default perspective before public listing
+- [x] Review whether `show_users_file` should remain exposed in the config panel.
+  - Removed from the normal config-panel surface; raw users-file inspection is now treated as recovery/debug territory rather than a routine UI action.
 
 - [ ] Expand smoke/regression coverage so we do not refight the same dragons.
   - Upgrade from at least one older revision to current

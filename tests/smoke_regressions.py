@@ -226,6 +226,8 @@ class PackagingPathTests(unittest.TestCase):
             DOCS / 'ADMIN.md',
             DOCS / 'USERS.md',
             DOCS / 'TROUBLESHOOTING.md',
+            DOCS / 'TESTING.md',
+            DOCS / 'LIVE-BOX-VERIFICATION.md',
             LICENSES / 'Authelia-Apache-2.0.txt',
         ]
         for path in expected:

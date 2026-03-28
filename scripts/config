@@ -221,15 +221,6 @@ run__restart_services() {
 }
 
 
-run__show_users_file() {
-    if [[ ! -f "$USERS_FILE" ]]; then
-        echo "Users file not found: $USERS_FILE"
-        return 1
-    fi
-    ynh_print_info "Current sidecar users file: $USERS_FILE"
-    cat "$USERS_FILE"
-}
-
 run__seed_first_user() {
     if [[ -z "${first_username:-}" || -z "${first_display_name:-}" || -z "${first_email:-}" || -z "${first_password:-}" ]]; then
         echo "first_username, first_display_name, first_email, and first_password are required"
