@@ -67,12 +67,11 @@ Positive review outcome:
 - [x] Tighten username/path validation for admin UI user-action routes.
   - Current routing accepts usernames from path segments without an explicit validation helper.
 
-- [ ] Reduce lifecycle-script drift.
-  - `install`, `upgrade`, and `restore` still share a lot of duplicated file-install logic.
-  - Factor common packaging/install steps where practical.
+- [x] Reduce lifecycle-script drift.
+  - Shared packaged-file install logic now lives in `_common.sh` and is reused by install/upgrade/restore.
 
-- [ ] Consider documenting the root apply helper trust boundary more explicitly.
-  - The sudo helper is tightly scoped, but it still applies root-owned nginx/runtime changes from app-controlled generated state.
+- [x] Consider documenting the root apply helper trust boundary more explicitly.
+  - Covered in `docs/SECURITY-NOTES.md`.
 
-- [ ] Revisit localhost SMTP assumptions in submission notes.
-  - `disable_require_tls: true` and `tls.skip_verify: true` are acceptable for local delivery, but should be described honestly if the local MTA relays outward.
+- [x] Revisit localhost SMTP assumptions in submission notes.
+  - Covered in `docs/SECURITY-NOTES.md` and `docs/SUBMISSION-NOTES.md`.

@@ -239,6 +239,8 @@ class PackagingPathTests(unittest.TestCase):
             DOCS / 'TESTING.md',
             DOCS / 'LIVE-BOX-VERIFICATION.md',
             DOCS / 'SECURITY-NOTES.md',
+            DOCS / 'RESTORE-REMOVE.md',
+            DOCS / 'SUBMISSION-NOTES.md',
             LICENSES / 'Authelia-Apache-2.0.txt',
             FIXTURES / 'policy_webauthn_enabled.yaml',
         ]
