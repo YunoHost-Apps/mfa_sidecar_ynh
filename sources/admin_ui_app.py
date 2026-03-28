@@ -363,28 +363,29 @@ class AdminApp:
                 f"<td><code>{h(path_value)}</code></td>"
                 f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
-                f"<td>Bypass (unmanaged)<br><span class='muted'>nginx check: {h(nginx_state)}</span>{warning_html}</td>"
+                f"<td><span class='state-badge state-off'>Bypass</span><br><span class='muted'>unmanaged · nginx check: {h(nginx_state)}</span>{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
                 f"{common_inputs}"
                 f"<input type='hidden' name='enabled' value='true' />"
-                f"<button type='submit' onclick=\"{confirm_text}\">Protect</button>"
+                f"<button class='toggle toggle-off' type='submit' onclick=\"{confirm_text}\"><span class='toggle-knob'></span><span class='toggle-label'>Bypass</span></button>"
                 f"</form>"
                 f"</td>"
                 f"</tr>"
             )
 
         for entry in entries:
-            state = "Protect" if entry.get("enabled") else "Bypass"
-            action = "Bypass" if entry.get("enabled") else "Protect"
+            enabled = bool(entry.get("enabled"))
+            state = "Protect" if enabled else "Bypass"
             path_value = normalize_path(entry.get('path', '/'))
             is_danger_target = entry['host'] == portal_domain or (entry['host'] == root_domain and path_value == '/')
             toggle_confirm = ''
-            if is_danger_target and not entry.get('enabled'):
+            if is_danger_target and not enabled:
                 toggle_confirm = "return confirm('Dangerous target. Have you tested MFA Sidecar on a non-root domain first? Enabling protection here can lock you out of services or normal admin access.');"
             warning_html = ""
             if is_danger_target:
                 warning_html = "<br><span class='danger-text'>Danger zone: test on a non-root domain first.</span>"
+            toggle_class = 'toggle-on' if enabled else 'toggle-off'
             target_rows.append(
                 f"<tr>"
                 f"<td>{h(entry.get('label', ''))}</td>"
@@ -392,10 +393,10 @@ class AdminApp:
                 f"<td><code>{h(path_value)}</code></td>"
                 f"<td><code>{h(entry['id'])}</code><br><span class='muted'>{h(entry.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(entry['upstream'])}</code></td>"
-                f"<td>{h(state)}{warning_html}</td>"
+                f"<td><span class='state-badge {'state-on' if enabled else 'state-off'}'>{h(state)}</span>{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
-                f"<button type='submit' onclick=\"{toggle_confirm}\">{h(action)}</button>"
+                f"<button class='toggle {toggle_class}' type='submit' onclick=\"{toggle_confirm}\"><span class='toggle-knob'></span><span class='toggle-label'>{h(state)}</span></button>"
                 f"</form>"
                 f"<form method='get' action='/admin' style='display:inline-block; margin-right: 0.4rem;'>"
                 f"<input type='hidden' name='edit' value='{h(entry['id'])}' />"
@@ -463,6 +464,13 @@ class AdminApp:
     input[type=text], input[type=password], input[type=email], select {{ width: 100%; padding: 0.45rem; box-sizing: border-box; }}
     .muted {{ color: #555; font-size: 0.92em; }}
     .danger-text {{ color: #900; font-weight: 600; }}
+    .state-badge {{ display: inline-block; min-width: 4.75rem; text-align: center; padding: 0.2rem 0.55rem; border-radius: 999px; font-weight: 700; font-size: 0.9rem; }}
+    .state-on {{ background: #dff3e3; color: #126a2f; border: 1px solid #8cc79a; }}
+    .state-off {{ background: #ececec; color: #555; border: 1px solid #b8b8b8; }}
+    .toggle {{ display: inline-flex; align-items: center; gap: 0.55rem; min-width: 8.25rem; padding: 0.32rem 0.75rem 0.32rem 0.4rem; border-radius: 999px; border: 1px solid #999; cursor: pointer; font-weight: 700; }}
+    .toggle-knob {{ display: inline-block; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: #fff; border: 1px solid rgba(0,0,0,0.18); box-shadow: 0 1px 2px rgba(0,0,0,0.18); }}
+    .toggle-on {{ background: #2f8f4e; border-color: #2b7f45; color: #fff; }}
+    .toggle-off {{ background: #d7d7d7; border-color: #a8a8a8; color: #333; }}
     nav {{ margin: 0.75rem 0 1rem; }}
     nav a {{ margin-right: 0.8rem; display: inline-block; padding: 0.5rem 0.8rem; border: 1px solid #888; border-radius: 0.35rem; text-decoration: none; color: #111; background: #f5f5f5; font-weight: 600; }}
     nav a:hover {{ background: #e9e9e9; }}
@@ -489,7 +497,7 @@ class AdminApp:
     <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled'}</code></li>
   </ul>
   <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 0.5rem;'>
-    <button type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');">{'Disable sidecar globally' if enforcement_enabled else 'Re-enable sidecar globally'}</button>
+    <button class='toggle {'toggle-on' if enforcement_enabled else 'toggle-off'}' type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');"><span class='toggle-knob'></span><span class='toggle-label'>{'Protect' if enforcement_enabled else 'Bypass'}</span></button>
   </form>
   <form method='post' action='/admin/global/clear-sessions' style='margin-bottom: 1rem;'>
     <button type='submit' onclick="return confirm('Clear all active MFA Sidecar sessions? This restarts Authelia and forces users to log in again on next access.');">Clear active sessions (force re-login)</button>
