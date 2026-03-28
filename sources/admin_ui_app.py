@@ -156,6 +156,16 @@ class AdminApp:
                 "--username", username,
             )
 
+    def set_user_role(self, *, username: str, role: str) -> None:
+        groups = [role] if role in {"users", "admins"} else ["users"]
+        with self.lock:
+            self._run_manage_users(
+                "set-groups",
+                "--users-file", str(self.users_file),
+                "--username", username,
+                "--groups", *groups,
+            )
+
     def add_entry_and_apply(self, *, host: str, path: str, label: str, upstream: str, enabled: bool, target_conf: str = "") -> None:
         entry_id = PolicyAdmin.slugify(f"{host}-{path}")
         with self.lock:
@@ -220,12 +230,13 @@ class AdminApp:
             state = "Disabled" if user["disabled"] else "Enabled"
             managed = "YunoHost-synced" if user["managed"] else "Sidecar-local"
             mfa_state = ", ".join(user["mfa_fields"]) if user["mfa_fields"] else "none recorded"
+            current_role = 'admins' if 'admins' in user['groups'] else 'users'
             rows.append(
                 f"<tr>"
                 f"<td><code>{h(user['username'])}</code></td>"
                 f"<td>{h(user['displayname'])}</td>"
                 f"<td>{h(user['email'])}</td>"
-                f"<td>{h(groups)}</td>"
+                f"<td>{h(groups)}<form method='post' action='/admin/users/{h(user['username'])}/role' style='margin-top:0.4rem;'><select name='role'><option value='users' {'selected' if current_role == 'users' else ''}>User</option><option value='admins' {'selected' if current_role == 'admins' else ''}>Admin</option></select> <button type='submit'>Set role</button></form></td>"
                 f"<td>{h(state)}<br><span class='muted'>{h(managed)}</span></td>"
                 f"<td><span class='muted'>{h(mfa_state)}</span></td>"
                 f"<td>"
@@ -290,9 +301,14 @@ class AdminApp:
       <label><span>Display name</span><input type='text' name='display_name' required /></label>
       <label><span>Email</span><input type='email' name='email' required /></label>
       <label><span>Password</span><input type='password' name='password' required /></label>
-      <label><span>Groups</span><input type='text' name='groups' value='admins' /></label>
+      <label><span>Role</span>
+        <select name='role'>
+          <option value='users' selected>User</option>
+          <option value='admins'>Admin</option>
+        </select>
+      </label>
     </div>
-    <p class='muted'>Comma-separated groups. Default is <code>admins</code>. This action creates the user if missing or updates the record if it already exists.</p>
+    <p class='muted'>Role defaults to <code>users</code>. Use <code>admins</code> only for actual administrators. This action creates the user if missing or updates the record if it already exists.</p>
     <p><button type='submit'>Create or update user</button></p>
   </form>
 </body>
@@ -608,15 +624,22 @@ class Handler(BaseHTTPRequestHandler):
                 display_name = form.get("display_name", [""])[0].strip()
                 email = form.get("email", [""])[0].strip()
                 password = form.get("password", [""])[0]
-                groups = [chunk.strip() for chunk in form.get("groups", ["admins"])[0].split(",") if chunk.strip()]
-                APP.ensure_user(username=username, display_name=display_name, email=email, password=password, groups=groups or ["admins"])
-                self._redirect("/admin/users?notice=" + quote_plus(f"User '{username}' created or updated"))
+                role = form.get("role", ["users"])[0].strip()
+                groups = [role] if role in {"users", "admins"} else ["users"]
+                APP.ensure_user(username=username, display_name=display_name, email=email, password=password, groups=groups)
+                self._redirect("/admin/users?notice=" + quote_plus(f"User '{username}' created or updated as {groups[0][:-1] if groups[0].endswith('s') else groups[0]}"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/password"):
                 username = parsed.path.split("/")[3]
                 password = form.get("password", [""])[0]
                 APP.set_user_password(username=username, password=password)
                 self._redirect("/admin/users?notice=" + quote_plus(f"Password reset for '{username}'"))
+                return
+            if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/role"):
+                username = parsed.path.split("/")[3]
+                role = form.get("role", ["users"])[0].strip()
+                APP.set_user_role(username=username, role=role)
+                self._redirect("/admin/users?notice=" + quote_plus(f"Updated role for '{username}' to {role[:-1] if role.endswith('s') else role}"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/mfa-reset"):
                 username = parsed.path.split("/")[3]
