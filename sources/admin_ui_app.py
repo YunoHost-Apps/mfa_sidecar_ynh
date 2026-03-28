@@ -270,6 +270,18 @@ class AdminApp:
         users_html = "\n".join(rows) or "<tr><td colspan='7'><em>No sidecar users found.</em></td></tr>"
         error_html = f"<div class='error'>{h(error)}</div>" if error else ""
         notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
+        summary = self.policy.portal_summary()
+        enforcement_enabled = bool(summary.get('enforcement_enabled', True))
+        disabled_bar = ""
+        if not enforcement_enabled:
+            disabled_bar = (
+                "<div class='error' style='background:#b30000;color:#fff;border-color:#800;padding:1rem 1rem 1.1rem;'>"
+                "<strong>Emergency bypass is ACTIVE.</strong> MFA Sidecar enforcement is disabled globally, so protected targets are currently bypassed. "
+                "User recovery actions are still available here, but the perimeter is not being enforced right now."
+                f"<form method='post' action='/admin/global/enable' style='display:block; margin-top: 0.85rem;'>{csrf_input}"
+                "<button type='submit' style='font-weight:700;' onclick=\"return confirm('Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first.');\">Re-enable global protection now</button>"
+                "</form></div>"
+            )
         return f"""<!doctype html>
 <html lang='en'>
 <head>
@@ -292,6 +304,7 @@ class AdminApp:
   <h1>MFA Sidecar users</h1>
   <p class='muted'>Version <code>{h(package_version)}</code> · Admin recovery surface for sidecar users. End users should still manage their own MFA from their normal login flow.</p>
   <p><a href='/admin'>← Back to targets</a></p>
+  {disabled_bar}
   {notice_html}
   {error_html}
 
@@ -434,10 +447,11 @@ class AdminApp:
         disabled_bar = ""
         if not enforcement_enabled:
             disabled_bar = (
-                "<div class='error' style='background:#b30000;color:#fff;border-color:#800;'>"
-                "<strong>MFA Sidecar is disabled.</strong> Protection is bypassed globally until you re-enable it. "
-                f"<form method='post' action='/admin/global/enable' style='display:inline-block; margin-left: 0.75rem;'>{csrf_input}"
-                "<button type='submit' onclick=\"return confirm('Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first.');\">Re-enable protection</button>"
+                "<div class='error' style='background:#b30000;color:#fff;border-color:#800;padding:1rem 1rem 1.1rem;'>"
+                "<strong>Emergency bypass is ACTIVE.</strong> MFA Sidecar enforcement is disabled globally, so protected targets are currently bypassed. "
+                "Use this only as a break-glass state, then turn protection back on once you have recovered access."
+                f"<form method='post' action='/admin/global/enable' style='display:block; margin-top: 0.85rem;'>{csrf_input}"
+                "<button type='submit' style='font-weight:700;' onclick=\"return confirm('Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first.');\">Re-enable global protection now</button>"
                 "</form></div>"
             )
         if edit_entry:
@@ -511,11 +525,11 @@ class AdminApp:
     <li><strong>Portal path:</strong> <code>{h(summary['portal_path'])}</code></li>
     <li><strong>Remembered session:</strong> <code>{h(summary['remember_me'])}</code></li>
     <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
-    <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled'}</code></li>
+    <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled (emergency bypass active)'}</code></li>
   </ul>
   <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 0.5rem;'>
     {csrf_input}
-    <button class='toggle {'toggle-on' if enforcement_enabled else 'toggle-off'}' type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');"><span class='toggle-knob'></span><span class='toggle-label'>{'Protect' if enforcement_enabled else 'Bypass'}</span></button>
+    <button class='toggle {'toggle-on' if enforcement_enabled else 'toggle-off'}' type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');"><span class='toggle-knob'></span><span class='toggle-label'>{'Disable global protection (break-glass)' if enforcement_enabled else 'Re-enable global protection'}</span></button>
   </form>
   <form method='post' action='/admin/global/clear-sessions' style='margin-bottom: 1rem;'>
     {csrf_input}

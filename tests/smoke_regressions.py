@@ -208,6 +208,15 @@ class AdminUiHardeningTests(unittest.TestCase):
         self.assertIn('Set-Cookie", f"{CSRF_COOKIE_NAME}={APP.csrf_token}; Path=/; HttpOnly; SameSite=Strict"', text)
         self.assertIn('invalid CSRF token', text)
 
+    def test_admin_ui_has_clear_break_glass_warning_and_reenable_path(self):
+        text = (SOURCES / 'admin_ui_app.py').read_text(encoding='utf-8')
+        self.assertIn('Emergency bypass is ACTIVE.', text)
+        self.assertIn('MFA Sidecar enforcement is disabled globally', text)
+        self.assertIn('Re-enable global protection now', text)
+        self.assertIn('Disable global protection (break-glass)', text)
+        self.assertIn("disabled (emergency bypass active)", text)
+        self.assertIn("action='/admin/global/enable'", text)
+
     def test_password_hashing_no_longer_uses_password_argv(self):
         text = (SOURCES / 'manage_authelia_users.py').read_text(encoding='utf-8')
         self.assertIn('pty.openpty()', text)
