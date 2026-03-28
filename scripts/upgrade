@@ -18,34 +18,7 @@ if [[ ! -f "/etc/nginx/conf.d/${domain}.conf" ]]; then
 fi
 
 _mfa_sidecar_install_layout
-install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
-install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
-install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
-install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
-install -D -m 755 ../sources/bootstrap_authelia_users.py "$install_dir/bin/bootstrap_authelia_users.py"
-install -D -m 755 ../sources/manage_authelia_users.py "$install_dir/bin/manage_authelia_users.py"
-install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
-install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
-install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
-install -D -m 644 ../sources/authelia.service /etc/systemd/system/mfa-sidecar-authelia.service
-install -D -m 644 ../sources/mfa-sidecar-admin.service /etc/systemd/system/mfa-sidecar-admin.service
-install -D -m 644 ../sources/authelia-release.json "$install_dir/sources/authelia-release.json"
-install -D -m 644 ../sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
-if [[ -f ../assets/logo.png ]]; then
-    install -D -m 644 ../assets/logo.png "$install_dir/www/logo.png"
-elif [[ -f ../assets/logo.jpg ]]; then
-    install -D -m 644 ../assets/logo.jpg "$install_dir/www/logo.jpg"
-fi
-install -D -m 644 ../manifest.toml "$install_dir/manifest.toml"
-install -D -m 644 ../README.md "$install_dir/README.md"
-install -D -m 644 ../LICENSE "$install_dir/LICENSE"
-install -D -m 644 ../THIRD_PARTY_NOTICES.md "$install_dir/THIRD_PARTY_NOTICES.md"
-install -D -m 644 ../licenses/Authelia-Apache-2.0.txt "$install_dir/licenses/Authelia-Apache-2.0.txt"
-install -D -m 644 ../docs/INSTALL.md "$install_dir/docs/INSTALL.md"
-install -D -m 644 ../docs/ADMIN.md "$install_dir/docs/ADMIN.md"
-install -D -m 644 ../docs/USERS.md "$install_dir/docs/USERS.md"
-install -D -m 644 ../docs/TROUBLESHOOTING.md "$install_dir/docs/TROUBLESHOOTING.md"
-install -D -m 644 ../docs/TESTING.md "$install_dir/docs/TESTING.md"
+_mfa_sidecar_install_packaged_files
 
 find "$install_dir" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 
