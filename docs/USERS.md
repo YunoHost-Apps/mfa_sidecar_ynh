@@ -23,7 +23,11 @@ There you will:
 1. enter your sidecar username/email and password
 2. complete MFA enrollment if needed
 3. complete MFA verification on future logins
-4. return to the original app after successful authentication
+4. return to the original app after successful authentication, or continue through any required first-time enrollment steps
+
+On the very first protected access, the sidecar may pause on an MFA enrollment/settings page while you register your authenticator app. That is normal.
+
+After sidecar authentication succeeds, the downstream app may still show its own login page. That is also normal unless that app has been separately configured to trust the sidecar for single sign-on.
 
 ## Remembered sessions
 
@@ -94,6 +98,8 @@ The intended experience is simple:
 - get redirected if protected
 - sign in
 - complete MFA
-- return to app
+- if this is your first protected login, finish any one-time enrollment step
+- return to the app perimeter
+- possibly complete the downstream app's own login if that app uses one
 
 If it feels much messier than that, the operator should probably investigate.

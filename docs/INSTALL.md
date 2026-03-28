@@ -143,7 +143,9 @@ They should install into:
 5. set it to **Protect**
 6. test in a private/incognito window
 7. validate redirect → login → MFA → return-to-app
-8. only then move to more important or broader targets
+8. expect first-time users to stop at MFA enrollment before the flow is fully smooth
+9. after sidecar auth succeeds, confirm the downstream app behaves as expected (it may still present its own login)
+10. only then move to more important or broader targets
 
 ## Default MFA method
 

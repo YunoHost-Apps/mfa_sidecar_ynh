@@ -91,7 +91,9 @@ Do not enable protection on a root/portal-style target before you have already p
 1. start with a dedicated subdomain app
 2. use an incognito/private window
 3. verify redirect → login → MFA → return-to-app
-4. only then widen coverage
+4. remember that first-time MFA enrollment may temporarily stop on the sidecar settings/enrollment page before subsequent access becomes smooth
+5. confirm what happens after sidecar auth — many downstream apps will still show their own login page, and that is expected unless they are separately integrated
+6. only then widen coverage
 
 ## User administration
 
