@@ -316,6 +316,8 @@ class PackagingPathTests(unittest.TestCase):
             self.assertIn('SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"', text)
         common = self._shell_text(SCRIPTS / '_common.sh')
         self.assertIn('_mfa_sidecar_pkg_path', common)
+        self.assertIn('BASH_SOURCE[0]', common)
+        self.assertNotIn('script_base="${SCRIPT_DIR:-$(pwd)}"', common)
         self.assertNotRegex(common, r'install -D -m \d+ \.\./')
 
     def test_expected_docs_and_license_files_exist(self):

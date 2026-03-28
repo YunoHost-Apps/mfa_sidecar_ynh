@@ -1,9 +1,10 @@
 #!/bin/bash
 
 _mfa_sidecar_package_root() {
-    local script_base
-    script_base="${SCRIPT_DIR:-$(pwd)}"
-    cd -- "$script_base/.." >/dev/null 2>&1 && pwd
+    local common_path common_dir
+    common_path="${BASH_SOURCE[0]}"
+    common_dir="$(cd -- "$(dirname -- "$common_path")" >/dev/null 2>&1 && pwd)"
+    cd -- "$common_dir/.." >/dev/null 2>&1 && pwd
 }
 
 _mfa_sidecar_pkg_path() {
