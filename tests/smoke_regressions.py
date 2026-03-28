@@ -274,7 +274,7 @@ class ApplyRuntimeHookTests(unittest.TestCase):
         self.assertIn('POLICY_PATH="$INSTALL_DIR/config/domain-policy.yaml"', text)
         self.assertIn('GENERATED_DIR="$INSTALL_DIR/deploy/generated-alpha"', text)
         self.assertIn('python3 "$RENDER_SCRIPT" "$POLICY_PATH" "$GENERATED_DIR"', text)
-        self.assertIn('python3 "$STAGE_SCRIPT" "$GENERATED_DIR" /', text)
+        self.assertIn('python3 "$STAGE_SCRIPT" "$GENERATED_DIR" / --owner mfa_sidecar --group mfa_sidecar', text)
         self.assertIn('RENDER_INDEX="/etc/mfa-sidecar/render-index.json"', text)
         self.assertIn('staged render index missing', text)
         self.assertNotIn('reinject-all "$RENDER_INDEX" --protected-dir "$PROTECTED_DIR" || true', text)
