@@ -45,6 +45,7 @@ install -D -m 644 ../docs/INSTALL.md "$install_dir/docs/INSTALL.md"
 install -D -m 644 ../docs/ADMIN.md "$install_dir/docs/ADMIN.md"
 install -D -m 644 ../docs/USERS.md "$install_dir/docs/USERS.md"
 install -D -m 644 ../docs/TROUBLESHOOTING.md "$install_dir/docs/TROUBLESHOOTING.md"
+install -D -m 644 ../docs/TESTING.md "$install_dir/docs/TESTING.md"
 
 find "$install_dir" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 
