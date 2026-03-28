@@ -23,7 +23,7 @@ if [[ ! -x "$INJECTOR" ]]; then
 fi
 
 python3 "$RENDER_SCRIPT" "$POLICY_PATH" "$GENERATED_DIR"
-python3 "$STAGE_SCRIPT" "$GENERATED_DIR" /
+python3 "$STAGE_SCRIPT" "$GENERATED_DIR" / --owner mfa_sidecar --group mfa_sidecar
 
 if [[ ! -f "$RENDER_INDEX" ]]; then
     echo "mfa-sidecar apply-runtime: staged render index missing: $RENDER_INDEX" >&2
