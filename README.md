@@ -31,6 +31,7 @@ If something is broken or you need a break-glass path:
 - **Security / trust-boundary notes** → `docs/SECURITY-NOTES.md`
 - **Restore / remove expectations** → `docs/RESTORE-REMOVE.md`
 - **Submission / reviewer notes** → `docs/SUBMISSION-NOTES.md`
+- **Release gates** → `docs/RELEASE-GATES.md`
 
 ## Core idea
 

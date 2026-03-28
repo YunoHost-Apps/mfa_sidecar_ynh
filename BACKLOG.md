@@ -1,36 +1,38 @@
 # MFA Sidecar Backlog
 
-## Before public submission / catalog review
-
-High-value checklist from live operator validation:
-
-- [ ] Run realistic upgrade tests from at least one prior package revision to current.
-  - Verify no auth regression on protected targets.
-  - Prove the upgrade path instead of assuming it.
+## Near-term release gate (0.3.0)
 
 - [ ] Validate emergency recovery on a real box.
   - Test `access_control.enforcement_enabled: false`
-  - Reload runtime
+  - Reload/runtime apply
   - Restart relevant services
-  - Document exact timings and expected outcomes in submission notes
+  - Confirm protected target bypasses remotely
+  - Re-enable and confirm auth returns
+
+See also: `docs/RELEASE-GATES.md`
+
+## Before wider public submission / catalog review
+
+High-value checklist from live operator validation:
 
 - [ ] Confirm app quality criteria for catalog expectations.
-  - Install/uninstall leaves the system clean enough
   - Permissions/groups are minimal
   - No broken behavior with multi-domain common setups
   - `tests.toml` reflects current install arguments and package reality
+
+- [x] Realistic upgrade path exercised repeatedly on a real box.
+  - Multiple real upgrades were performed during hardening, including failure discovery/fix cycles.
+
+- [x] Uninstall/reinstall recovery exercised under stress.
+  - Not elegant, but real.
 
 - [x] Review whether `show_users_file` should remain exposed in the config panel.
   - Removed from the normal config-panel surface; raw users-file inspection is now treated as recovery/debug territory rather than a routine UI action.
 
 - [ ] Expand smoke/regression coverage so we do not refight the same dragons.
-  - Upgrade from at least one older revision to current
-  - Protected target auth regression on a real protected app path
-  - SSOwat bypass behavior for internal auth subrequest locations
-  - Existing-install config/default migration behavior (especially MFA method defaults)
   - `enforcement_enabled: false` break-glass behavior
-  - Render/stage/apply reinjection after upgrade
-  - Presence of required packaged assets/docs so install/upgrade cannot fail on missing files
+  - Additional upgrade-style fixtures where helpful
+  - Any remaining live-only failures worth encoding once observed
 
 ## Notes
 

@@ -88,12 +88,14 @@ The repo now includes a smoke/regression suite for the live failures already enc
 
 ## Remaining pre-submission checks
 
-Still worth validating before public submission:
+The main remaining release gate for `0.3.0` is:
 
-- upgrade from one or more older revisions to current
 - real-box break-glass behavior with `enforcement_enabled: false`
-- uninstall/restore cleanliness on a real box
+
+Still worth validating before wider public submission/catalog expectations:
+
 - one or more multi-domain common setups
+- additional real-box uninstall/restore cleanliness checks if practical
 
 ## Security posture summary
 
