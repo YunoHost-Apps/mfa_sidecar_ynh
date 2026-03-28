@@ -55,17 +55,17 @@ Positive review outcome:
 
 ## Follow-up from external code review (Claude Opus 4.6)
 
-- [ ] Remove plaintext password exposure via CLI arguments in `manage_authelia_users.py` / admin UI subprocesses.
-  - Prefer stdin or another non-argv path for password handoff.
+- [x] Remove plaintext password exposure via CLI arguments in `manage_authelia_users.py` / admin UI subprocesses.
+  - Current fix uses a pseudo-TTY to drive Authelia's interactive hash prompt instead of passing `--password` on argv.
 
-- [ ] Document the localhost admin trust boundary explicitly.
+- [x] Document the localhost admin trust boundary explicitly.
   - `admin_ui_app._authorized()` currently returns `True` and depends entirely on loopback bind + nginx/YunoHost auth.
   - Add comments/docs so this is clearly intentional if retained.
 
-- [ ] Add CSRF protection for admin UI POST actions.
-  - Current loopback + proxy model lowers risk, but POST-only admin actions should still get tokens if the surface is going public.
+- [x] Add CSRF protection for admin UI POST actions.
+  - Added a lightweight per-process token mirrored in a Strict cookie + hidden form fields for admin POST actions.
 
-- [ ] Tighten username/path validation for admin UI user-action routes.
+- [x] Tighten username/path validation for admin UI user-action routes.
   - Current routing accepts usernames from path segments without an explicit validation helper.
 
 - [ ] Reduce lifecycle-script drift.

@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import html
 import os
+import re
+import secrets
 import subprocess
 import sys
 import threading
 from http import HTTPStatus
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote_plus, urlparse
@@ -41,10 +44,19 @@ BIND_HOST = os.environ.get("MFA_SIDECAR_ADMIN_BIND", "127.0.0.1")
 BIND_PORT = int(os.environ.get("MFA_SIDECAR_ADMIN_PORT", "9087"))
 DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR", "/etc/nginx/conf.d")
 DISCOVERY_YUNOHOST_BIN = os.environ.get("MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN", "/usr/bin/yunohost")
+USERNAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$")
+CSRF_COOKIE_NAME = "mfa_sidecar_admin_csrf"
 
 
 def h(value: object) -> str:
     return html.escape(str(value), quote=True)
+
+
+def validate_username(username: str) -> str:
+    username = (username or "").strip()
+    if not USERNAME_RE.match(username):
+        raise PolicyError("username must match [A-Za-z0-9][A-Za-z0-9_.@-]{0,127}")
+    return username
 
 
 def load_package_version() -> str:
@@ -73,6 +85,7 @@ class AdminApp:
             yunohost_bin=DISCOVERY_YUNOHOST_BIN,
         )
         self.lock = threading.Lock()
+        self.csrf_token = secrets.token_urlsafe(32)
 
     def apply_runtime(self) -> None:
         subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
@@ -221,9 +234,10 @@ class AdminApp:
         except Exception as exc:
             return [], str(exc)
 
-    def render_users_page(self, error: str = "", notice: str = "") -> str:
+    def render_users_page(self, error: str = "", notice: str = "", csrf_token: str = "") -> str:
         package_version = load_package_version()
         users = self.load_users()
+        csrf_input = f"<input type='hidden' name='csrf_token' value='{h(csrf_token)}' />"
         rows = []
         for user in users:
             groups = ", ".join(user["groups"]) or "(none)"
@@ -236,19 +250,19 @@ class AdminApp:
                 f"<td><code>{h(user['username'])}</code></td>"
                 f"<td>{h(user['displayname'])}</td>"
                 f"<td>{h(user['email'])}</td>"
-                f"<td>{h(groups)}<form method='post' action='/admin/users/{h(user['username'])}/role' style='margin-top:0.4rem;'><select name='role'><option value='users' {'selected' if current_role == 'users' else ''}>User</option><option value='admins' {'selected' if current_role == 'admins' else ''}>Admin</option></select> <button type='submit'>Set role</button></form></td>"
+                f"<td>{h(groups)}<form method='post' action='/admin/users/{h(user['username'])}/role' style='margin-top:0.4rem;'>{csrf_input}<select name='role'><option value='users' {'selected' if current_role == 'users' else ''}>User</option><option value='admins' {'selected' if current_role == 'admins' else ''}>Admin</option></select> <button type='submit'>Set role</button></form></td>"
                 f"<td>{h(state)}<br><span class='muted'>{h(managed)}</span></td>"
                 f"<td><span class='muted'>{h(mfa_state)}</span></td>"
                 f"<td>"
                 f"<form method='post' action='/admin/users/{h(user['username'])}/password' style='display:inline-block; margin:0 0.4rem 0.4rem 0;'>"
-                f"<input type='password' name='password' placeholder='New password' required /> "
+                f"{csrf_input}<input type='password' name='password' placeholder='New password' required /> "
                 f"<button type='submit' onclick=\"return confirm('Reset password for this user?');\">Set password</button>"
                 f"</form>"
                 f"<form method='post' action='/admin/users/{h(user['username'])}/mfa-reset' style='display:inline-block; margin:0 0.4rem 0.4rem 0;'>"
-                f"<button type='submit' onclick=\"return confirm('Clear stored MFA enrollment data for this user? They will need to enroll again.');\">Reset MFA</button>"
+                f"{csrf_input}<button type='submit' onclick=\"return confirm('Clear stored MFA enrollment data for this user? They will need to enroll again.');\">Reset MFA</button>"
                 f"</form>"
                 f"<form method='post' action='/admin/users/{h(user['username'])}/{'enable' if user['disabled'] else 'disable'}' style='display:inline-block; margin:0 0.4rem 0.4rem 0;'>"
-                f"<button type='submit' onclick=\"return confirm('{'Enable' if user['disabled'] else 'Disable'} this user?');\">{'Enable' if user['disabled'] else 'Disable'}</button>"
+                f"{csrf_input}<button type='submit' onclick=\"return confirm('{'Enable' if user['disabled'] else 'Disable'} this user?');\">{'Enable' if user['disabled'] else 'Disable'}</button>"
                 f"</form>"
                 f"</td>"
                 f"</tr>"
@@ -296,6 +310,7 @@ class AdminApp:
 
   <h2>Add or update user</h2>
   <form method='post' action='/admin/users/ensure'>
+    {csrf_input}
     <div class='grid'>
       <label><span>Username</span><input type='text' name='username' required /></label>
       <label><span>Display name</span><input type='text' name='display_name' required /></label>
@@ -315,9 +330,10 @@ class AdminApp:
 </html>
 """
 
-    def render_index(self, error: str = "", notice: str = "", edit_entry_id: str = "") -> str:
+    def render_index(self, error: str = "", notice: str = "", edit_entry_id: str = "", csrf_token: str = "") -> str:
         summary = self.policy.portal_summary()
         package_version = load_package_version()
+        csrf_input = f"<input type='hidden' name='csrf_token' value='{h(csrf_token)}' />"
         entries = self.policy.list_entries()
         portal_domain = summary.get('portal_domain', '')
         root_domain = extract_root_domain(portal_domain)
@@ -367,7 +383,7 @@ class AdminApp:
                 f"<td><span class='muted'>unmanaged · nginx check: {h(nginx_state)}</span>{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
-                f"{common_inputs}"
+                f"{csrf_input}{common_inputs}"
                 f"<input type='hidden' name='enabled' value='true' />"
                 f"<button class='toggle toggle-off' type='submit' onclick=\"{confirm_text}\"><span class='toggle-knob'></span><span class='toggle-label'>Bypass</span></button>"
                 f"</form>"
@@ -397,14 +413,14 @@ class AdminApp:
                 f"<td>{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
-                f"<button class='toggle {toggle_class}' type='submit' onclick=\"{toggle_confirm}\"><span class='toggle-knob'></span><span class='toggle-label'>{h(state)}</span></button>"
+                f"{csrf_input}<button class='toggle {toggle_class}' type='submit' onclick=\"{toggle_confirm}\"><span class='toggle-knob'></span><span class='toggle-label'>{h(state)}</span></button>"
                 f"</form>"
                 f"<form method='get' action='/admin' style='display:inline-block; margin-right: 0.4rem;'>"
                 f"<input type='hidden' name='edit' value='{h(entry['id'])}' />"
                 f"<button type='submit'>Edit</button>"
                 f"</form>"
                 f"<form method='post' action='/admin/entries/{h(entry['id'])}/delete' style='display:inline-block;'>"
-                f"<button type='submit' onclick=\"return confirm('Delete this managed entry?');\">Delete</button>"
+                f"{csrf_input}<button type='submit' onclick=\"return confirm('Delete this managed entry?');\">Delete</button>"
                 f"</form>"
                 f"</td>"
                 f"</tr>"
@@ -420,7 +436,7 @@ class AdminApp:
             disabled_bar = (
                 "<div class='error' style='background:#b30000;color:#fff;border-color:#800;'>"
                 "<strong>MFA Sidecar is disabled.</strong> Protection is bypassed globally until you re-enable it. "
-                "<form method='post' action='/admin/global/enable' style='display:inline-block; margin-left: 0.75rem;'>"
+                f"<form method='post' action='/admin/global/enable' style='display:inline-block; margin-left: 0.75rem;'>{csrf_input}"
                 "<button type='submit' onclick=\"return confirm('Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first.');\">Re-enable protection</button>"
                 "</form></div>"
             )
@@ -498,9 +514,11 @@ class AdminApp:
     <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled'}</code></li>
   </ul>
   <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 0.5rem;'>
+    {csrf_input}
     <button class='toggle {'toggle-on' if enforcement_enabled else 'toggle-off'}' type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');"><span class='toggle-knob'></span><span class='toggle-label'>{'Protect' if enforcement_enabled else 'Bypass'}</span></button>
   </form>
   <form method='post' action='/admin/global/clear-sessions' style='margin-bottom: 1rem;'>
+    {csrf_input}
     <button type='submit' onclick="return confirm('Clear all active MFA Sidecar sessions? This restarts Authelia and forces users to log in again on next access.');">Clear active sessions (force re-login)</button>
   </form>
 
@@ -519,6 +537,7 @@ class AdminApp:
 
   <h2>{h(form_title)}</h2>
   <form method='post' action='{h(form_action)}'>
+    {csrf_input}
     <div class='grid'>
       <label><span>Label</span><input type='text' name='label' placeholder='Homebox' value='{h(form_label)}' /></label>
       <label><span>Host</span><input type='text' name='host' placeholder='home.wm3v.com' value='{h(form_host)}' required /></label>
@@ -558,9 +577,9 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
         if parsed.path in {"/", "/admin"}:
             edit_entry_id = qs.get("edit", [""])[0]
-            body = APP.render_index(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0], edit_entry_id=edit_entry_id)
+            body = APP.render_index(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0], edit_entry_id=edit_entry_id, csrf_token=APP.csrf_token)
         elif parsed.path == "/admin/users":
-            body = APP.render_users_page(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0])
+            body = APP.render_users_page(error=qs.get("error", [""])[0], notice=qs.get("notice", [""])[0], csrf_token=APP.csrf_token)
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -568,6 +587,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Set-Cookie", f"{CSRF_COOKIE_NAME}={APP.csrf_token}; Path=/; HttpOnly; SameSite=Strict")
         self.end_headers()
         self.wfile.write(payload)
 
@@ -582,6 +602,12 @@ class Handler(BaseHTTPRequestHandler):
             length = 0
         raw = self.rfile.read(length).decode("utf-8")
         form = parse_qs(raw)
+        cookie = SimpleCookie(self.headers.get("Cookie", ""))
+        cookie_token = cookie.get(CSRF_COOKIE_NAME).value if cookie.get(CSRF_COOKIE_NAME) else ""
+        form_token = form.get("csrf_token", [""])[0]
+        if cookie_token != APP.csrf_token or form_token != APP.csrf_token:
+            self.send_error(HTTPStatus.FORBIDDEN, "invalid CSRF token")
+            return
         try:
             if parsed.path in {"/admin/entries", "/admin/discoveries/add"}:
                 host = form.get("host", [""])[0]
@@ -631,7 +657,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._redirect("/admin?notice=" + quote_plus("Cleared active sessions by restarting Authelia; users will need to log in again"))
                 return
             if parsed.path == "/admin/users/ensure":
-                username = form.get("username", [""])[0].strip()
+                username = validate_username(form.get("username", [""])[0].strip())
                 display_name = form.get("display_name", [""])[0].strip()
                 email = form.get("email", [""])[0].strip()
                 password = form.get("password", [""])[0]
@@ -641,29 +667,29 @@ class Handler(BaseHTTPRequestHandler):
                 self._redirect("/admin/users?notice=" + quote_plus(f"User '{username}' created or updated as {groups[0][:-1] if groups[0].endswith('s') else groups[0]}"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/password"):
-                username = parsed.path.split("/")[3]
+                username = validate_username(parsed.path.split("/")[3])
                 password = form.get("password", [""])[0]
                 APP.set_user_password(username=username, password=password)
                 self._redirect("/admin/users?notice=" + quote_plus(f"Password reset for '{username}'"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/role"):
-                username = parsed.path.split("/")[3]
+                username = validate_username(parsed.path.split("/")[3])
                 role = form.get("role", ["users"])[0].strip()
                 APP.set_user_role(username=username, role=role)
                 self._redirect("/admin/users?notice=" + quote_plus(f"Updated role for '{username}' to {role[:-1] if role.endswith('s') else role}"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/mfa-reset"):
-                username = parsed.path.split("/")[3]
+                username = validate_username(parsed.path.split("/")[3])
                 APP.reset_user_mfa(username=username)
                 self._redirect("/admin/users?notice=" + quote_plus(f"Cleared MFA enrollment fields for '{username}'"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/disable"):
-                username = parsed.path.split("/")[3]
+                username = validate_username(parsed.path.split("/")[3])
                 APP.set_user_disabled(username=username, disabled=True)
                 self._redirect("/admin/users?notice=" + quote_plus(f"Disabled '{username}'"))
                 return
             if parsed.path.startswith("/admin/users/") and parsed.path.endswith("/enable"):
-                username = parsed.path.split("/")[3]
+                username = validate_username(parsed.path.split("/")[3])
                 APP.set_user_disabled(username=username, disabled=False)
                 self._redirect("/admin/users?notice=" + quote_plus(f"Enabled '{username}'"))
                 return
@@ -681,6 +707,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _authorized(self) -> bool:
+        # Intentional trust model: this loopback-only admin UI relies on the
+        # YunoHost/nginx fronting layer to enforce operator auth before traffic
+        # reaches localhost:9087. This method remains permissive by design, but
+        # the boundary should stay documented and reviewed.
         return True
 
 

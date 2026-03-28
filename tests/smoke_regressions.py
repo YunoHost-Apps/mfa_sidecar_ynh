@@ -191,6 +191,19 @@ class InjectorTests(unittest.TestCase):
             self.assertIn('auth_request_set $redirection_url $upstream_http_location;', text)
 
 
+class AdminUiHardeningTests(unittest.TestCase):
+    def test_admin_ui_contains_csrf_cookie_and_validation(self):
+        text = (SOURCES / 'admin_ui_app.py').read_text(encoding='utf-8')
+        self.assertIn('CSRF_COOKIE_NAME = "mfa_sidecar_admin_csrf"', text)
+        self.assertIn('Set-Cookie", f"{CSRF_COOKIE_NAME}={APP.csrf_token}; Path=/; HttpOnly; SameSite=Strict"', text)
+        self.assertIn('invalid CSRF token', text)
+
+    def test_password_hashing_no_longer_uses_password_argv(self):
+        text = (SOURCES / 'manage_authelia_users.py').read_text(encoding='utf-8')
+        self.assertIn('pty.openpty()', text)
+        self.assertNotIn('--password", password', text)
+
+
 class PackagingPathTests(unittest.TestCase):
     def _shell_text(self, path: Path) -> str:
         return path.read_text(encoding='utf-8')
