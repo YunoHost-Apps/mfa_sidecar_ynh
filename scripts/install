@@ -69,7 +69,7 @@ if [[ ! -f "/etc/nginx/conf.d/${domain}.conf" ]]; then
 fi
 
 mkdir -p "/etc/nginx/conf.d/${domain}.d"
-cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
+cp /etc/mfa-sidecar/nginx/portal.conf "$SCRIPT_DIR/../conf/nginx.conf"
 ynh_config_add_nginx
 _mfa_sidecar_inject_primary_domain_include
 ynh_systemctl --service=nginx --action=reload || true

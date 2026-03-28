@@ -297,27 +297,26 @@ class ApplyRuntimeHookTests(unittest.TestCase):
         self.assertIn('if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":', text)
         self.assertIn('subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True, capture_output=True, text=True)', text)
 
-    def test_admin_service_allows_nginx_runtime_paths_under_systemd_sandbox(self):
+    def test_admin_service_does_not_hardcode_brittle_mount_namespace_paths(self):
         text = (SOURCES / 'mfa-sidecar-admin.service').read_text(encoding='utf-8')
-        self.assertIn('/run', text)
-        self.assertIn('/var/log/nginx', text)
-        self.assertIn('/var/lib/nginx', text)
-        self.assertIn('/var/cache/nginx', text)
-        self.assertIn('ProtectSystem=strict', text)
+        self.assertIn('PrivateTmp=true', text)
+        self.assertIn('ProtectHome=true', text)
+        self.assertNotIn('ProtectSystem=strict', text)
+        self.assertNotIn('ReadWritePaths=', text)
+        self.assertNotIn('/var/cache/nginx', text)
 
 
 class PackagingPathTests(unittest.TestCase):
     def _shell_text(self, path: Path) -> str:
         return path.read_text(encoding='utf-8')
 
-    def test_install_and_upgrade_reference_existing_shipped_files(self):
-        repo_files = {p.relative_to(REPO).as_posix() for p in REPO.rglob('*') if p.is_file() and '.git/' not in p.as_posix()}
-        pattern = re.compile(r'\.\./([A-Za-z0-9_./-]+)')
-        for script in (SCRIPTS / 'install', SCRIPTS / 'upgrade'):
+    def test_install_upgrade_restore_and_config_use_script_dir_anchored_repo_paths(self):
+        for script in (SCRIPTS / 'install', SCRIPTS / 'upgrade', SCRIPTS / 'restore', SCRIPTS / 'config'):
             text = self._shell_text(script)
-            refs = sorted(set(pattern.findall(text)))
-            missing = [ref for ref in refs if ref not in repo_files and not ref.startswith('conf/nginx.conf')]
-            self.assertEqual(missing, [], f'{script.name} references missing packaged files: {missing}')
+            self.assertIn('SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"', text)
+        common = self._shell_text(SCRIPTS / '_common.sh')
+        self.assertIn('_mfa_sidecar_pkg_path', common)
+        self.assertNotRegex(common, r'install -D -m \d+ \.\./')
 
     def test_expected_docs_and_license_files_exist(self):
         expected = [

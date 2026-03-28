@@ -1,5 +1,16 @@
 #!/bin/bash
 
+_mfa_sidecar_package_root() {
+    local script_base
+    script_base="${SCRIPT_DIR:-$(pwd)}"
+    cd -- "$script_base/.." >/dev/null 2>&1 && pwd
+}
+
+_mfa_sidecar_pkg_path() {
+    local rel="$1"
+    printf '%s/%s\n' "$(_mfa_sidecar_package_root)" "$rel"
+}
+
 _mfa_sidecar_resolve_paths() {
     local resolved_install_dir resolved_data_dir
 
@@ -83,40 +94,40 @@ _mfa_sidecar_install_layout() {
 }
 
 _mfa_sidecar_install_packaged_files() {
-    install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
-    install -D -m 755 ../sources/stage_alpha_runtime.py "$install_dir/bin/stage_alpha_runtime.py"
-    install -D -m 755 ../sources/inject_protected_include.py "$install_dir/bin/inject_protected_include.py"
-    install -D -m 755 ../sources/install_authelia_from_vendor.py "$install_dir/bin/install_authelia_from_vendor.py"
-    install -D -m 755 ../sources/bootstrap_authelia_users.py "$install_dir/bin/bootstrap_authelia_users.py"
-    install -D -m 755 ../sources/manage_authelia_users.py "$install_dir/bin/manage_authelia_users.py"
-    install -D -m 755 ../sources/admin_ui_app.py "$install_dir/bin/admin_ui_app.py"
-    install -D -m 755 ../sources/policy_admin.py "$install_dir/bin/policy_admin.py"
-    install -D -m 755 ../sources/discovery.py "$install_dir/bin/discovery.py"
-    install -D -m 644 ../sources/authelia.service /etc/systemd/system/mfa-sidecar-authelia.service
-    install -D -m 644 ../sources/mfa-sidecar-admin.service /etc/systemd/system/mfa-sidecar-admin.service
-    install -D -m 644 ../sources/authelia-release.json "$install_dir/sources/authelia-release.json"
-    install -D -m 644 ../sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
-    if [[ -f ../assets/logo.png ]]; then
-        install -D -m 644 ../assets/logo.png "$install_dir/www/logo.png"
-    elif [[ -f ../assets/logo.jpg ]]; then
-        install -D -m 644 ../assets/logo.jpg "$install_dir/www/logo.jpg"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/render_alpha_config.py)" "$install_dir/bin/render_alpha_config.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/stage_alpha_runtime.py)" "$install_dir/bin/stage_alpha_runtime.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/inject_protected_include.py)" "$install_dir/bin/inject_protected_include.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/install_authelia_from_vendor.py)" "$install_dir/bin/install_authelia_from_vendor.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/bootstrap_authelia_users.py)" "$install_dir/bin/bootstrap_authelia_users.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/manage_authelia_users.py)" "$install_dir/bin/manage_authelia_users.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/admin_ui_app.py)" "$install_dir/bin/admin_ui_app.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/policy_admin.py)" "$install_dir/bin/policy_admin.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/discovery.py)" "$install_dir/bin/discovery.py"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path sources/authelia.service)" /etc/systemd/system/mfa-sidecar-authelia.service
+    install -D -m 644 "$(_mfa_sidecar_pkg_path sources/mfa-sidecar-admin.service)" /etc/systemd/system/mfa-sidecar-admin.service
+    install -D -m 644 "$(_mfa_sidecar_pkg_path sources/authelia-release.json)" "$install_dir/sources/authelia-release.json"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz)" "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
+    if [[ -f "$(_mfa_sidecar_pkg_path assets/logo.png)" ]]; then
+        install -D -m 644 "$(_mfa_sidecar_pkg_path assets/logo.png)" "$install_dir/www/logo.png"
+    elif [[ -f "$(_mfa_sidecar_pkg_path assets/logo.jpg)" ]]; then
+        install -D -m 644 "$(_mfa_sidecar_pkg_path assets/logo.jpg)" "$install_dir/www/logo.jpg"
     fi
-    install -D -m 644 ../manifest.toml "$install_dir/manifest.toml"
-    install -D -m 644 ../README.md "$install_dir/README.md"
-    install -D -m 644 ../LICENSE "$install_dir/LICENSE"
-    install -D -m 644 ../THIRD_PARTY_NOTICES.md "$install_dir/THIRD_PARTY_NOTICES.md"
-    install -D -m 644 ../licenses/Authelia-Apache-2.0.txt "$install_dir/licenses/Authelia-Apache-2.0.txt"
-    install -D -m 644 ../docs/INSTALL.md "$install_dir/docs/INSTALL.md"
-    install -D -m 644 ../docs/ADMIN.md "$install_dir/docs/ADMIN.md"
-    install -D -m 644 ../docs/USERS.md "$install_dir/docs/USERS.md"
-    install -D -m 644 ../docs/TROUBLESHOOTING.md "$install_dir/docs/TROUBLESHOOTING.md"
-    install -D -m 644 ../docs/TESTING.md "$install_dir/docs/TESTING.md"
-    install -D -m 644 ../docs/LIVE-BOX-VERIFICATION.md "$install_dir/docs/LIVE-BOX-VERIFICATION.md"
-    install -D -m 644 ../docs/SECURITY-NOTES.md "$install_dir/docs/SECURITY-NOTES.md"
-    install -D -m 644 ../docs/RESTORE-REMOVE.md "$install_dir/docs/RESTORE-REMOVE.md"
-    install -D -m 644 ../docs/SUBMISSION-NOTES.md "$install_dir/docs/SUBMISSION-NOTES.md"
-    install -D -m 644 ../docs/RELEASE-GATES.md "$install_dir/docs/RELEASE-GATES.md"
-    install -D -m 755 ../scripts/verify_live_box.sh "$install_dir/bin/verify_live_box.sh"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path manifest.toml)" "$install_dir/manifest.toml"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path README.md)" "$install_dir/README.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path LICENSE)" "$install_dir/LICENSE"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path THIRD_PARTY_NOTICES.md)" "$install_dir/THIRD_PARTY_NOTICES.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path licenses/Authelia-Apache-2.0.txt)" "$install_dir/licenses/Authelia-Apache-2.0.txt"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/INSTALL.md)" "$install_dir/docs/INSTALL.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/ADMIN.md)" "$install_dir/docs/ADMIN.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/USERS.md)" "$install_dir/docs/USERS.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/TROUBLESHOOTING.md)" "$install_dir/docs/TROUBLESHOOTING.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/TESTING.md)" "$install_dir/docs/TESTING.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/LIVE-BOX-VERIFICATION.md)" "$install_dir/docs/LIVE-BOX-VERIFICATION.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/SECURITY-NOTES.md)" "$install_dir/docs/SECURITY-NOTES.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/RESTORE-REMOVE.md)" "$install_dir/docs/RESTORE-REMOVE.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/SUBMISSION-NOTES.md)" "$install_dir/docs/SUBMISSION-NOTES.md"
+    install -D -m 644 "$(_mfa_sidecar_pkg_path docs/RELEASE-GATES.md)" "$install_dir/docs/RELEASE-GATES.md"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path scripts/verify_live_box.sh)" "$install_dir/bin/verify_live_box.sh"
 }
 
 
@@ -358,9 +369,9 @@ PYEOF
 }
 
 _mfa_sidecar_install_reinject_hooks() {
-    install -D -m 755 ../sources/hooks/post_app_upgrade-reinject /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
-    install -D -m 755 ../sources/hooks/conf_regen-reinject /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
-    install -D -m 755 ../sources/hooks/apply-runtime-as-root "$install_dir/bin/apply-runtime-as-root"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/hooks/post_app_upgrade-reinject)" /etc/yunohost/hooks.d/post_app_upgrade/50-mfa-sidecar-reinject
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/hooks/conf_regen-reinject)" /etc/yunohost/hooks.d/conf_regen/98-mfa-sidecar
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/hooks/apply-runtime-as-root)" "$install_dir/bin/apply-runtime-as-root"
 }
 
 _mfa_sidecar_remove_reinject_hooks() {

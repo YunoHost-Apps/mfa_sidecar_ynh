@@ -190,7 +190,7 @@ run__reload_runtime() {
 
     _mfa_sidecar_sync_protected_domain_includes
 
-    cp /etc/mfa-sidecar/nginx/portal.conf ../conf/nginx.conf
+    cp /etc/mfa-sidecar/nginx/portal.conf "$SCRIPT_DIR/../conf/nginx.conf"
     ynh_config_add_nginx
     ynh_systemctl --service=nginx --action=reload
     ynh_systemctl --service=mfa-sidecar-authelia --action=restart
