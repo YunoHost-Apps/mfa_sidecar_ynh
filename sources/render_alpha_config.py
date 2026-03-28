@@ -230,11 +230,13 @@ def build_nginx_auth_endpoint_conf(site: dict, authz_endpoint: str, *, enforceme
         proxy_pass {authz_endpoint};
         proxy_pass_request_body off;
         proxy_set_header Content-Length "";
+        proxy_set_header Connection "";
+        proxy_set_header X-Original-Method $request_method;
         proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header X-Forwarded-URI $request_uri;
-        proxy_set_header X-Real-IP $remote_addr;
         """
     ).strip() if enforcement_enabled else "return 204;\n          # sidecar enforcement disabled"
     return dedent(

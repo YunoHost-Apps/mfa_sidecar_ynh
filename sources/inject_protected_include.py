@@ -33,7 +33,8 @@ def managed_auth_block(auth_location: str, portal_domain: str, newline: str = "\
     return (
         f"{MARK_START}{newline}"
         f"  auth_request {auth_location};{newline}"
-        f"  error_page 401 =302 https://{portal_domain}/?rd=$scheme://$http_host$request_uri;{newline}"
+        f"  auth_request_set $redirection_url $upstream_http_location;{newline}"
+        f"  error_page 401 =302 $redirection_url;{newline}"
         f"{MARK_END}{newline}"
     )
 
