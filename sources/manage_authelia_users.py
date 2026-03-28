@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import pty
+import re
+import select
 import shutil
 import subprocess
 import sys
@@ -12,6 +16,7 @@ import yaml
 
 DEFAULT_GROUPS = ["users"]
 MANAGED_MARKER = "managed_by_mfa_sidecar_sync"
+USERNAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$")
 DEFAULT_PLACEHOLDER_HASH = "$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$2M9QGyGynl3CE4Yd7sQ0Jd0N1k1fA0sQO9L5H5lYv3o"
 MFA_FIELDS = [
     "totp_secret",
@@ -44,14 +49,49 @@ def save_users(path: Path, data: dict) -> None:
     path.chmod(0o600)
 
 
+def validate_username(username: str) -> str:
+    username = (username or "").strip()
+    if not USERNAME_RE.match(username):
+        raise SystemExit("username must match [A-Za-z0-9][A-Za-z0-9_.@-]{0,127}")
+    return username
+
+
 def hash_password(authelia_bin: str, password: str) -> str:
-    proc = subprocess.run(
-        [authelia_bin, "crypto", "hash", "generate", "argon2", "--password", password, "--no-confirm"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    lines = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+    master_fd, slave_fd = pty.openpty()
+    try:
+        proc = subprocess.Popen(
+            [authelia_bin, "crypto", "hash", "generate", "argon2", "--no-confirm"],
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            text=True,
+            close_fds=True,
+        )
+    finally:
+        os.close(slave_fd)
+
+    output = []
+    password_sent = False
+    while True:
+        ready, _, _ = select.select([master_fd], [], [], 5)
+        if not ready:
+            if proc.poll() is not None:
+                break
+            continue
+        chunk = os.read(master_fd, 4096).decode(errors="replace")
+        if not chunk:
+            if proc.poll() is not None:
+                break
+            continue
+        output.append(chunk)
+        if ("Enter Password:" in chunk or "Password:" in chunk) and not password_sent:
+            os.write(master_fd, (password + "\n").encode())
+            password_sent = True
+    proc.wait(timeout=10)
+    os.close(master_fd)
+    if proc.returncode != 0:
+        raise SystemExit("Authelia hash command failed: " + "".join(output).strip())
+    lines = [line.strip() for line in "".join(output).splitlines() if line.strip()]
     if not lines:
         raise SystemExit("Authelia hash command returned no output")
     for line in reversed(lines):
@@ -97,6 +137,7 @@ def command_ensure(args: argparse.Namespace) -> int:
     data = load_users(path)
     users = data["users"]
 
+    args.username = validate_username(args.username)
     changed = False
     user, created = ensure_user_record(users, args.username)
     changed = changed or created
@@ -206,6 +247,7 @@ def command_set_password(args: argparse.Namespace) -> int:
     path = Path(args.users_file)
     data = load_users(path)
     users = data["users"]
+    args.username = validate_username(args.username)
     user, _ = ensure_user_record(users, args.username)
     password_hash = hash_password(args.authelia_bin, args.password)
     user["password"] = password_hash
@@ -219,6 +261,7 @@ def command_set_disabled(args: argparse.Namespace) -> int:
     path = Path(args.users_file)
     data = load_users(path)
     users = data["users"]
+    args.username = validate_username(args.username)
     if args.username not in users:
         raise SystemExit(f"User not found: {args.username}")
     users[args.username]["disabled"] = bool(args.disabled)
@@ -232,6 +275,7 @@ def command_reset_mfa(args: argparse.Namespace) -> int:
     path = Path(args.users_file)
     data = load_users(path)
     users = data["users"]
+    args.username = validate_username(args.username)
     if args.username not in users:
         raise SystemExit(f"User not found: {args.username}")
     user = users[args.username]
@@ -249,6 +293,7 @@ def command_set_groups(args: argparse.Namespace) -> int:
     path = Path(args.users_file)
     data = load_users(path)
     users = data["users"]
+    args.username = validate_username(args.username)
     if args.username not in users:
         raise SystemExit(f"User not found: {args.username}")
     users[args.username]["groups"] = args.groups
