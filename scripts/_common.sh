@@ -335,6 +335,8 @@ ${app} ALL=(root) NOPASSWD: $install_dir/bin/apply-runtime-as-root $install_dir
 # MFA Sidecar: allow admin UI to discover YunoHost domains and apps
 ${app} ALL=(root) NOPASSWD: /usr/bin/yunohost domain list --output-as json
 ${app} ALL=(root) NOPASSWD: /usr/bin/yunohost app list --output-as json
+# MFA Sidecar: allow admin UI to restart Authelia after user-management changes
+${app} ALL=(root) NOPASSWD: /usr/bin/systemctl restart mfa-sidecar-authelia
 SUDOEOF
     chmod 0440 /etc/sudoers.d/mfa-sidecar
 }
