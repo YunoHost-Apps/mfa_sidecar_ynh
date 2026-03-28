@@ -243,13 +243,22 @@ class AdminUiHardeningTests(unittest.TestCase):
 
 
 class ApplyRuntimeHookTests(unittest.TestCase):
-    def test_apply_runtime_hook_uses_staged_render_index_and_fails_loudly(self):
+    def test_apply_runtime_hook_renders_stages_and_uses_staged_render_index(self):
         text = (SOURCES / 'hooks' / 'apply-runtime-as-root').read_text(encoding='utf-8')
+        self.assertIn('POLICY_PATH="$INSTALL_DIR/config/domain-policy.yaml"', text)
+        self.assertIn('GENERATED_DIR="$INSTALL_DIR/deploy/generated-alpha"', text)
+        self.assertIn('python3 "$RENDER_SCRIPT" "$POLICY_PATH" "$GENERATED_DIR"', text)
+        self.assertIn('python3 "$STAGE_SCRIPT" "$GENERATED_DIR" /', text)
         self.assertIn('RENDER_INDEX="/etc/mfa-sidecar/render-index.json"', text)
         self.assertIn('staged render index missing', text)
         self.assertNotIn('reinject-all "$RENDER_INDEX" --protected-dir "$PROTECTED_DIR" || true', text)
         self.assertIn('nginx -t', text)
         self.assertIn('systemctl reload nginx', text)
+
+    def test_admin_ui_apply_runtime_uses_single_root_side_apply_by_default(self):
+        text = (SOURCES / 'admin_ui_app.py').read_text(encoding='utf-8')
+        self.assertIn('if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":', text)
+        self.assertIn('subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True)', text)
 
 
 class PackagingPathTests(unittest.TestCase):

@@ -88,9 +88,9 @@ class AdminApp:
         self.csrf_token = secrets.token_urlsafe(32)
 
     def apply_runtime(self) -> None:
-        subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
-        subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
         if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":
+            subprocess.run(["python3", DEFAULT_RENDER_SCRIPT, str(self.policy_path), str(self.generated_dir)], check=True)
+            subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
             return
         apply_helper = str(Path(DEFAULT_INSTALL_DIR) / "bin" / "apply-runtime-as-root")
         subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True)
