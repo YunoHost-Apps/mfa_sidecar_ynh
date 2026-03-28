@@ -301,6 +301,8 @@ class ApplyRuntimeHookTests(unittest.TestCase):
         text = (SOURCES / 'mfa-sidecar-admin.service').read_text(encoding='utf-8')
         self.assertIn('/run', text)
         self.assertIn('/var/log/nginx', text)
+        self.assertIn('/var/lib/nginx', text)
+        self.assertIn('/var/cache/nginx', text)
         self.assertIn('ProtectSystem=strict', text)
 
 
