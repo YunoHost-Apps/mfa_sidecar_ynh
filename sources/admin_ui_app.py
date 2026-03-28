@@ -74,6 +74,15 @@ def load_package_version() -> str:
     return "unknown"
 
 
+def load_live_runtime_metadata() -> dict:
+    path = Path("/etc/mfa-sidecar/runtime-metadata.json")
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except OSError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 class AdminApp:
     def __init__(self) -> None:
         self.policy_path = Path(DEFAULT_POLICY_PATH)
@@ -345,12 +354,15 @@ class AdminApp:
 
     def render_index(self, error: str = "", notice: str = "", edit_entry_id: str = "", csrf_token: str = "") -> str:
         summary = self.policy.portal_summary()
+        live_runtime = load_live_runtime_metadata()
         package_version = load_package_version()
         csrf_input = f"<input type='hidden' name='csrf_token' value='{h(csrf_token)}' />"
         entries = self.policy.list_entries()
         portal_domain = summary.get('portal_domain', '')
         root_domain = extract_root_domain(portal_domain)
-        enforcement_enabled = bool(summary.get('enforcement_enabled', True))
+        policy_enforcement_enabled = bool(summary.get('enforcement_enabled', True))
+        live_enforcement_enabled = bool(live_runtime.get('enforcement_enabled', policy_enforcement_enabled))
+        enforcement_enabled = live_enforcement_enabled
         discovered, discovery_error = self.discovered_targets()
         edit_entry = next((entry for entry in entries if entry['id'] == edit_entry_id), None)
 
@@ -444,6 +456,15 @@ class AdminApp:
         error_html = f"<div class='error'>{h(error)}</div>" if error else ""
         notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
         discovery_html = f"<div class='error'>Discovery degraded: {h(discovery_error)}</div>" if discovery_error else ""
+        state_mismatch_html = ""
+        if live_enforcement_enabled != policy_enforcement_enabled:
+            state_mismatch_html = (
+                "<div class='error'>"
+                f"<strong>Live/runtime mismatch.</strong> Policy says global enforcement is <code>{'enabled' if policy_enforcement_enabled else 'disabled'}</code>, "
+                f"but the last applied runtime reports <code>{'enabled' if live_enforcement_enabled else 'disabled'}</code>. "
+                "The live runtime state is shown below. Re-apply before trusting the toggle state."
+                "</div>"
+            )
         disabled_bar = ""
         if not enforcement_enabled:
             disabled_bar = (
@@ -515,6 +536,7 @@ class AdminApp:
   </nav>
   <p class='muted'>Version <code>{h(package_version)}</code> · Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
   {disabled_bar}
+  {state_mismatch_html}
   {notice_html}
   {error_html}
   {discovery_html}
@@ -525,7 +547,8 @@ class AdminApp:
     <li><strong>Portal path:</strong> <code>{h(summary['portal_path'])}</code></li>
     <li><strong>Remembered session:</strong> <code>{h(summary['remember_me'])}</code></li>
     <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
-    <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled (emergency bypass active)'}</code></li>
+    <li><strong>Live global enforcement:</strong> <code>{'enabled' if live_enforcement_enabled else 'disabled (emergency bypass active)'}</code></li>
+    <li><strong>Policy intent:</strong> <code>{'enabled' if policy_enforcement_enabled else 'disabled'}</code></li>
   </ul>
   <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 0.5rem;'>
     {csrf_input}
