@@ -1,7 +1,7 @@
 # MFA Sidecar for YunoHost
 
 <p align="center">
-  <img src="assets/logo.png" alt="MFA Sidecar logo" width="160" />
+  <img src="assets/logo.jpg" alt="MFA Sidecar logo" width="160" />
 </p>
 
 MFA Sidecar is a browser-first MFA perimeter for selected YunoHost web apps.
