@@ -4,17 +4,26 @@
 set -euo pipefail
 
 INSTALL_DIR="${1:-/opt/yunohost/mfa_sidecar}"
-RENDER_INDEX="$INSTALL_DIR/deploy/generated-alpha/render-index.json"
+RENDER_INDEX="/etc/mfa-sidecar/render-index.json"
 INJECTOR="$INSTALL_DIR/bin/inject_protected_include.py"
 PROTECTED_DIR="/etc/mfa-sidecar/nginx/protected"
 
-# Re-inject auth_request directives into target app location blocks
-if [[ -f "$RENDER_INDEX" && -x "$INJECTOR" ]]; then
-    python3 "$INJECTOR" reinject-all "$RENDER_INDEX" --protected-dir "$PROTECTED_DIR" || true
+if [[ ! -x "$INJECTOR" ]]; then
+    echo "mfa-sidecar apply-runtime: injector missing or not executable: $INJECTOR" >&2
+    exit 1
 fi
 
+if [[ ! -f "$RENDER_INDEX" ]]; then
+    echo "mfa-sidecar apply-runtime: staged render index missing: $RENDER_INDEX" >&2
+    exit 1
+fi
+
+# Re-inject auth_request directives into target app location blocks
+python3 "$INJECTOR" reinject-all "$RENDER_INDEX" --protected-dir "$PROTECTED_DIR"
+
 # Validate and reload nginx
-nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+nginx -t
+systemctl reload nginx
 
 # Restart Authelia so it picks up the regenerated config
-systemctl restart mfa-sidecar-authelia 2>/dev/null || true
+systemctl restart mfa-sidecar-authelia

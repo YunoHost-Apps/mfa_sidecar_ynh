@@ -42,6 +42,7 @@ def load_module(name: str, path: Path):
 
 render = load_module("render_alpha_config", SOURCES / "render_alpha_config.py")
 inject = load_module("inject_protected_include", SOURCES / "inject_protected_include.py")
+stage_runtime = load_module("stage_alpha_runtime", SOURCES / "stage_alpha_runtime.py")
 
 
 def sample_policy() -> dict:
@@ -161,6 +162,24 @@ class RenderAuthRequestTests(unittest.TestCase):
             self.assertEqual(cfg["totp"]["issuer"], "MFA Sidecar")
 
 
+class StageRuntimeTests(unittest.TestCase):
+    def test_stage_runtime_copies_render_index_into_live_etc_tree(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            generated = base / 'generated'
+            out = base / 'staged'
+            (generated / 'nginx').mkdir(parents=True)
+            (generated / 'authelia-config.generated.yml').write_text('server: {}\n', encoding='utf-8')
+            (generated / 'runtime-metadata.json').write_text('{"enforcement_enabled": true}\n', encoding='utf-8')
+            (generated / 'render-index.json').write_text('{"enabled": []}\n', encoding='utf-8')
+            (generated / 'nginx' / 'portal.generated.conf').write_text('location / {}\n', encoding='utf-8')
+            stage_runtime.main.__globals__['resolve_ids'] = lambda owner, group: (None, None)
+            subprocess.run([
+                'python3', str(SOURCES / 'stage_alpha_runtime.py'), str(generated), str(out)
+            ], check=True)
+            self.assertTrue((out / 'etc/mfa-sidecar/render-index.json').exists())
+
+
 class InjectorTests(unittest.TestCase):
     def test_managed_auth_block_uses_authelia_redirect_header(self):
         block = inject.managed_auth_block('/authelia-auth-home-domain-tld', 'auth.domain.tld')
@@ -221,6 +240,16 @@ class AdminUiHardeningTests(unittest.TestCase):
         text = (SOURCES / 'manage_authelia_users.py').read_text(encoding='utf-8')
         self.assertIn('pty.openpty()', text)
         self.assertNotIn('--password", password', text)
+
+
+class ApplyRuntimeHookTests(unittest.TestCase):
+    def test_apply_runtime_hook_uses_staged_render_index_and_fails_loudly(self):
+        text = (SOURCES / 'hooks' / 'apply-runtime-as-root').read_text(encoding='utf-8')
+        self.assertIn('RENDER_INDEX="/etc/mfa-sidecar/render-index.json"', text)
+        self.assertIn('staged render index missing', text)
+        self.assertNotIn('reinject-all "$RENDER_INDEX" --protected-dir "$PROTECTED_DIR" || true', text)
+        self.assertIn('nginx -t', text)
+        self.assertIn('systemctl reload nginx', text)
 
 
 class PackagingPathTests(unittest.TestCase):
