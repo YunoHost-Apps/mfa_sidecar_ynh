@@ -26,6 +26,7 @@ This package now documents itself around the three surfaces people actually care
 If something is broken or you need a break-glass path:
 
 - **Troubleshooting / Recovery** → `docs/TROUBLESHOOTING.md`
+- **Testing / smoke regressions** → `docs/TESTING.md`
 
 ## Core idea
 
