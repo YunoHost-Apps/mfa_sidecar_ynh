@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-DEFAULT_GROUPS = ["admins"]
+DEFAULT_GROUPS = ["users"]
 MANAGED_MARKER = "managed_by_mfa_sidecar_sync"
 DEFAULT_PLACEHOLDER_HASH = "$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$2M9QGyGynl3CE4Yd7sQ0Jd0N1k1fA0sQO9L5H5lYv3o"
 MFA_FIELDS = [
@@ -245,6 +245,18 @@ def command_reset_mfa(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_set_groups(args: argparse.Namespace) -> int:
+    path = Path(args.users_file)
+    data = load_users(path)
+    users = data["users"]
+    if args.username not in users:
+        raise SystemExit(f"User not found: {args.username}")
+    users[args.username]["groups"] = args.groups
+    save_users(path, data)
+    print(f"Set groups for '{args.username}' in {path}: {','.join(args.groups)}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -287,6 +299,12 @@ def build_parser() -> argparse.ArgumentParser:
     reset_mfa_cmd.add_argument("--users-file", required=True)
     reset_mfa_cmd.add_argument("--username", required=True)
     reset_mfa_cmd.set_defaults(func=command_reset_mfa)
+
+    groups_cmd = sub.add_parser("set-groups")
+    groups_cmd.add_argument("--users-file", required=True)
+    groups_cmd.add_argument("--username", required=True)
+    groups_cmd.add_argument("--groups", nargs="+", required=True)
+    groups_cmd.set_defaults(func=command_set_groups)
 
     return parser
 

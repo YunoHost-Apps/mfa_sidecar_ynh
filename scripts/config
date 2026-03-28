@@ -251,7 +251,7 @@ run__sync_users_from_yunohost() {
     python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" sync-from-yunohost \
         --users-file "$USERS_FILE" \
         --yunohost-bin "${MFA_SIDECAR_SYNC_YUNOHOST_BIN:-yunohost}" \
-        --default-groups admins
+        --default-groups users
     ynh_systemctl --service=mfa-sidecar-authelia --action=restart
     ynh_print_info "Synchronized sidecar users from YunoHost and restarted Authelia. Missing upstream users are disabled, not deleted."
 }
