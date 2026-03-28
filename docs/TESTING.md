@@ -22,8 +22,13 @@ The test goal is simple:
 ### YunoHost app tests
 
 - `tests.toml`
+- `YunoHost/package_check` (external harness; not vendored in this repo)
 
-These remain useful for basic package install/curl expectations, but they are not rich enough on their own to catch the integration regressions we hit on wm3v.
+These are the first-class app contract. `tests.toml` should describe what package_check is actually allowed to do, and package_check should be treated as the boring baseline for install/remove/upgrade/backup/restore behavior.
+
+For MFA Sidecar specifically, `tests.toml` now explicitly declares the required first-admin install args and excludes `install.subdir` because the app is intentionally dedicated-domain root-only.
+
+These YunoHost tests still are not rich enough on their own to catch every custom integration regression we hit on wm3v, but they are the baseline discipline we should satisfy before trusting any repo-local smoke suite.
 
 ### Repo-local smoke regressions
 
