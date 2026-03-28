@@ -33,6 +33,9 @@ elif [[ -f ../assets/logo.jpg ]]; then
 fi
 install -D -m 644 ../manifest.toml "$install_dir/manifest.toml"
 install -D -m 644 ../README.md "$install_dir/README.md"
+install -D -m 644 ../LICENSE "$install_dir/LICENSE"
+install -D -m 644 ../THIRD_PARTY_NOTICES.md "$install_dir/THIRD_PARTY_NOTICES.md"
+install -D -m 644 ../licenses/Authelia-Apache-2.0.txt "$install_dir/licenses/Authelia-Apache-2.0.txt"
 install -D -m 644 ../docs/INSTALL.md "$install_dir/docs/INSTALL.md"
 install -D -m 644 ../docs/ADMIN.md "$install_dir/docs/ADMIN.md"
 install -D -m 644 ../docs/USERS.md "$install_dir/docs/USERS.md"

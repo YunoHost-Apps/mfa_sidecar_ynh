@@ -120,6 +120,12 @@ This is the primary break-glass mechanism.
 - Authelia config: `/etc/mfa-sidecar/authelia/configuration.yml`
 - portal/nginx assets: `/etc/mfa-sidecar/nginx/`
 
+## Licensing
+
+- MFA Sidecar license: `LICENSE`
+- Third-party notices: `THIRD_PARTY_NOTICES.md`
+- Vendored Authelia license copy: `licenses/Authelia-Apache-2.0.txt`
+
 ## Versioning
 
 This package uses the normal YunoHost versioning convention:
