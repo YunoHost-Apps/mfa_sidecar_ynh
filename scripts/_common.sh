@@ -115,6 +115,7 @@ _mfa_sidecar_install_packaged_files() {
     install -D -m 644 ../docs/SECURITY-NOTES.md "$install_dir/docs/SECURITY-NOTES.md"
     install -D -m 644 ../docs/RESTORE-REMOVE.md "$install_dir/docs/RESTORE-REMOVE.md"
     install -D -m 644 ../docs/SUBMISSION-NOTES.md "$install_dir/docs/SUBMISSION-NOTES.md"
+    install -D -m 644 ../docs/RELEASE-GATES.md "$install_dir/docs/RELEASE-GATES.md"
     install -D -m 755 ../scripts/verify_live_box.sh "$install_dir/bin/verify_live_box.sh"
 }
 

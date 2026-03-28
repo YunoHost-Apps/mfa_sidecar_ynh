@@ -241,6 +241,7 @@ class PackagingPathTests(unittest.TestCase):
             DOCS / 'SECURITY-NOTES.md',
             DOCS / 'RESTORE-REMOVE.md',
             DOCS / 'SUBMISSION-NOTES.md',
+            DOCS / 'RELEASE-GATES.md',
             LICENSES / 'Authelia-Apache-2.0.txt',
             FIXTURES / 'policy_webauthn_enabled.yaml',
         ]
