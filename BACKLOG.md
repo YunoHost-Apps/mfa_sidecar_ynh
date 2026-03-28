@@ -52,3 +52,28 @@ Positive review outcome:
 - No hardcoded secrets found
 - No obviously over-permissive sudo surface found
 - Overall human-operable-under-stress direction was judged strong
+
+## Follow-up from external code review (Claude Opus 4.6)
+
+- [ ] Remove plaintext password exposure via CLI arguments in `manage_authelia_users.py` / admin UI subprocesses.
+  - Prefer stdin or another non-argv path for password handoff.
+
+- [ ] Document the localhost admin trust boundary explicitly.
+  - `admin_ui_app._authorized()` currently returns `True` and depends entirely on loopback bind + nginx/YunoHost auth.
+  - Add comments/docs so this is clearly intentional if retained.
+
+- [ ] Add CSRF protection for admin UI POST actions.
+  - Current loopback + proxy model lowers risk, but POST-only admin actions should still get tokens if the surface is going public.
+
+- [ ] Tighten username/path validation for admin UI user-action routes.
+  - Current routing accepts usernames from path segments without an explicit validation helper.
+
+- [ ] Reduce lifecycle-script drift.
+  - `install`, `upgrade`, and `restore` still share a lot of duplicated file-install logic.
+  - Factor common packaging/install steps where practical.
+
+- [ ] Consider documenting the root apply helper trust boundary more explicitly.
+  - The sudo helper is tightly scoped, but it still applies root-owned nginx/runtime changes from app-controlled generated state.
+
+- [ ] Revisit localhost SMTP assumptions in submission notes.
+  - `disable_require_tls: true` and `tls.skip_verify: true` are acceptable for local delivery, but should be described honestly if the local MTA relays outward.
