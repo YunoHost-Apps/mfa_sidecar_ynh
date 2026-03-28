@@ -343,12 +343,12 @@ _mfa_sidecar_remove_sudoers() {
     rm -f /etc/sudoers.d/mfa-sidecar
 }
 
-_mfa_sidecar_write_alpha_notes() {
+_mfa_sidecar_write_runtime_notes() {
     {
-        printf '%s\n' 'MFA Sidecar alpha package'
-        printf '%s\n' '========================='
+        printf '%s\n' 'MFA Sidecar package'
+        printf '%s\n' '==================='
         printf '\n'
-        printf '%s\n' 'This alpha package seeds a managed-sites policy file, installs a vendored pinned'
+        printf '%s\n' 'This package seeds a managed-sites policy file, installs a vendored pinned'
         printf '%s\n' 'Authelia release, generates Authelia/nginx runtime artifacts, and stages them'
         printf '%s\n' 'into live runtime paths.'
         printf '\n'
@@ -369,7 +369,7 @@ _mfa_sidecar_write_alpha_notes() {
         printf '%s\n' "- vendored authelia source: $install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
         printf '%s\n' "- installed authelia binary: $install_dir/bin/authelia"
         printf '\n'
-        printf '%s\n' 'Current beta-shaped improvements:'
+        printf '%s\n' 'Current improvements:'
         printf '%s\n' '- dedicated portal domain enforced'
         printf '%s\n' '- managed host+path entries with longest-match-wins semantics'
         printf '%s\n' '- vendored pinned Authelia artifact with sha256 verification'
@@ -381,5 +381,5 @@ _mfa_sidecar_write_alpha_notes() {
         printf '%s\n' '- use YunoHost operator/admin auth to reach `/admin`; the admin UI is no longer intended to depend on a custom sidecar header secret'
         printf '%s\n' '- validate live auth flow after install'
         printf '%s\n' '- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls'
-    } > "$install_dir/README.alpha"
+    } > "$install_dir/README.package"
 }

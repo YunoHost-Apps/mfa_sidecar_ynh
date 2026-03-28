@@ -43,7 +43,7 @@ def validate_upstream(upstream: str) -> str:
     if not parsed.hostname:
         raise PolicyError("upstream must include a hostname")
     if parsed.path not in {"", "/"}:
-        raise PolicyError("upstream must be host+port only for alpha")
+        raise PolicyError("upstream must be host+port only for now")
     return upstream.rstrip("/")
 
 

@@ -26,7 +26,7 @@ if [[ -d "$portal_nginx_dir" ]] && [[ -z "$(find "$portal_nginx_dir" -mindepth 1
 fi
 
 #=================================================
-# DISABLE SERVICE (ALPHA DRAFT)
+# DISABLE SERVICES
 #=================================================
 ynh_systemctl --service=mfa-sidecar-authelia --action=stop || true
 ynh_systemctl --service=mfa-sidecar-authelia --action=disable || true

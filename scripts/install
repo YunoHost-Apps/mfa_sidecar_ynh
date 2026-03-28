@@ -10,7 +10,7 @@ _mfa_sidecar_validate_inputs
 #=================================================
 # SETUP APP STRUCTURE
 #=================================================
-ynh_script_progression "Preparing MFA sidecar alpha layout..."
+ynh_script_progression "Preparing MFA Sidecar layout..."
 
 _mfa_sidecar_install_layout
 install -D -m 755 ../sources/render_alpha_config.py "$install_dir/bin/render_alpha_config.py"
@@ -70,7 +70,7 @@ python3 "$install_dir/bin/manage_authelia_users.py" ensure-user \
     --email "$first_email" \
     --password "$first_password" \
     --groups admins
-_mfa_sidecar_write_alpha_notes
+_mfa_sidecar_write_runtime_notes
 
 #=================================================
 # CONFIGURE NGINX
@@ -89,7 +89,7 @@ _mfa_sidecar_inject_primary_domain_include
 ynh_systemctl --service=nginx --action=reload || true
 
 #=================================================
-# ENABLE SERVICE (ALPHA DRAFT)
+# ENABLE SERVICES
 #=================================================
 ynh_script_progression "Registering sidecar services..."
 systemctl daemon-reload || true

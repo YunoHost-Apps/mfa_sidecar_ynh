@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage generated alpha runtime files into a target root/prefix."""
+"""Stage generated runtime files into a target root/prefix."""
 
 from __future__ import annotations
 
@@ -91,7 +91,7 @@ def main() -> None:
 
     apply_tree_permissions(prefix, args.owner, args.group)
 
-    print(f"Staged alpha runtime into: {prefix}")
+    print(f"Staged runtime into: {prefix}")
 
 
 if __name__ == "__main__":
