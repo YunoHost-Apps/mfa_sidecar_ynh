@@ -9,9 +9,9 @@ User=mfa_sidecar
 Group=mfa_sidecar
 EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
 Environment=MFA_SIDECAR_POLICY_PATH=/opt/yunohost/mfa_sidecar/config/domain-policy.yaml
-Environment=MFA_SIDECAR_RENDER_SCRIPT=/opt/yunohost/mfa_sidecar/bin/render_alpha_config.py
-Environment=MFA_SIDECAR_STAGE_SCRIPT=/opt/yunohost/mfa_sidecar/bin/stage_alpha_runtime.py
-Environment=MFA_SIDECAR_GENERATED_DIR=/opt/yunohost/mfa_sidecar/deploy/generated-alpha
+Environment=MFA_SIDECAR_RENDER_SCRIPT=/opt/yunohost/mfa_sidecar/bin/render_runtime_config.py
+Environment=MFA_SIDECAR_STAGE_SCRIPT=/opt/yunohost/mfa_sidecar/bin/stage_runtime.py
+Environment=MFA_SIDECAR_GENERATED_DIR=/opt/yunohost/mfa_sidecar/deploy/generated-runtime
 Environment=MFA_SIDECAR_STAGE_ROOT=/
 Environment=MFA_SIDECAR_INSTALL_DIR=/opt/yunohost/mfa_sidecar
 Environment=MFA_SIDECAR_ADMIN_BIND=127.0.0.1

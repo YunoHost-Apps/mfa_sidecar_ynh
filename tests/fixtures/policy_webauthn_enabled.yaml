@@ -58,7 +58,7 @@ access_control:
 recovery:
   mode: authelia-reset-password-and-enrollment
   disable_reset: false
-alpha:
+runtime:
   generate_nginx_snippets: true
   generate_authelia_config: true
   enforce_tls_upstream_verification: false

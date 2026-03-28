@@ -4,7 +4,7 @@ set -euo pipefail
 APP="mfa_sidecar"
 INSTALL_DIR="/opt/yunohost/mfa_sidecar"
 POLICY_FILE="$INSTALL_DIR/config/domain-policy.yaml"
-GENERATED_DIR="$INSTALL_DIR/deploy/generated-alpha"
+GENERATED_DIR="$INSTALL_DIR/deploy/generated-runtime"
 RUNTIME_DIR="/etc/mfa-sidecar"
 
 say() {

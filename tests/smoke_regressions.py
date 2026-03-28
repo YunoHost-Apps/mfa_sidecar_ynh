@@ -40,9 +40,9 @@ def load_module(name: str, path: Path):
     return module
 
 
-render = load_module("render_alpha_config", SOURCES / "render_alpha_config.py")
+render = load_module("render_runtime_config", SOURCES / "render_runtime_config.py")
 inject = load_module("inject_protected_include", SOURCES / "inject_protected_include.py")
-stage_runtime = load_module("stage_alpha_runtime", SOURCES / "stage_alpha_runtime.py")
+stage_runtime = load_module("stage_runtime", SOURCES / "stage_runtime.py")
 
 
 def sample_policy() -> dict:
@@ -109,7 +109,7 @@ def sample_policy() -> dict:
             ],
         },
         "recovery": {"mode": "authelia-reset-password-and-enrollment", "disable_reset": False},
-        "alpha": {"generate_nginx_snippets": True, "generate_authelia_config": True, "enforce_tls_upstream_verification": False},
+        "runtime": {"generate_nginx_snippets": True, "generate_authelia_config": True, "enforce_tls_upstream_verification": False},
     }
 
 
@@ -175,7 +175,7 @@ class StageRuntimeTests(unittest.TestCase):
             (generated / 'nginx' / 'portal.generated.conf').write_text('location / {}\n', encoding='utf-8')
             stage_runtime.main.__globals__['resolve_ids'] = lambda owner, group: (None, None)
             subprocess.run([
-                'python3', str(SOURCES / 'stage_alpha_runtime.py'), str(generated), str(out)
+                'python3', str(SOURCES / 'stage_runtime.py'), str(generated), str(out)
             ], check=True)
             self.assertTrue((out / 'etc/mfa-sidecar/render-index.json').exists())
 
@@ -281,7 +281,7 @@ class ApplyRuntimeHookTests(unittest.TestCase):
     def test_apply_runtime_hook_renders_stages_and_uses_staged_render_index(self):
         text = (SOURCES / 'hooks' / 'apply-runtime-as-root').read_text(encoding='utf-8')
         self.assertIn('POLICY_PATH="$INSTALL_DIR/config/domain-policy.yaml"', text)
-        self.assertIn('GENERATED_DIR="$INSTALL_DIR/deploy/generated-alpha"', text)
+        self.assertIn('GENERATED_DIR="$INSTALL_DIR/deploy/generated-runtime"', text)
         self.assertIn('python3 "$RENDER_SCRIPT" "$POLICY_PATH" "$GENERATED_DIR"', text)
         self.assertIn('python3 "$STAGE_SCRIPT" "$GENERATED_DIR" / --owner mfa_sidecar --group mfa_sidecar', text)
         self.assertIn('--owner mfa_sidecar', text)

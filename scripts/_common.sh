@@ -80,7 +80,7 @@ _mfa_sidecar_install_layout() {
     mkdir -p \
         "$install_dir/config" \
         "$install_dir/bin" \
-        "$install_dir/deploy/generated-alpha" \
+        "$install_dir/deploy/generated-runtime" \
         "$install_dir/cache/authelia" \
         "$install_dir/sources/vendor" \
         "$install_dir/run" \
@@ -94,8 +94,8 @@ _mfa_sidecar_install_layout() {
 }
 
 _mfa_sidecar_install_packaged_files() {
-    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/render_alpha_config.py)" "$install_dir/bin/render_alpha_config.py"
-    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/stage_alpha_runtime.py)" "$install_dir/bin/stage_alpha_runtime.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/render_runtime_config.py)" "$install_dir/bin/render_runtime_config.py"
+    install -D -m 755 "$(_mfa_sidecar_pkg_path sources/stage_runtime.py)" "$install_dir/bin/stage_runtime.py"
     install -D -m 755 "$(_mfa_sidecar_pkg_path sources/inject_protected_include.py)" "$install_dir/bin/inject_protected_include.py"
     install -D -m 755 "$(_mfa_sidecar_pkg_path sources/install_authelia_from_vendor.py)" "$install_dir/bin/install_authelia_from_vendor.py"
     install -D -m 755 "$(_mfa_sidecar_pkg_path sources/bootstrap_authelia_users.py)" "$install_dir/bin/bootstrap_authelia_users.py"
@@ -245,7 +245,7 @@ access_control:
 recovery:
   mode: authelia-reset-password-and-enrollment
   disable_reset: false
-alpha:
+runtime:
   generate_nginx_snippets: true
   generate_authelia_config: true
   enforce_tls_upstream_verification: false
@@ -253,12 +253,12 @@ EOF
 }
 
 _mfa_sidecar_sync_runtime_assets() {
-    python3 "$install_dir/bin/render_alpha_config.py" \
+    python3 "$install_dir/bin/render_runtime_config.py" \
         "$install_dir/config/domain-policy.yaml" \
-        "$install_dir/deploy/generated-alpha"
+        "$install_dir/deploy/generated-runtime"
 
-    python3 "$install_dir/bin/stage_alpha_runtime.py" \
-        "$install_dir/deploy/generated-alpha" / \
+    python3 "$install_dir/bin/stage_runtime.py" \
+        "$install_dir/deploy/generated-runtime" / \
         --owner "$app" \
         --group "$app"
 }
@@ -332,7 +332,7 @@ _mfa_sidecar_remove_primary_domain_include() {
 }
 
 _mfa_sidecar_sync_protected_domain_includes() {
-    local render_index="$install_dir/deploy/generated-alpha/render-index.json"
+    local render_index="$install_dir/deploy/generated-runtime/render-index.json"
     if [[ ! -f "$render_index" ]]; then
         return 0
     fi
@@ -341,7 +341,7 @@ _mfa_sidecar_sync_protected_domain_includes() {
 }
 
 _mfa_sidecar_remove_protected_domain_includes() {
-    local render_index="$install_dir/deploy/generated-alpha/render-index.json"
+    local render_index="$install_dir/deploy/generated-runtime/render-index.json"
     if [[ ! -f "$render_index" ]]; then
         find /etc/nginx/conf.d -name '*.conf' -print0 2>/dev/null | while IFS= read -r -d '' conf; do
             python3 "$install_dir/bin/inject_protected_include.py" remove "$conf" || true
@@ -414,7 +414,7 @@ _mfa_sidecar_write_runtime_notes() {
         printf '\n'
         printf '%s\n' 'Generated/staged paths:'
         printf '%s\n' "- policy seed: $install_dir/config/domain-policy.yaml"
-        printf '%s\n' "- generated artifacts: $install_dir/deploy/generated-alpha/"
+        printf '%s\n' "- generated artifacts: $install_dir/deploy/generated-runtime/"
         printf '%s\n' '- authelia config: /etc/mfa-sidecar/authelia/configuration.yml'
         printf '%s\n' '- nginx portal include: /etc/mfa-sidecar/nginx/portal.conf'
         printf '%s\n' '- nginx protected includes: /etc/mfa-sidecar/nginx/protected/*.conf'

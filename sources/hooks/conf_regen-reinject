@@ -1,6 +1,6 @@
 #!/bin/bash
 [[ "$1" == "post" && "$2" == "nginx" ]] || exit 0
-if [[ -x /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py && -f /opt/yunohost/mfa_sidecar/deploy/generated-alpha/render-index.json ]]; then
-  python3 /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py reinject-all /opt/yunohost/mfa_sidecar/deploy/generated-alpha/render-index.json || true
+if [[ -x /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py && -f /opt/yunohost/mfa_sidecar/deploy/generated-runtime/render-index.json ]]; then
+  python3 /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py reinject-all /opt/yunohost/mfa_sidecar/deploy/generated-runtime/render-index.json || true
 fi
 nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true

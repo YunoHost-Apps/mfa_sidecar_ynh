@@ -32,9 +32,9 @@ def extract_root_domain(host: str) -> str:
 
 
 DEFAULT_POLICY_PATH = os.environ.get("MFA_SIDECAR_POLICY_PATH", "/etc/mfa-sidecar/config/domain-policy.yaml")
-DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR / "render_alpha_config.py"))
-DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_alpha_runtime.py"))
-DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-alpha")
+DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR / "render_runtime_config.py"))
+DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_runtime.py"))
+DEFAULT_GENERATED_DIR = os.environ.get("MFA_SIDECAR_GENERATED_DIR", "/etc/mfa-sidecar/generated-runtime")
 DEFAULT_STAGE_ROOT = os.environ.get("MFA_SIDECAR_STAGE_ROOT", "/")
 DEFAULT_INSTALL_DIR = os.environ.get("MFA_SIDECAR_INSTALL_DIR", "/opt/yunohost/mfa_sidecar")
 DEFAULT_USERS_FILE = os.environ.get("MFA_SIDECAR_USERS_FILE", "/etc/mfa-sidecar/authelia/users.yml")

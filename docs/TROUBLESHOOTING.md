@@ -151,7 +151,7 @@ Do not start troubleshooting with:
 ### Policy and generated runtime
 
 - `/opt/yunohost/mfa_sidecar/config/domain-policy.yaml`
-- `/opt/yunohost/mfa_sidecar/deploy/generated-alpha/render-index.json`
+- `/opt/yunohost/mfa_sidecar/deploy/generated-runtime/render-index.json`
 - `/etc/mfa-sidecar/runtime-metadata.json`
 
 ### Auth and users

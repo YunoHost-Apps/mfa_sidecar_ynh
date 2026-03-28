@@ -181,12 +181,12 @@ run__reload_runtime() {
     install_dir="$APP_INSTALL_DIR"
     data_dir="$APP_DATA_DIR"
 
-    python3 "$install_dir/bin/render_alpha_config.py" \
+    python3 "$install_dir/bin/render_runtime_config.py" \
         "$POLICY_FILE" \
-        "$install_dir/deploy/generated-alpha"
+        "$install_dir/deploy/generated-runtime"
 
-    python3 "$install_dir/bin/stage_alpha_runtime.py" \
-        "$install_dir/deploy/generated-alpha" /
+    python3 "$install_dir/bin/stage_runtime.py" \
+        "$install_dir/deploy/generated-runtime" /
 
     _mfa_sidecar_sync_protected_domain_includes
 
