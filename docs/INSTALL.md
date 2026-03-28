@@ -145,6 +145,18 @@ They should install into:
 7. validate redirect → login → MFA → return-to-app
 8. only then move to more important or broader targets
 
+## Default MFA method
+
+This package currently defaults to **TOTP/authenticator app** enrollment and leaves WebAuthn disabled by default.
+
+That is intentional for now:
+
+- TOTP is easier to explain
+- TOTP is easier to recover
+- TOTP is less likely to confuse first-time operators and users than passkey/security-key prompts
+
+WebAuthn can return later once the operator and user flows are fully nailed down.
+
 ## Things to avoid right after install
 
 Do not do these first:

@@ -179,7 +179,7 @@ identity:
 mfa:
   issuer: MFA Sidecar
   webauthn:
-    enabled: true
+    enabled: false
     display_name: MFA Sidecar
     attestation_conveyance_preference: indirect
     user_verification: preferred
