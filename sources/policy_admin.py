@@ -97,11 +97,13 @@ class PolicyAdmin:
 
     def portal_summary(self) -> dict:
         policy = self.load()
+        access = policy.get("access_control", {})
         return {
             "portal_domain": policy.get("portal", {}).get("domain", ""),
             "portal_path": policy.get("portal", {}).get("path", "/"),
             "remember_me": policy.get("session", {}).get("remember_me", ""),
-            "default_policy": policy.get("access_control", {}).get("default_policy", "bypass"),
+            "default_policy": access.get("default_policy", "bypass"),
+            "enforcement_enabled": bool(access.get("enforcement_enabled", True)),
         }
 
     def add_entry(self, *, entry_id: str, label: str, host: str, path: str, upstream: str, enabled: bool, target_conf: str = "") -> dict:
@@ -171,6 +173,12 @@ class PolicyAdmin:
             raise PolicyError("entry not found")
         policy["access_control"]["managed_sites"] = kept
         self._save(policy)
+
+    def set_enforcement_enabled(self, enabled: bool) -> bool:
+        policy = self.load()
+        policy.setdefault("access_control", {})["enforcement_enabled"] = bool(enabled)
+        self._save(policy)
+        return bool(policy["access_control"]["enforcement_enabled"])
 
     def _validate_uniqueness(self, policy: dict) -> None:
         seen_ids = set()

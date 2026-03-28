@@ -18,6 +18,13 @@ if str(BASE_DIR) not in sys.path:
 from discovery import Discovery
 from policy_admin import PolicyAdmin, PolicyError, normalize_path, validate_upstream, validate_entry_id
 
+
+def extract_root_domain(host: str) -> str:
+    parts = str(host or '').strip('.').split('.')
+    if len(parts) <= 2:
+        return str(host or '').strip('.')
+    return '.'.join(parts[1:])
+
 DEFAULT_POLICY_PATH = os.environ.get("MFA_SIDECAR_POLICY_PATH", "/etc/mfa-sidecar/config/domain-policy.yaml")
 DEFAULT_RENDER_SCRIPT = os.environ.get("MFA_SIDECAR_RENDER_SCRIPT", str(BASE_DIR / "render_alpha_config.py"))
 DEFAULT_STAGE_SCRIPT = os.environ.get("MFA_SIDECAR_STAGE_SCRIPT", str(BASE_DIR / "stage_alpha_runtime.py"))
@@ -108,15 +115,18 @@ class AdminApp:
             self.policy.delete_entry(entry_id)
             self.apply_runtime()
 
+    def set_enforcement_enabled_and_apply(self, enabled: bool) -> None:
+        with self.lock:
+            self.policy.set_enforcement_enabled(enabled)
+            self.apply_runtime()
+
     def discovered_targets(self) -> tuple[list[dict], str]:
         try:
             discovered = self.discovery.discover()
             managed_pairs = {(entry['host'], normalize_path(entry.get('path', '/'))) for entry in self.policy.list_entries()}
-            portal_domain = self.policy.portal_summary().get('portal_domain', '')
             suggestions = [
                 item for item in discovered.get('suggestions', [])
                 if item['kind'] in {'app-path', 'domain'}
-                and item.get('host') != portal_domain
                 and (item['host'], normalize_path(item.get('path', '/'))) not in managed_pairs
             ]
             return suggestions, ""
@@ -127,6 +137,9 @@ class AdminApp:
         summary = self.policy.portal_summary()
         package_version = load_package_version()
         entries = self.policy.list_entries()
+        portal_domain = summary.get('portal_domain', '')
+        root_domain = extract_root_domain(portal_domain)
+        enforcement_enabled = bool(summary.get('enforcement_enabled', True))
         discovered, discovery_error = self.discovered_targets()
         edit_entry = next((entry for entry in entries if entry['id'] == edit_entry_id), None)
 
@@ -147,6 +160,10 @@ class AdminApp:
             except PolicyError:
                 upstream_value = 'https://127.0.0.1:443'
             nginx_state = 'yes' if item.get('nginx_present') else 'no'
+            is_danger_target = item['host'] == portal_domain or (item['host'] == root_domain and path_value == '/')
+            confirm_text = ''
+            if is_danger_target:
+                confirm_text = "return confirm('Dangerous target. Have you tested MFA Sidecar on a non-root domain first? Enabling protection here can lock you out of services or normal admin access.');"
             common_inputs = (
                 f"<input type='hidden' name='label' value='{h(item.get('label', ''))}' />"
                 f"<input type='hidden' name='host' value='{h(item['host'])}' />"
@@ -154,6 +171,9 @@ class AdminApp:
                 f"<input type='hidden' name='upstream' value='{h(upstream_value)}' />"
                 f"<input type='hidden' name='target_conf' value='{h(item.get('target_conf', ''))}' />"
             )
+            warning_html = ""
+            if is_danger_target:
+                warning_html = "<br><span class='danger-text'>Danger zone: test on a non-root domain first.</span>"
             target_rows.append(
                 f"<tr>"
                 f"<td>{h(item.get('label', ''))}</td>"
@@ -161,36 +181,39 @@ class AdminApp:
                 f"<td><code>{h(path_value)}</code></td>"
                 f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
-                f"<td>Unmanaged<br><span class='muted'>nginx check: {h(nginx_state)}</span></td>"
+                f"<td>Bypass (unmanaged)<br><span class='muted'>nginx check: {h(nginx_state)}</span>{warning_html}</td>"
                 f"<td>"
-                f"<form method='post' action='/admin/discoveries/add' style='display:inline-block; margin-right: 0.4rem;'>"
-                f"{common_inputs}"
-                f"<input type='hidden' name='enabled' value='true' />"
-                f"<button type='submit'>Protect</button>"
-                f"</form>"
                 f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
                 f"{common_inputs}"
-                f"<input type='hidden' name='enabled' value='false' />"
-                f"<button type='submit'>Bypass</button>"
+                f"<input type='hidden' name='enabled' value='true' />"
+                f"<button type='submit' onclick=\"{confirm_text}\">Protect</button>"
                 f"</form>"
                 f"</td>"
                 f"</tr>"
             )
 
         for entry in entries:
-            state = "Protected" if entry.get("enabled") else "Bypass"
-            action = "Disable" if entry.get("enabled") else "Enable"
+            state = "Protect" if entry.get("enabled") else "Bypass"
+            action = "Bypass" if entry.get("enabled") else "Protect"
+            path_value = normalize_path(entry.get('path', '/'))
+            is_danger_target = entry['host'] == portal_domain or (entry['host'] == root_domain and path_value == '/')
+            toggle_confirm = ''
+            if is_danger_target and not entry.get('enabled'):
+                toggle_confirm = "return confirm('Dangerous target. Have you tested MFA Sidecar on a non-root domain first? Enabling protection here can lock you out of services or normal admin access.');"
+            warning_html = ""
+            if is_danger_target:
+                warning_html = "<br><span class='danger-text'>Danger zone: test on a non-root domain first.</span>"
             target_rows.append(
                 f"<tr>"
                 f"<td>{h(entry.get('label', ''))}</td>"
                 f"<td><code>{h(entry['host'])}</code></td>"
-                f"<td><code>{h(normalize_path(entry.get('path', '/')))}</code></td>"
+                f"<td><code>{h(path_value)}</code></td>"
                 f"<td><code>{h(entry['id'])}</code><br><span class='muted'>{h(entry.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(entry['upstream'])}</code></td>"
-                f"<td>{h(state)}</td>"
+                f"<td>{h(state)}{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
-                f"<button type='submit'>{h(action)}</button>"
+                f"<button type='submit' onclick=\"{toggle_confirm}\">{h(action)}</button>"
                 f"</form>"
                 f"<form method='get' action='/admin' style='display:inline-block; margin-right: 0.4rem;'>"
                 f"<input type='hidden' name='edit' value='{h(entry['id'])}' />"
@@ -208,6 +231,15 @@ class AdminApp:
         error_html = f"<div class='error'>{h(error)}</div>" if error else ""
         notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
         discovery_html = f"<div class='error'>Discovery degraded: {h(discovery_error)}</div>" if discovery_error else ""
+        disabled_bar = ""
+        if not enforcement_enabled:
+            disabled_bar = (
+                "<div class='error' style='background:#b30000;color:#fff;border-color:#800;'>"
+                "<strong>MFA Sidecar is disabled.</strong> Protection is bypassed globally until you re-enable it. "
+                "<form method='post' action='/admin/global/enable' style='display:inline-block; margin-left: 0.75rem;'>"
+                "<button type='submit' onclick=\"return confirm('Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first.');\">Re-enable protection</button>"
+                "</form></div>"
+            )
         if edit_entry:
             form_title = f"Edit managed entry: {edit_entry['id']}"
             form_action = f"/admin/entries/{edit_entry['id']}/update"
@@ -248,11 +280,13 @@ class AdminApp:
     label span {{ display: block; font-weight: 600; margin-bottom: 0.25rem; }}
     input[type=text], select {{ width: 100%; padding: 0.45rem; }}
     .muted {{ color: #555; font-size: 0.92em; }}
+    .danger-text {{ color: #900; font-weight: 600; }}
   </style>
 </head>
 <body>
   <h1>MFA Sidecar admin</h1>
   <p class='muted'>Version <code>{h(package_version)}</code> · Simple operator control plane. Domains come from YunoHost. App subpaths come from YunoHost app inventory. nginx is only a light sanity check for discovered app paths.</p>
+  {disabled_bar}
   {notice_html}
   {error_html}
   {discovery_html}
@@ -263,7 +297,11 @@ class AdminApp:
     <li><strong>Portal path:</strong> <code>{h(summary['portal_path'])}</code></li>
     <li><strong>Remembered session:</strong> <code>{h(summary['remember_me'])}</code></li>
     <li><strong>Default policy:</strong> <code>{h(summary['default_policy'])}</code></li>
+    <li><strong>Global enforcement:</strong> <code>{'enabled' if enforcement_enabled else 'disabled'}</code></li>
   </ul>
+  <form method='post' action='/admin/global/{'disable' if enforcement_enabled else 'enable'}' style='margin-bottom: 1rem;'>
+    <button type='submit' onclick="return confirm('{"Do you really want to disable MFA Sidecar enforcement globally? Existing config will be kept, but all protection will be bypassed until you re-enable it." if enforcement_enabled else "Do you really want to re-enable MFA Sidecar enforcement globally? Make sure you have tested on a non-root domain first."}');">{'Disable sidecar globally' if enforcement_enabled else 'Re-enable sidecar globally'}</button>
+  </form>
 
   <h2>Targets</h2>
   <p class='muted'>One table, one control surface. Discovered YunoHost app locations appear here as unmanaged rows with one-click onboarding. Managed rows stay here too, so manual add lands in the same list with the same controls.</p>
@@ -375,6 +413,14 @@ class Handler(BaseHTTPRequestHandler):
                 entry_id = validate_entry_id(parsed.path.split("/")[3])
                 APP.delete_entry_and_apply(entry_id)
                 self._redirect("/admin?notice=" + quote_plus("Entry deleted and runtime applied"))
+                return
+            if parsed.path == "/admin/global/disable":
+                APP.set_enforcement_enabled_and_apply(False)
+                self._redirect("/admin?notice=" + quote_plus("MFA Sidecar disabled globally; protection is now bypassed until re-enabled"))
+                return
+            if parsed.path == "/admin/global/enable":
+                APP.set_enforcement_enabled_and_apply(True)
+                self._redirect("/admin?notice=" + quote_plus("MFA Sidecar re-enabled globally and runtime applied"))
                 return
             self.send_error(HTTPStatus.NOT_FOUND)
         except (PolicyError, subprocess.CalledProcessError) as exc:

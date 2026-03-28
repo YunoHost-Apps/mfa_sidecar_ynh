@@ -124,12 +124,13 @@ def build_authelia_values(policy: dict) -> dict:
     access = policy["access_control"]
     storage = policy["storage"]
     recovery = policy.get("recovery", {})
+    enforcement_enabled = bool(access.get("enforcement_enabled", True))
 
     rules = []
     for site in managed_sites(policy):
         host = site["host"]
         path = normalize_path(site.get("path", "/"))
-        enabled = bool(site.get("enabled", False))
+        enabled = bool(site.get("enabled", False)) and enforcement_enabled
         policy_name = "two_factor" if enabled else "bypass"
         rule = {"domain": host, "policy": policy_name}
         if path != "/":
@@ -221,27 +222,33 @@ def build_nginx_portal_conf(policy: dict) -> str:
     ).strip() + "\n"
 
 
-def build_nginx_auth_endpoint_conf(site: dict, authz_endpoint: str) -> str:
+def build_nginx_auth_endpoint_conf(site: dict, authz_endpoint: str, *, enforcement_enabled: bool = True) -> str:
     auth_location = f"/authelia-auth-{site['id']}"
+    auth_body = dedent(
+        f"""
+        {AUTH_ENDPOINT_MARKER}
+        proxy_pass {authz_endpoint};
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-URI $request_uri;
+        proxy_set_header X-Real-IP $remote_addr;
+        """
+    ).strip() if enforcement_enabled else "return 204;\n          # sidecar enforcement disabled"
     return dedent(
         f"""
         location = {auth_location} {{
           internal;
-          {AUTH_ENDPOINT_MARKER}
-          proxy_pass {authz_endpoint};
-          proxy_pass_request_body off;
-          proxy_set_header Content-Length "";
-          proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          proxy_set_header X-Forwarded-Host $host;
-          proxy_set_header X-Forwarded-URI $request_uri;
-          proxy_set_header X-Real-IP $remote_addr;
+          {auth_body}
         }}
 
         # id: {site['id']}
         # host: {site['host']}
         # path: {normalize_path(site.get('path', '/'))}
         # enabled: {str(site.get('enabled', False)).lower()}
+        # enforcement_enabled: {str(enforcement_enabled).lower()}
         """
     ).strip() + "\n"
 
@@ -250,6 +257,7 @@ def build_index(policy: dict) -> dict:
     enabled = []
     disabled = []
     portal_domain = policy["portal"]["domain"]
+    enforcement_enabled = bool(policy.get("access_control", {}).get("enforcement_enabled", True))
     for site in managed_sites(policy):
         target = enabled if site.get("enabled", False) else disabled
         normalized_path = normalize_path(site.get("path", "/"))
@@ -271,6 +279,7 @@ def build_index(policy: dict) -> dict:
         )
     return {
         "portal_domain": portal_domain,
+        "enforcement_enabled": enforcement_enabled,
         "enabled": enabled,
         "disabled": disabled,
     }
@@ -282,6 +291,8 @@ def build_runtime_metadata(policy: dict) -> dict:
     return {
         "portal_domain": policy["portal"]["domain"],
         "portal_listen": policy["portal"]["listen"],
+        "default_policy": policy["access_control"].get("default_policy", "bypass"),
+        "enforcement_enabled": bool(policy["access_control"].get("enforcement_enabled", True)),
         "identity": {
             "backend": "file",
             "user_database_path": local["path"],
@@ -337,9 +348,10 @@ def render(policy_path: Path, out_dir: Path) -> None:
 
     authz_endpoint = f"http://{policy['portal']['listen']['host']}:{policy['portal']['listen']['port']}/api/authz/auth-request"
     portal_domain = policy["portal"]["domain"]
+    enforcement_enabled = bool(policy.get("access_control", {}).get("enforcement_enabled", True))
     for site in managed_sites(policy):
         target_file = nginx_dir / f"{site['id']}.generated.conf"
-        target_file.write_text(build_nginx_auth_endpoint_conf(site, authz_endpoint), encoding="utf-8")
+        target_file.write_text(build_nginx_auth_endpoint_conf(site, authz_endpoint, enforcement_enabled=enforcement_enabled), encoding="utf-8")
 
     (out_dir / "render-index.json").write_text(json.dumps(build_index(policy), indent=2) + "\n", encoding="utf-8")
     (out_dir / "runtime-metadata.json").write_text(json.dumps(build_runtime_metadata(policy), indent=2) + "\n", encoding="utf-8")
