@@ -386,8 +386,9 @@ _mfa_sidecar_write_runtime_notes() {
         printf '\n'
         printf '%s\n' 'Documentation shipped with this package:'
         printf '%s\n' "- top-level README: $install_dir/README.md"
-        printf '%s\n' "- operator/admin guide: $install_dir/docs/OPERATOR-GUIDE.md"
-        printf '%s\n' "- user guide: $install_dir/docs/USER-GUIDE.md"
+        printf '%s\n' "- install guide: $install_dir/docs/INSTALL.md"
+        printf '%s\n' "- admin guide: $install_dir/docs/ADMIN.md"
+        printf '%s\n' "- users guide: $install_dir/docs/USERS.md"
         printf '%s\n' "- troubleshooting/recovery: $install_dir/docs/TROUBLESHOOTING.md"
     } > "$install_dir/README.package"
 }
