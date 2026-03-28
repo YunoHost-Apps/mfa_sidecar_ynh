@@ -329,7 +329,8 @@ class AdminApp:
             (entry['host'], normalize_path(entry.get('path', '/'))): entry
             for entry in entries
         }
-        target_rows = []
+        managed_rows = []
+        discovered_rows = []
 
         for item in discovered:
             path_value = normalize_path(item.get('path', '/'))
@@ -356,14 +357,14 @@ class AdminApp:
             warning_html = ""
             if is_danger_target:
                 warning_html = "<br><span class='danger-text'>Danger zone: test on a non-root domain first.</span>"
-            target_rows.append(
+            discovered_rows.append(
                 f"<tr>"
                 f"<td>{h(item.get('label', ''))}</td>"
                 f"<td><code>{h(item['host'])}</code></td>"
                 f"<td><code>{h(path_value)}</code></td>"
                 f"<td><code>{h(item.get('app_id', ''))}</code><br><span class='muted'>{h(item.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(upstream_value)}</code></td>"
-                f"<td><span class='state-badge state-off'>Bypass</span><br><span class='muted'>unmanaged · nginx check: {h(nginx_state)}</span>{warning_html}</td>"
+                f"<td><span class='muted'>unmanaged · nginx check: {h(nginx_state)}</span>{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/discoveries/add' style='display:inline-block;'>"
                 f"{common_inputs}"
@@ -386,14 +387,14 @@ class AdminApp:
             if is_danger_target:
                 warning_html = "<br><span class='danger-text'>Danger zone: test on a non-root domain first.</span>"
             toggle_class = 'toggle-on' if enabled else 'toggle-off'
-            target_rows.append(
+            managed_rows.append(
                 f"<tr>"
                 f"<td>{h(entry.get('label', ''))}</td>"
                 f"<td><code>{h(entry['host'])}</code></td>"
                 f"<td><code>{h(path_value)}</code></td>"
                 f"<td><code>{h(entry['id'])}</code><br><span class='muted'>{h(entry.get('target_conf', ''))}</span></td>"
                 f"<td><code>{h(entry['upstream'])}</code></td>"
-                f"<td><span class='state-badge {'state-on' if enabled else 'state-off'}'>{h(state)}</span>{warning_html}</td>"
+                f"<td>{warning_html}</td>"
                 f"<td>"
                 f"<form method='post' action='/admin/entries/{h(entry['id'])}/toggle' style='display:inline-block; margin-right: 0.4rem;'>"
                 f"<button class='toggle {toggle_class}' type='submit' onclick=\"{toggle_confirm}\"><span class='toggle-knob'></span><span class='toggle-label'>{h(state)}</span></button>"
@@ -409,7 +410,7 @@ class AdminApp:
                 f"</tr>"
             )
 
-        targets_html = "\n".join(target_rows) or "<tr><td colspan='7'><em>No discovered or managed app locations yet.</em></td></tr>"
+        targets_html = "\n".join(managed_rows + discovered_rows) or "<tr><td colspan='7'><em>No discovered or managed app locations yet.</em></td></tr>"
 
         error_html = f"<div class='error'>{h(error)}</div>" if error else ""
         notice_html = f"<div class='notice'>{h(notice)}</div>" if notice else ""
@@ -508,7 +509,7 @@ class AdminApp:
   <table>
     <thead>
       <tr>
-        <th>Label</th><th>Host</th><th>Path</th><th>ID / source</th><th>Upstream</th><th>Status</th><th>Action</th>
+        <th>Label</th><th>Host</th><th>Path</th><th>ID / source</th><th>Upstream</th><th>Notes</th><th>Action</th>
       </tr>
     </thead>
     <tbody>
