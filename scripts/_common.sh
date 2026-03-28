@@ -383,5 +383,11 @@ _mfa_sidecar_write_runtime_notes() {
         printf '%s\n' '- use YunoHost operator/admin auth to reach `/admin`; the admin UI is no longer intended to depend on a custom sidecar header secret'
         printf '%s\n' '- validate live auth flow after install'
         printf '%s\n' '- add and tune managed site entries from the admin control plane (`/admin`) until more of that surface is moved into YunoHost-native controls'
+        printf '\n'
+        printf '%s\n' 'Documentation shipped with this package:'
+        printf '%s\n' "- top-level README: $install_dir/README.md"
+        printf '%s\n' "- operator/admin guide: $install_dir/docs/OPERATOR-GUIDE.md"
+        printf '%s\n' "- user guide: $install_dir/docs/USER-GUIDE.md"
+        printf '%s\n' "- troubleshooting/recovery: $install_dir/docs/TROUBLESHOOTING.md"
     } > "$install_dir/README.package"
 }

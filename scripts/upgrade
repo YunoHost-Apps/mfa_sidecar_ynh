@@ -33,6 +33,10 @@ install -D -m 644 ../sources/authelia-release.json "$install_dir/sources/autheli
 install -D -m 644 ../sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
 install -D -m 644 ../assets/logo.png "$install_dir/www/logo.png"
 install -D -m 644 ../manifest.toml "$install_dir/manifest.toml"
+install -D -m 644 ../README.md "$install_dir/README.md"
+install -D -m 644 ../docs/OPERATOR-GUIDE.md "$install_dir/docs/OPERATOR-GUIDE.md"
+install -D -m 644 ../docs/USER-GUIDE.md "$install_dir/docs/USER-GUIDE.md"
+install -D -m 644 ../docs/TROUBLESHOOTING.md "$install_dir/docs/TROUBLESHOOTING.md"
 
 find "$install_dir" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 
