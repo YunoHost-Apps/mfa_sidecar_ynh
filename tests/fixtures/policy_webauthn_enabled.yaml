@@ -1,0 +1,64 @@
+portal:
+  domain: auth.domain.tld
+  path: /
+  listen:
+    host: 127.0.0.1
+    port: 9091
+session:
+  name: mfa_sidecar_session
+  secret_file: /etc/mfa-sidecar/secrets/session_secret
+  expiration: 1h
+  inactivity: 5m
+  remember_me: 24h
+  cookie_domain: ""
+storage:
+  encryption_key_file: /etc/mfa-sidecar/secrets/storage_encryption_key
+identity:
+  local:
+    path: /etc/mfa-sidecar/authelia/users.yml
+    watch: false
+    search:
+      email: true
+      case_insensitive: true
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+  sync:
+    enabled: false
+    source: yunohost-ldap-readonly
+    fields: [username, email]
+mfa:
+  issuer: MFA Sidecar
+  webauthn:
+    enabled: true
+    display_name: MFA Sidecar
+    attestation_conveyance_preference: indirect
+    user_verification: preferred
+    timeout: 60s
+  totp:
+    enabled: true
+    issuer: MFA Sidecar
+access_control:
+  default_policy: open
+  enforcement_enabled: true
+  managed_sites:
+    - id: home-domain-tld
+      label: HomeBox
+      host: home.domain.tld
+      path: /
+      enabled: true
+      upstream: http://127.0.0.1:59150
+      target_conf: /etc/nginx/conf.d/home.domain.tld.d/homebox.conf
+recovery:
+  mode: authelia-reset-password-and-enrollment
+  disable_reset: false
+alpha:
+  generate_nginx_snippets: true
+  generate_authelia_config: true
+  enforce_tls_upstream_verification: false

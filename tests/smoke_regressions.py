@@ -27,6 +27,7 @@ SCRIPTS = REPO / "scripts"
 ASSETS = REPO / "assets"
 DOCS = REPO / "docs"
 LICENSES = REPO / "licenses"
+FIXTURES = REPO / "tests" / "fixtures"
 
 
 def load_module(name: str, path: Path):
@@ -150,6 +151,15 @@ class RenderAuthRequestTests(unittest.TestCase):
             self.assertIn('access_by_lua_block { return; }', text)
             self.assertIn('X-Original-Method $request_method', text)
 
+    def test_fixture_existing_policy_with_webauthn_enabled_renders_disable_false(self):
+        with tempfile.TemporaryDirectory() as td:
+            out_dir = Path(td) / "out"
+            fixture = FIXTURES / "policy_webauthn_enabled.yaml"
+            render.render(fixture, out_dir)
+            cfg = yaml.safe_load((out_dir / "authelia-config.generated.yml").read_text(encoding="utf-8"))
+            self.assertFalse(cfg["webauthn"]["disable"])
+            self.assertEqual(cfg["totp"]["issuer"], "MFA Sidecar")
+
 
 class InjectorTests(unittest.TestCase):
     def test_managed_auth_block_uses_authelia_redirect_header(self):
@@ -228,7 +238,9 @@ class PackagingPathTests(unittest.TestCase):
             DOCS / 'TROUBLESHOOTING.md',
             DOCS / 'TESTING.md',
             DOCS / 'LIVE-BOX-VERIFICATION.md',
+            DOCS / 'SECURITY-NOTES.md',
             LICENSES / 'Authelia-Apache-2.0.txt',
+            FIXTURES / 'policy_webauthn_enabled.yaml',
         ]
         for path in expected:
             self.assertTrue(path.exists(), f'missing expected packaged file: {path.relative_to(REPO)}')

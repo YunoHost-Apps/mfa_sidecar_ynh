@@ -112,6 +112,7 @@ _mfa_sidecar_install_packaged_files() {
     install -D -m 644 ../docs/TROUBLESHOOTING.md "$install_dir/docs/TROUBLESHOOTING.md"
     install -D -m 644 ../docs/TESTING.md "$install_dir/docs/TESTING.md"
     install -D -m 644 ../docs/LIVE-BOX-VERIFICATION.md "$install_dir/docs/LIVE-BOX-VERIFICATION.md"
+    install -D -m 644 ../docs/SECURITY-NOTES.md "$install_dir/docs/SECURITY-NOTES.md"
     install -D -m 755 ../scripts/verify_live_box.sh "$install_dir/bin/verify_live_box.sh"
 }
 
