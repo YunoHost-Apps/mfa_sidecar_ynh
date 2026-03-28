@@ -102,7 +102,7 @@ class AdminApp:
             subprocess.run(["python3", DEFAULT_STAGE_SCRIPT, str(self.generated_dir), DEFAULT_STAGE_ROOT], check=True)
             return
         apply_helper = str(Path(DEFAULT_INSTALL_DIR) / "bin" / "apply-runtime-as-root")
-        subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True)
+        subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True, capture_output=True, text=True)
 
     def _run_manage_users(self, *args: str) -> None:
         subprocess.run(["python3", DEFAULT_MANAGE_USERS_SCRIPT, *args], check=True)
@@ -731,9 +731,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._redirect("/admin/users?notice=" + quote_plus(f"Enabled '{username}'"))
                 return
             self.send_error(HTTPStatus.NOT_FOUND)
-        except (PolicyError, subprocess.CalledProcessError) as exc:
+        except PolicyError as exc:
             target = "/admin/users" if parsed.path.startswith("/admin/users") else "/admin"
             self._redirect(target + "?error=" + quote_plus(str(exc)))
+        except subprocess.CalledProcessError as exc:
+            target = "/admin/users" if parsed.path.startswith("/admin/users") else "/admin"
+            stderr_text = (exc.stderr or "").strip()
+            stdout_text = (exc.stdout or "").strip()
+            if stderr_text:
+                print(f"mfa-sidecar admin apply failed stderr: {stderr_text}", file=sys.stderr)
+            if stdout_text:
+                print(f"mfa-sidecar admin apply failed stdout: {stdout_text}", file=sys.stderr)
+            self._redirect(target + "?error=" + quote_plus("Apply failed. Live enforcement may not match policy intent yet. Check runtime state below and review the admin service journal for details."))
 
     def log_message(self, format: str, *args) -> None:
         return

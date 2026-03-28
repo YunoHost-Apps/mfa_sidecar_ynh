@@ -262,6 +262,15 @@ class AdminUiHardeningTests(unittest.TestCase):
         self.assertIn('Live global enforcement:', text)
         self.assertIn('Policy intent:', text)
 
+    def test_admin_ui_logs_subprocess_failures_and_does_not_leak_raw_exception_text(self):
+        text = (SOURCES / 'admin_ui_app.py').read_text(encoding='utf-8')
+        self.assertIn('capture_output=True, text=True', text)
+        self.assertIn('mfa-sidecar admin apply failed stderr:', text)
+        self.assertIn('mfa-sidecar admin apply failed stdout:', text)
+        self.assertIn('Apply failed. Live enforcement may not match policy intent yet.', text)
+        self.assertNotIn("quote_plus(f\"Command ['sudo',", text)
+        self.assertNotIn("returned non-zero exit status", text)
+
     def test_password_hashing_no_longer_uses_password_argv(self):
         text = (SOURCES / 'manage_authelia_users.py').read_text(encoding='utf-8')
         self.assertIn('pty.openpty()', text)
@@ -286,7 +295,12 @@ class ApplyRuntimeHookTests(unittest.TestCase):
     def test_admin_ui_apply_runtime_uses_single_root_side_apply_by_default(self):
         text = (SOURCES / 'admin_ui_app.py').read_text(encoding='utf-8')
         self.assertIn('if os.environ.get("MFA_SIDECAR_SKIP_ROOT_APPLY") == "1":', text)
-        self.assertIn('subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True)', text)
+        self.assertIn('subprocess.run(["sudo", apply_helper, DEFAULT_INSTALL_DIR], check=True, capture_output=True, text=True)', text)
+
+    def test_admin_service_allows_run_access_for_nginx_validation(self):
+        text = (SOURCES / 'mfa-sidecar-admin.service').read_text(encoding='utf-8')
+        self.assertIn('/run', text)
+        self.assertIn('ProtectSystem=strict', text)
 
 
 class PackagingPathTests(unittest.TestCase):

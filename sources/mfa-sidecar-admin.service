@@ -23,7 +23,7 @@ RestartSec=5s
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/etc/mfa-sidecar /var/lib/mfa_sidecar /opt/yunohost/mfa_sidecar /etc/nginx/conf.d /var/log/yunohost /var/cache/yunohost /tmp
+ReadWritePaths=/etc/mfa-sidecar /var/lib/mfa_sidecar /opt/yunohost/mfa_sidecar /etc/nginx/conf.d /var/log/yunohost /var/cache/yunohost /run /tmp
 UMask=0027
 WorkingDirectory=/opt/yunohost/mfa_sidecar
 
