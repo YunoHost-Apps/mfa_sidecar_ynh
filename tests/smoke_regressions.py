@@ -219,6 +219,25 @@ class InjectorTests(unittest.TestCase):
             self.assertIn('BEGIN mfa-sidecar managed block', text)
             self.assertIn('auth_request_set $redirection_url $upstream_http_location;', text)
 
+    def test_reinject_all_fails_if_any_managed_target_cannot_be_injected(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            render_index = {
+                'enabled': [
+                    {
+                        'id': 'missing-home',
+                        'target_conf': str(base / 'missing.conf'),
+                        'auth_location': '/authelia-auth-home-domain-tld',
+                        'portal_domain': 'auth.domain.tld',
+                        'path': '/',
+                    }
+                ]
+            }
+            idx = base / 'render-index.json'
+            idx.write_text(json.dumps(render_index), encoding='utf-8')
+            with self.assertRaises(SystemExit):
+                inject.reinject_all(idx, base)
+
 
 class AdminUiHardeningTests(unittest.TestCase):
     def test_admin_ui_contains_csrf_cookie_and_validation(self):
@@ -235,6 +254,13 @@ class AdminUiHardeningTests(unittest.TestCase):
         self.assertIn('Disable global protection (break-glass)', text)
         self.assertIn("disabled (emergency bypass active)", text)
         self.assertIn("action='/admin/global/enable'", text)
+
+    def test_admin_ui_prefers_live_runtime_state_and_warns_on_mismatch(self):
+        text = (SOURCES / 'admin_ui_app.py').read_text(encoding='utf-8')
+        self.assertIn('load_live_runtime_metadata', text)
+        self.assertIn('Live/runtime mismatch.', text)
+        self.assertIn('Live global enforcement:', text)
+        self.assertIn('Policy intent:', text)
 
     def test_password_hashing_no_longer_uses_password_argv(self):
         text = (SOURCES / 'manage_authelia_users.py').read_text(encoding='utf-8')
