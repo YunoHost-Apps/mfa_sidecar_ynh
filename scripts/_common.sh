@@ -141,7 +141,7 @@ _mfa_sidecar_write_secret_if_missing() {
     local path="$1"
     if [[ ! -f "$path" ]]; then
         umask 077
-        openssl rand -hex 32 > "$path"
+        ynh_string_random --length=64 > "$path"
     fi
 }
 

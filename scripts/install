@@ -15,7 +15,7 @@ ynh_script_progression "Preparing MFA Sidecar layout..."
 _mfa_sidecar_install_layout
 _mfa_sidecar_install_packaged_files
 
-find "$install_dir" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+find "$install_dir" -type d -name '__pycache__' -exec ynh_secure_remove --file={} \; 2>/dev/null || true
 
 _mfa_sidecar_install_authelia_binary
 _mfa_sidecar_write_secret_if_missing "$(_mfa_sidecar_secret_file session_secret)"

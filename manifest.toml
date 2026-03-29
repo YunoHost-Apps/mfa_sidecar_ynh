@@ -14,7 +14,6 @@ maintainers = []
 license = "AGPL-3.0-or-later"
 website = "https://mfasidecar.com"
 code = "https://github.com/wonko6x9/mfa_sidecar_ynh"
-documentation = "https://mfasidecar.com"
 
 [integration]
 yunohost = ">= 11.2.30"
@@ -58,13 +57,10 @@ ram.runtime = "200M"
     [install.session_duration]
     ask.en = "Remembered session duration"
     ask.fr = "Durée de session mémorisée"
-    type = "select"
-    choices.8h = "8 hours"
-    choices.24h = "24 hours"
-    choices.168h = "7 days"
-    choices.336h = "14 days"
-    choices.720h = "30 days"
+    type = "string"
     default = "24h"
+    help.en = "Allowed values: 8h, 24h, 168h, 336h, 720h"
+    help.fr = "Valeurs autorisées : 8h, 24h, 168h, 336h, 720h"
 
     [install.upstream_scheme]
     ask.en = "Default upstream scheme"
