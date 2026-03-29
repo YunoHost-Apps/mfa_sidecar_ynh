@@ -185,9 +185,9 @@ On path-based/root-domain apps especially, verify the real upstream behavior rat
 
 ## Important paths
 
-- policy: `/opt/yunohost/mfa_sidecar/config/domain-policy.yaml`
+- policy: `$install_dir/config/domain-policy.yaml`
 - sidecar users: `/etc/mfa-sidecar/authelia/users.yml`
-- generated runtime: `/opt/yunohost/mfa_sidecar/deploy/generated-runtime/`
+- generated runtime: `$install_dir/deploy/generated-runtime/`
 - runtime metadata: `/etc/mfa-sidecar/runtime-metadata.json`
 - staged nginx/Authelia files: `/etc/mfa-sidecar/`
 

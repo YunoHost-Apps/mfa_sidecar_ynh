@@ -74,7 +74,7 @@ If lifecycle behavior becomes inconsistent, do not guess.
 
 Prefer to inspect:
 
-- `/opt/yunohost/mfa_sidecar/`
+- the package install dir (currently typically `/opt/yunohost/mfa_sidecar/`)
 - `/etc/mfa-sidecar/`
 - target nginx config files under `/etc/nginx/conf.d/`
 

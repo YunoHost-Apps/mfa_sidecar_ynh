@@ -19,9 +19,9 @@ Do not assume every auth problem is a user problem.
 
 ### Preferred break-glass: disable enforcement globally
 
-Edit:
+Edit the package policy file, typically:
 
-- `/opt/yunohost/mfa_sidecar/config/domain-policy.yaml`
+- `$install_dir/config/domain-policy.yaml`
 
 Set:
 
@@ -150,8 +150,8 @@ Do not start troubleshooting with:
 
 ### Policy and generated runtime
 
-- `/opt/yunohost/mfa_sidecar/config/domain-policy.yaml`
-- `/opt/yunohost/mfa_sidecar/deploy/generated-runtime/render-index.json`
+- `$install_dir/config/domain-policy.yaml`
+- `$install_dir/deploy/generated-runtime/render-index.json`
 - `/etc/mfa-sidecar/runtime-metadata.json`
 
 ### Auth and users

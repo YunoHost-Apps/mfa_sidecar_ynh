@@ -7,10 +7,10 @@ This checklist is for real-box validation after upgrades, break-glass changes, o
 Run:
 
 ```bash
-sudo /opt/yunohost/mfa_sidecar/bin/verify_live_box.sh
+sudo "${MFA_SIDECAR_INSTALL_DIR:-/opt/yunohost/mfa_sidecar}"/bin/verify_live_box.sh
 ```
 
-The package ships a copy of `scripts/verify_live_box.sh` into the install dir during install/upgrade.
+The package ships a copy of `scripts/verify_live_box.sh` into the current install dir during install/upgrade.
 
 ## What to verify manually
 

@@ -124,13 +124,13 @@ Do not skip this.
 
 ### 4. Verify the docs exist on the box
 
-They should install into:
+They should install into the package install dir, typically something like:
 
-- `/opt/yunohost/mfa_sidecar/README.md`
-- `/opt/yunohost/mfa_sidecar/docs/INSTALL.md`
-- `/opt/yunohost/mfa_sidecar/docs/ADMIN.md`
-- `/opt/yunohost/mfa_sidecar/docs/USERS.md`
-- `/opt/yunohost/mfa_sidecar/docs/TROUBLESHOOTING.md`
+- `$install_dir/README.md`
+- `$install_dir/docs/INSTALL.md`
+- `$install_dir/docs/ADMIN.md`
+- `$install_dir/docs/USERS.md`
+- `$install_dir/docs/TROUBLESHOOTING.md`
 
 ## First rollout after install
 
@@ -178,9 +178,9 @@ access_control:
   enforcement_enabled: false
 ```
 
-in:
+in the package install dir policy file, typically:
 
-- `/opt/yunohost/mfa_sidecar/config/domain-policy.yaml`
+- `$install_dir/config/domain-policy.yaml`
 
 Then reload runtime.
 
