@@ -10,7 +10,6 @@ RENDER_SCRIPT="$INSTALL_DIR/bin/render_runtime_config.py"
 STAGE_SCRIPT="$INSTALL_DIR/bin/stage_runtime.py"
 RENDER_INDEX="/etc/mfa-sidecar/render-index.json"
 INJECTOR="$INSTALL_DIR/bin/inject_protected_include.py"
-PROTECTED_DIR="/etc/mfa-sidecar/nginx/protected"
 
 if [[ ! -f "$POLICY_PATH" ]]; then
     echo "mfa-sidecar apply-runtime: policy missing: $POLICY_PATH" >&2
@@ -30,8 +29,9 @@ if [[ ! -f "$RENDER_INDEX" ]]; then
     exit 1
 fi
 
-# Re-inject auth_request directives into target app location blocks
-python3 "$INJECTOR" reinject-all "$RENDER_INDEX" --protected-dir "$PROTECTED_DIR"
+# Re-inject auth_request directives into target app location blocks and
+# create/remove sibling bridge includes that load auth endpoint locations.
+python3 "$INJECTOR" reinject-all "$RENDER_INDEX"
 
 # Validate and reload nginx
 nginx -t

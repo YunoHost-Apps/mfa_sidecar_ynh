@@ -201,6 +201,9 @@ class InjectorTests(unittest.TestCase):
             base = Path(td)
             target_conf = base / 'homebox.conf'
             target_conf.write_text("location / {\n  proxy_pass http://127.0.0.1:59150/;\n}\n", encoding='utf-8')
+            protected = base / 'etc/mfa-sidecar/nginx/protected/home-domain-tld.conf'
+            protected.parent.mkdir(parents=True)
+            protected.write_text("location = /authelia-auth-home-domain-tld {\n  internal;\n}\n", encoding='utf-8')
             render_index = {
                 'enabled': [
                     {
@@ -209,15 +212,49 @@ class InjectorTests(unittest.TestCase):
                         'auth_location': '/authelia-auth-home-domain-tld',
                         'portal_domain': 'auth.domain.tld',
                         'path': '/',
+                        'auth_snippet': str(protected),
                     }
-                ]
+                ],
+                'disabled': [],
             }
             idx = base / 'render-index.json'
             idx.write_text(json.dumps(render_index), encoding='utf-8')
-            inject.reinject_all(idx, base)
+            inject.reinject_all(idx)
             text = target_conf.read_text(encoding='utf-8')
             self.assertIn('BEGIN mfa-sidecar managed block', text)
             self.assertIn('auth_request_set $redirection_url $upstream_http_location;', text)
+
+    def test_reinject_all_writes_bridge_include_for_enabled_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            domain_dir = base / 'etc/nginx/conf.d/home.domain.tld.d'
+            domain_dir.mkdir(parents=True)
+            target_conf = domain_dir / 'homebox.conf'
+            target_conf.write_text("location / {\n  proxy_pass http://127.0.0.1:59150/;\n}\n", encoding='utf-8')
+            protected = base / 'etc/mfa-sidecar/nginx/protected/home-domain-tld.conf'
+            protected.parent.mkdir(parents=True)
+            protected.write_text("location = /authelia-auth-home-domain-tld {\n  internal;\n}\n", encoding='utf-8')
+            render_index = {
+                'enabled': [
+                    {
+                        'id': 'home-domain-tld',
+                        'target_conf': str(target_conf),
+                        'auth_location': '/authelia-auth-home-domain-tld',
+                        'portal_domain': 'auth.domain.tld',
+                        'path': '/',
+                        'auth_snippet': str(protected),
+                    }
+                ],
+                'disabled': [],
+            }
+            idx = base / 'render-index.json'
+            idx.write_text(json.dumps(render_index), encoding='utf-8')
+            inject.reinject_all(idx)
+            bridge = domain_dir / 'mfa-sidecar-home-domain-tld.conf'
+            self.assertTrue(bridge.exists(), 'expected sibling bridge include to be created')
+            bridge_text = bridge.read_text(encoding='utf-8')
+            self.assertIn(f'include {protected};', bridge_text)
+            self.assertIn('BEGIN mfa-sidecar bridge include', bridge_text)
 
     def test_reinject_all_fails_if_any_managed_target_cannot_be_injected(self):
         with tempfile.TemporaryDirectory() as td:
@@ -236,7 +273,36 @@ class InjectorTests(unittest.TestCase):
             idx = base / 'render-index.json'
             idx.write_text(json.dumps(render_index), encoding='utf-8')
             with self.assertRaises(SystemExit):
-                inject.reinject_all(idx, base)
+                inject.reinject_all(idx)
+
+    def test_reinject_all_removes_bridge_include_for_disabled_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            domain_dir = base / 'etc/nginx/conf.d/home.domain.tld.d'
+            domain_dir.mkdir(parents=True)
+            target_conf = domain_dir / 'homebox.conf'
+            target_conf.write_text("location / {\n  proxy_pass http://127.0.0.1:59150/;\n}\n", encoding='utf-8')
+            bridge = domain_dir / 'mfa-sidecar-home-domain-tld.conf'
+            bridge.write_text('# stale bridge\n', encoding='utf-8')
+            render_index = {
+                'enabled': [],
+                'disabled': [
+                    {
+                        'id': 'home-domain-tld',
+                        'target_conf': str(target_conf),
+                    }
+                ],
+            }
+            idx = base / 'render-index.json'
+            idx.write_text(json.dumps(render_index), encoding='utf-8')
+            inject.reinject_all(idx)
+            self.assertFalse(bridge.exists(), 'expected disabled target bridge include to be removed')
+
+    def test_bridge_filename_is_deterministic(self):
+        self.assertEqual(
+            inject.bridge_filename('home-domain-tld'),
+            'mfa-sidecar-home-domain-tld.conf',
+        )
 
 
 class AdminUiHardeningTests(unittest.TestCase):
