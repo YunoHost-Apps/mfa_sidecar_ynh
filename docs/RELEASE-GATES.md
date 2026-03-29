@@ -4,29 +4,43 @@ This document exists to keep version bumps honest.
 
 It is intentionally short.
 
-## Proposed gate for 0.3.0
+## 0.3.0 gate status
 
-The repo and package are already substantially hardened. For `0.3.0`, the remaining meaningful gate is **real-box break-glass validation**.
+`0.3.0` has now been earned on a real box.
 
-### Required before calling it 0.3.0
+### Completed for 0.3.0
 
-- [ ] Validate `access_control.enforcement_enabled: false` on a real box
-- [ ] Render / stage / apply runtime
-- [ ] Restart nginx + sidecar services
-- [ ] Confirm protected target is bypassed remotely
-- [ ] Re-enable enforcement
-- [ ] Confirm protected target requires sidecar auth again
+- [x] Validate `access_control.enforcement_enabled: false` on a real box
+- [x] Render / stage / apply runtime
+- [x] Restart nginx + sidecar services
+- [x] Confirm protected target is bypassed remotely
+- [x] Re-enable enforcement
+- [x] Confirm protected target requires sidecar auth again
+- [x] Validate the auth-request bridge include is actually loaded by nginx
+- [x] Validate both a root-mounted target and a subpath-mounted target on a real box
+- [x] Validate disable / re-enable loops after the bridge + matcher + rollback fixes
 
-## Why this is the remaining gate
+## What was fixed to clear the gate
 
-The following are already considered substantially demonstrated:
+The live-box work that actually moved the package across the line included:
+
+- restoring the missing nginx bridge include that loads per-target auth endpoint locations
+- supporting trailing-slash-equivalent subpath matching (for layouts like `/webmail` vs `/webmail/`)
+- fixing disabled-target cleanup so auth blocks and bridge includes are both removed together
+- fixing package removal cleanup so bridge includes do not linger after uninstall/remove
+
+## Why this release is honest
+
+The repo and package have now demonstrated, on a real box:
 
 - repeated real upgrades through multiple revisions
-- end-to-end protected-target auth flow on a real box
+- end-to-end protected-target auth flow
+- break-glass disable / re-enable
+- root-mounted and subpath-mounted target protection
 - uninstall/reinstall recovery under stress
 - repo-local regression smoke coverage for the major live failures encountered so far
 
-That does not mean the package is perfect. It means the most meaningful remaining pre-`0.3.0` proof is the break-glass path.
+That still does not mean the package is perfect. It means `0.3.0` is an honest milestone rather than wishful numbering.
 
 ## What 0.3.0 means
 

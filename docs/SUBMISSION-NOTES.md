@@ -86,16 +86,22 @@ The repo now includes a smoke/regression suite for the live failures already enc
 - packaged-file sanity
 - MFA method rendering behavior
 
-## Remaining pre-submission checks
+## Release status / remaining checks
 
-The main remaining release gate for `0.3.0` is:
+`0.3.0` is now justified by real-box validation.
+
+The release-closing work that mattered most was:
 
 - real-box break-glass behavior with `enforcement_enabled: false`
+- live proof that missing nginx auth-endpoint bridge includes were fixed
+- live proof that subpath-mounted targets work after slash-normalized matcher fixes
+- live proof that disable / re-enable no longer strands targets in half-rolled-back nginx state
 
 Still worth validating before wider public submission/catalog expectations:
 
 - one or more multi-domain common setups
 - additional real-box uninstall/restore cleanliness checks if practical
+- package_check baseline for the release candidate
 
 ## Security posture summary
 
