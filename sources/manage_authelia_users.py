@@ -8,10 +8,13 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+import os
 
 import yaml
 
 DEFAULT_GROUPS = ["users"]
+DEFAULT_INSTALL_DIR = os.environ.get("MFA_SIDECAR_INSTALL_DIR", "/opt/yunohost/mfa_sidecar")
+DEFAULT_AUTHELIA_BIN = os.environ.get("MFA_SIDECAR_AUTHELIA_BIN", str(Path(DEFAULT_INSTALL_DIR) / "bin" / "authelia"))
 MANAGED_MARKER = "managed_by_mfa_sidecar_sync"
 USERNAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$")
 DEFAULT_PLACEHOLDER_HASH = "$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$2M9QGyGynl3CE4Yd7sQ0Jd0N1k1fA0sQO9L5H5lYv3o"
@@ -280,7 +283,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ensure = sub.add_parser("ensure-user")
     ensure.add_argument("--users-file", required=True)
-    ensure.add_argument("--authelia-bin", default="/opt/yunohost/mfa_sidecar/bin/authelia")
+    ensure.add_argument("--authelia-bin", default=DEFAULT_AUTHELIA_BIN)
     ensure.add_argument("--username", required=True)
     ensure.add_argument("--display-name", required=True)
     ensure.add_argument("--email", required=True)
@@ -300,7 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     password_cmd = sub.add_parser("set-password")
     password_cmd.add_argument("--users-file", required=True)
-    password_cmd.add_argument("--authelia-bin", default="/opt/yunohost/mfa_sidecar/bin/authelia")
+    password_cmd.add_argument("--authelia-bin", default=DEFAULT_AUTHELIA_BIN)
     password_cmd.add_argument("--username", required=True)
     password_cmd.add_argument("--password", required=True)
     password_cmd.set_defaults(func=command_set_password)

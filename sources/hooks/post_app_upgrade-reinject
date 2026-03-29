@@ -1,5 +1,10 @@
 #!/bin/bash
-if [[ -x /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py && -f /opt/yunohost/mfa_sidecar/deploy/generated-runtime/render-index.json ]]; then
-  python3 /opt/yunohost/mfa_sidecar/bin/inject_protected_include.py reinject-all /opt/yunohost/mfa_sidecar/deploy/generated-runtime/render-index.json || true
+INSTALL_DIR="${MFA_SIDECAR_INSTALL_DIR:-/opt/yunohost/mfa_sidecar}"
+ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
+[[ -f "$ENV_FILE" ]] && . "$ENV_FILE"
+INJECTOR="$INSTALL_DIR/bin/inject_protected_include.py"
+RENDER_INDEX="$INSTALL_DIR/deploy/generated-runtime/render-index.json"
+if [[ -x "$INJECTOR" && -f "$RENDER_INDEX" ]]; then
+  python3 "$INJECTOR" reinject-all "$RENDER_INDEX" || true
 fi
 nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true

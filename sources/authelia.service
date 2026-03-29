@@ -8,16 +8,16 @@ Type=simple
 User=mfa_sidecar
 Group=mfa_sidecar
 EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
-ExecStart=/opt/yunohost/mfa_sidecar/bin/authelia --config /etc/mfa-sidecar/authelia/configuration.yml
+ExecStart=${MFA_SIDECAR_AUTHELIA_BIN} --config /etc/mfa-sidecar/authelia/configuration.yml
 Restart=on-failure
 RestartSec=5s
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/etc/mfa-sidecar /var/lib/mfa_sidecar /opt/yunohost/mfa_sidecar/run
+ReadWritePaths=/etc/mfa-sidecar /var/lib/mfa_sidecar ${MFA_SIDECAR_INSTALL_DIR}/run
 UMask=0027
-WorkingDirectory=/opt/yunohost/mfa_sidecar
+WorkingDirectory=${MFA_SIDECAR_INSTALL_DIR}
 
 [Install]
 WantedBy=multi-user.target

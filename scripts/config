@@ -18,6 +18,7 @@ fi
 if [[ -z "$APP_INSTALL_DIR" || "$APP_INSTALL_DIR" == *'$app'* || "$APP_INSTALL_DIR" == *'__APP__'* ]]; then
     APP_INSTALL_DIR="/opt/yunohost/${app}"
 fi
+APP_AUTHELIA_BIN="$APP_INSTALL_DIR/bin/authelia"
 if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'__APP__'* ]]; then
     APP_DATA_DIR="/var/lib/${app}"
 fi
@@ -118,7 +119,7 @@ elif policy_path.exists():
     except Exception:
         pass
 url = f"https://{portal_domain}/admin" if portal_domain != 'unknown' else '/admin'
-print(f'''style: warning
+print(f'''style: info
 ask:
   en: "Open this app's admin UI: {url}"
   fr: "Ouvrir l'interface d'administration de cette app : {url}"''')
@@ -228,7 +229,7 @@ run__seed_first_user() {
     fi
     python3 "$APP_INSTALL_DIR/bin/manage_authelia_users.py" ensure-user \
         --users-file "$USERS_FILE" \
-        --authelia-bin /opt/yunohost/mfa_sidecar/bin/authelia \
+        --authelia-bin "$APP_AUTHELIA_BIN" \
         --username "$first_username" \
         --display-name "$first_display_name" \
         --email "$first_email" \

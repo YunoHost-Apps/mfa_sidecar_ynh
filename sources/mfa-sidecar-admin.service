@@ -8,22 +8,21 @@ Type=simple
 User=mfa_sidecar
 Group=mfa_sidecar
 EnvironmentFile=-/etc/mfa-sidecar/mfa-sidecar.env
-Environment=MFA_SIDECAR_POLICY_PATH=/opt/yunohost/mfa_sidecar/config/domain-policy.yaml
-Environment=MFA_SIDECAR_RENDER_SCRIPT=/opt/yunohost/mfa_sidecar/bin/render_runtime_config.py
-Environment=MFA_SIDECAR_STAGE_SCRIPT=/opt/yunohost/mfa_sidecar/bin/stage_runtime.py
-Environment=MFA_SIDECAR_GENERATED_DIR=/opt/yunohost/mfa_sidecar/deploy/generated-runtime
+Environment=MFA_SIDECAR_POLICY_PATH=${MFA_SIDECAR_INSTALL_DIR}/config/domain-policy.yaml
+Environment=MFA_SIDECAR_RENDER_SCRIPT=${MFA_SIDECAR_INSTALL_DIR}/bin/render_runtime_config.py
+Environment=MFA_SIDECAR_STAGE_SCRIPT=${MFA_SIDECAR_INSTALL_DIR}/bin/stage_runtime.py
+Environment=MFA_SIDECAR_GENERATED_DIR=${MFA_SIDECAR_INSTALL_DIR}/deploy/generated-runtime
 Environment=MFA_SIDECAR_STAGE_ROOT=/
-Environment=MFA_SIDECAR_INSTALL_DIR=/opt/yunohost/mfa_sidecar
 Environment=MFA_SIDECAR_ADMIN_BIND=127.0.0.1
 Environment=MFA_SIDECAR_ADMIN_PORT=9087
 Environment=PYTHONDONTWRITEBYTECODE=1
-ExecStart=/usr/bin/python3 /opt/yunohost/mfa_sidecar/bin/admin_ui_app.py
+ExecStart=/usr/bin/python3 ${MFA_SIDECAR_INSTALL_DIR}/bin/admin_ui_app.py
 Restart=on-failure
 RestartSec=5s
 PrivateTmp=true
 ProtectHome=true
 UMask=0027
-WorkingDirectory=/opt/yunohost/mfa_sidecar
+WorkingDirectory=${MFA_SIDECAR_INSTALL_DIR}
 
 [Install]
 WantedBy=multi-user.target
