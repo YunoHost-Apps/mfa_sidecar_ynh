@@ -14,6 +14,8 @@ MFA Sidecar currently installs a vendored Authelia release artifact from:
 
 - `sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz`
 
+That vendored artifact is intentional. The package chooses a pinned, sha256-verified release input because this integration sits on a live authentication path and the project currently values reproducible installs/upgrades over install-time upstream fetching.
+
 A copy of the upstream Authelia license text is included in:
 
 - `licenses/Authelia-Apache-2.0.txt`

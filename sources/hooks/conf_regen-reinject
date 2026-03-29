@@ -1,6 +1,6 @@
 #!/bin/bash
 [[ "$1" == "post" && "$2" == "nginx" ]] || exit 0
-INSTALL_DIR="${MFA_SIDECAR_INSTALL_DIR:-/opt/yunohost/mfa_sidecar}"
+INSTALL_DIR="${MFA_SIDECAR_INSTALL_DIR:-/var/www/mfa_sidecar}"
 ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
 [[ -f "$ENV_FILE" ]] && . "$ENV_FILE"
 INJECTOR="$INSTALL_DIR/bin/inject_protected_include.py"

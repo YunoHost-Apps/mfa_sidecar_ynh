@@ -13,7 +13,7 @@ import os
 import yaml
 
 DEFAULT_GROUPS = ["users"]
-DEFAULT_INSTALL_DIR = os.environ.get("MFA_SIDECAR_INSTALL_DIR", "/opt/yunohost/mfa_sidecar")
+DEFAULT_INSTALL_DIR = os.environ.get("MFA_SIDECAR_INSTALL_DIR", "/var/www/mfa_sidecar")
 DEFAULT_AUTHELIA_BIN = os.environ.get("MFA_SIDECAR_AUTHELIA_BIN", str(Path(DEFAULT_INSTALL_DIR) / "bin" / "authelia"))
 MANAGED_MARKER = "managed_by_mfa_sidecar_sync"
 USERNAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$")

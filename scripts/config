@@ -16,7 +16,7 @@ if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'
     APP_DATA_DIR="$(ynh_app_setting_get --key=data_dir 2>/dev/null || true)"
 fi
 if [[ -z "$APP_INSTALL_DIR" || "$APP_INSTALL_DIR" == *'$app'* || "$APP_INSTALL_DIR" == *'__APP__'* ]]; then
-    APP_INSTALL_DIR="/opt/yunohost/${app}"
+    APP_INSTALL_DIR="/var/www/${app}"
 fi
 APP_AUTHELIA_BIN="$APP_INSTALL_DIR/bin/authelia"
 if [[ -z "$APP_DATA_DIR" || "$APP_DATA_DIR" == *'$app'* || "$APP_DATA_DIR" == *'__APP__'* ]]; then

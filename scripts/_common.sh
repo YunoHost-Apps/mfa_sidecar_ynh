@@ -26,7 +26,7 @@ _mfa_sidecar_resolve_paths() {
     fi
 
     if [[ -z "$resolved_install_dir" || "$resolved_install_dir" == *'$app'* || "$resolved_install_dir" == *'__APP__'* ]]; then
-        resolved_install_dir="/opt/yunohost/${app}"
+        resolved_install_dir="/var/www/${app}"
     fi
     if [[ -z "$resolved_data_dir" || "$resolved_data_dir" == *'$app'* || "$resolved_data_dir" == *'__APP__'* ]]; then
         resolved_data_dir="/var/lib/${app}"

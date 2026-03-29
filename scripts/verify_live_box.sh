@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP="mfa_sidecar"
-INSTALL_DIR="${MFA_SIDECAR_INSTALL_DIR:-/opt/yunohost/mfa_sidecar}"
+INSTALL_DIR="${MFA_SIDECAR_INSTALL_DIR:-/var/www/mfa_sidecar}"
 ENV_FILE="/etc/mfa-sidecar/mfa-sidecar.env"
 [[ -f "$ENV_FILE" ]] && . "$ENV_FILE"
 POLICY_FILE="$INSTALL_DIR/config/domain-policy.yaml"

@@ -119,7 +119,7 @@ This is the primary break-glass mechanism.
 
 ## Important paths
 
-- install dir: current package install dir (currently typically `/opt/yunohost/mfa_sidecar`)
+- install dir: current package install dir (for new installs now intended to be typically `/var/www/mfa_sidecar`)
 - data dir: `/var/lib/mfa_sidecar`
 - policy file: `$install_dir/config/domain-policy.yaml`
 - sidecar users: `/etc/mfa-sidecar/authelia/users.yml`

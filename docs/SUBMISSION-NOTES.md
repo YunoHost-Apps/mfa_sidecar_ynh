@@ -59,7 +59,15 @@ This is the main maintenance surface and is treated accordingly in tests/docs.
 
 The package ships a pinned Authelia release artifact and verifies it with sha256.
 
-This is an explicit supply-chain tradeoff made for YunoHost packaging practicality.
+This is an explicit supply-chain and operational reliability tradeoff, not an accidental shortcut.
+
+Why this package currently prefers the vendored model:
+
+- MFA Sidecar is a security perimeter; unexpected upstream fetch failures or release drift can break real login paths for whole YunoHost installs
+- the packaged artifact is exactly the one exercised in real-box validation, which reduces "upstream moved and now install/upgrade behavior changed underneath us" risk
+- the package still verifies the artifact cryptographically instead of treating the vendored tarball as blind trust
+
+In other words: this package is intentionally optimizing for reproducible installs and upgrades on a security-sensitive integration surface, even though that is somewhat less aligned with generic YunoHost packaging preference.
 
 ## What has been validated so far
 

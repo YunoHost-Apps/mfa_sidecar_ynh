@@ -56,7 +56,23 @@ Practical implication:
 - unusual nginx config structures may still need operator attention
 - live-box verification after upgrades is worth the effort
 
-## 5. Why the package prefers human-operable recovery
+## 5. Vendored Authelia artifact as a reliability boundary
+
+MFA Sidecar currently ships a pinned Authelia release artifact and verifies it with sha256 during install.
+
+This is a conscious tradeoff.
+
+Why it exists:
+
+- MFA Sidecar sits on the login path for protected apps, so install/upgrade fragility is not a cosmetic problem
+- relying on a live upstream fetch for a security perimeter package increases the chance of drift, transient upstream outages, changed release layouts, or fetch-time surprises at exactly the wrong moment
+- the vendored artifact gives the package a reproducible, reviewable, tested binary input
+
+This does increase repository/package weight and is less aligned with the default YunoHost preference for fetching sources at install time.
+
+The project currently considers that trade acceptable because unexpected upstream acquisition failures are a materially worse failure mode for this kind of package.
+
+## 6. Why the package prefers human-operable recovery
 
 The package intentionally favors:
 

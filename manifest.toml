@@ -122,7 +122,7 @@ ram.runtime = "200M"
     [resources.system_user]
 
     [resources.install_dir]
-    dir = "/opt/yunohost/$app"
+    dir = "/var/www/$app"
 
     [resources.data_dir]
     dir = "/var/lib/$app"
