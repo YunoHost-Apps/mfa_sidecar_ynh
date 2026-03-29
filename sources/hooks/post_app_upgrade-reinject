@@ -7,4 +7,3 @@ RENDER_INDEX="$INSTALL_DIR/deploy/generated-runtime/render-index.json"
 if [[ -x "$INJECTOR" && -f "$RENDER_INDEX" ]]; then
   python3 "$INJECTOR" reinject-all "$RENDER_INDEX" || true
 fi
-nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true

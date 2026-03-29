@@ -193,7 +193,8 @@ run__reload_runtime() {
 
     cp /etc/mfa-sidecar/nginx/portal.conf "$APP_SCRIPT_DIR/../conf/nginx.conf"
     ynh_config_add_nginx
-    ynh_systemctl --service=nginx --action=reload
+    /usr/sbin/nginx -t
+    systemctl reload nginx
     ynh_systemctl --service=mfa-sidecar-authelia --action=restart
     ynh_systemctl --service=mfa-sidecar-admin --action=restart
     ynh_print_info "Regenerated runtime assets and restarted MFA Sidecar services."
@@ -209,7 +210,7 @@ run__emergency_disable() {
 
     _mfa_sidecar_remove_protected_domain_includes
 
-    ynh_systemctl --service=nginx --action=reload || true
+    /usr/sbin/nginx -t && systemctl reload nginx || true
     ynh_systemctl --service=mfa-sidecar-authelia --action=stop || true
     ynh_systemctl --service=mfa-sidecar-admin --action=stop || true
     ynh_print_info "Emergency disable complete: portal include hook removed, protected app-location injections removed, nginx reloaded, and sidecar services stopped. Generated auth-endpoint snippets and sidecar state remain on disk for later recovery."
