@@ -104,8 +104,9 @@ _mfa_sidecar_install_packaged_files() {
     install -D -m 755 "$(_mfa_sidecar_pkg_path sources/admin_ui_app.py)" "$install_dir/bin/admin_ui_app.py"
     install -D -m 755 "$(_mfa_sidecar_pkg_path sources/policy_admin.py)" "$install_dir/bin/policy_admin.py"
     install -D -m 755 "$(_mfa_sidecar_pkg_path sources/discovery.py)" "$install_dir/bin/discovery.py"
-    install -D -m 644 "$(_mfa_sidecar_pkg_path sources/authelia.service)" /etc/systemd/system/mfa-sidecar-authelia.service
-    install -D -m 644 "$(_mfa_sidecar_pkg_path sources/mfa-sidecar-admin.service)" /etc/systemd/system/mfa-sidecar-admin.service
+    sed "s|__INSTALL_DIR__|$install_dir|g" "$(_mfa_sidecar_pkg_path sources/authelia.service)" > /etc/systemd/system/mfa-sidecar-authelia.service
+    sed "s|__INSTALL_DIR__|$install_dir|g" "$(_mfa_sidecar_pkg_path sources/mfa-sidecar-admin.service)" > /etc/systemd/system/mfa-sidecar-admin.service
+    chmod 644 /etc/systemd/system/mfa-sidecar-authelia.service /etc/systemd/system/mfa-sidecar-admin.service
     install -D -m 644 "$(_mfa_sidecar_pkg_path sources/authelia-release.json)" "$install_dir/sources/authelia-release.json"
     install -D -m 644 "$(_mfa_sidecar_pkg_path sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz)" "$install_dir/sources/vendor/authelia-v4.39.16-linux-amd64.tar.gz"
     if [[ -f "$(_mfa_sidecar_pkg_path assets/logo.png)" ]]; then
