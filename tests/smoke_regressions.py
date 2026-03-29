@@ -256,6 +256,22 @@ class InjectorTests(unittest.TestCase):
             self.assertIn(f'include {protected};', bridge_text)
             self.assertIn('BEGIN mfa-sidecar bridge include', bridge_text)
 
+    def test_inject_into_location_matches_trailing_slash_equivalent_subpath(self):
+        with tempfile.TemporaryDirectory() as td:
+            conf = Path(td) / 'roundcube.conf'
+            conf.write_text(
+                "rewrite ^/webmail$ /webmail/ permanent;\n"
+                "location /webmail/ {\n"
+                "  alias /var/www/roundcube/;\n"
+                "  try_files $uri $uri/ /index.php?q=$uri&$args;\n"
+                "}\n",
+                encoding='utf-8',
+            )
+            inject.inject_into_location(conf, '/webmail', '/authelia-auth-wm3v-com-webmail', 'auth.domain.tld')
+            text = conf.read_text(encoding='utf-8')
+            self.assertIn('location /webmail/ {', text)
+            self.assertIn('auth_request /authelia-auth-wm3v-com-webmail;', text)
+
     def test_reinject_all_fails_if_any_managed_target_cannot_be_injected(self):
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)

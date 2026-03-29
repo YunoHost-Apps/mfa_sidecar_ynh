@@ -178,7 +178,11 @@ def _location_matches(body: str, target_path: str) -> bool:
     if not tokens:
         return False
     path_token = tokens[-1].strip('"\'')
-    return path_token == target_path
+    if path_token == target_path:
+        return True
+    if target_path != "/" and path_token.rstrip("/") == target_path.rstrip("/"):
+        return True
+    return False
 
 
 def inject_into_location(conf_path: Path, target_path: str, auth_location: str, portal_domain: str) -> None:
