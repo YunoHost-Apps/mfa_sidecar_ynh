@@ -64,6 +64,10 @@ _mfa_sidecar_validate_inputs() {
     if ! [[ "$upstream_port" =~ ^[0-9]+$ ]] || (( upstream_port < 1 || upstream_port > 65535 )); then
         ynh_die "upstream_port must be a valid TCP port."
     fi
+
+    if [[ "${first_username:-}" =~ ^[Aa][Dd][Mm][Ii][Nn]$ ]]; then
+        ynh_die "first_username 'admin' is not allowed for MFA Sidecar because it commonly collides with legacy/system/YunoHost identity expectations; choose a distinct operator username such as 'mfaadmin'."
+    fi
 }
 
 _mfa_sidecar_session_remember_me() {

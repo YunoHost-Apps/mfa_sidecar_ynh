@@ -90,8 +90,8 @@ ram.runtime = "200M"
     ask.en = "First sidecar admin username"
     ask.fr = "Nom d'utilisateur du premier admin du sidecar"
     type = "string"
-    help.en = "Required. This user is created during install so the portal is immediately usable."
-    help.fr = "Obligatoire. Cet utilisateur est créé pendant l'installation afin que le portail soit immédiatement utilisable."
+    help.en = "Required. This user is created during install so the portal is immediately usable. Do not use 'admin'; choose a distinct operator username such as 'mfaadmin'."
+    help.fr = "Obligatoire. Cet utilisateur est créé pendant l'installation afin que le portail soit immédiatement utilisable. N'utilisez pas 'admin' ; choisissez un nom d'utilisateur opérateur distinct comme 'mfaadmin'."
 
     [install.first_display_name]
     ask.en = "First sidecar admin display name"

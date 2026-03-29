@@ -107,8 +107,8 @@ services = ["nginx"]
         [main.users.users_file_note]
         type = "alert"
         style = "info"
-        ask.en = "MFA Sidecar keeps its own users file. The first admin was created during install. Prefer /admin/users for routine management. Treat the raw users file as a recovery/debug surface, not a normal config-panel view."
-        ask.fr = "MFA Sidecar conserve son propre fichier utilisateurs. Le premier admin a été créé pendant l'installation. Préférez /admin/users pour la gestion courante. Traitez le fichier utilisateurs brut comme une surface de récupération/débogage, pas comme une vue normale du panneau de configuration."
+        ask.en = "MFA Sidecar keeps its own users file. The first admin was created during install. Prefer /admin/users for routine management. Treat the raw users file as a recovery/debug surface, not a normal config-panel view. Important: do not use 'admin' as a sidecar username in either the CLI install flow or the GUI user flow; choose a distinct operator username such as 'mfaadmin'."
+        ask.fr = "MFA Sidecar conserve son propre fichier utilisateurs. Le premier admin a été créé pendant l'installation. Préférez /admin/users pour la gestion courante. Traitez le fichier utilisateurs brut comme une surface de récupération/débogage, pas comme une vue normale du panneau de configuration. Important : n'utilisez pas 'admin' comme nom d'utilisateur sidecar, ni dans l'installation CLI ni dans l'interface GUI ; choisissez un nom distinct comme 'mfaadmin'."
         bind = "null"
 
         [main.users.first_username]

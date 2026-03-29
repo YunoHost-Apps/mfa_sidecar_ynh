@@ -104,6 +104,8 @@ sudo systemctl status mfa-sidecar-authelia --no-pager
 sudo cat /etc/mfa-sidecar/authelia/users.yml
 ```
 
+Important operator note: do **not** use `admin` as a sidecar username. On real YunoHost systems it can collide with legacy/system identity expectations and create confusing login failures. Use a distinct operator username such as `mfaadmin`.
+
 ## If a user is stuck
 
 From `/admin/users`, admins can:

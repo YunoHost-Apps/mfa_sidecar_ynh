@@ -94,6 +94,8 @@ You will provide:
 
 This user is the initial **Admin** and is what makes the portal immediately usable after install.
 
+Important: do **not** use the username `admin` for MFA Sidecar. On real YunoHost systems it can collide with legacy/system/YunoHost identity expectations and produce confusing authentication failures. Use a distinct operator username such as `mfaadmin` instead.
+
 ## What you should see after install
 
 You should end up with:

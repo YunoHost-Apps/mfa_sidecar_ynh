@@ -25,6 +25,7 @@ MFA_FIELDS = [
     "one_time_password",
     "mobile_push",
 ]
+RESERVED_USERNAMES = {"admin"}
 
 
 def ensure_parent(path: Path) -> None:
@@ -53,6 +54,8 @@ def validate_username(username: str) -> str:
     username = (username or "").strip()
     if not USERNAME_RE.match(username):
         raise SystemExit("username must match [A-Za-z0-9][A-Za-z0-9_.@-]{0,127}")
+    if username.lower() in RESERVED_USERNAMES:
+        raise SystemExit("username 'admin' is not allowed for MFA Sidecar because it commonly collides with legacy/system/YunoHost identity expectations; choose a distinct operator username such as 'mfaadmin'")
     return username
 
 

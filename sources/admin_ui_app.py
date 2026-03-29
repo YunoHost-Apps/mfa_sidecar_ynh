@@ -46,6 +46,7 @@ DISCOVERY_NGINX_CONF_DIR = os.environ.get("MFA_SIDECAR_DISCOVERY_NGINX_CONF_DIR"
 DISCOVERY_YUNOHOST_BIN = os.environ.get("MFA_SIDECAR_DISCOVERY_YUNOHOST_BIN", "/usr/bin/yunohost")
 USERNAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$")
 CSRF_COOKIE_NAME = "mfa_sidecar_admin_csrf"
+RESERVED_USERNAMES = {"admin"}
 
 
 def h(value: object) -> str:
@@ -56,6 +57,8 @@ def validate_username(username: str) -> str:
     username = (username or "").strip()
     if not USERNAME_RE.match(username):
         raise PolicyError("username must match [A-Za-z0-9][A-Za-z0-9_.@-]{0,127}")
+    if username.lower() in RESERVED_USERNAMES:
+        raise PolicyError("username 'admin' is not allowed for MFA Sidecar because it commonly collides with legacy/system/YunoHost identity expectations; choose a distinct operator username such as 'mfaadmin'")
     return username
 
 
