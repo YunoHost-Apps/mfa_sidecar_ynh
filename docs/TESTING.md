@@ -10,6 +10,9 @@ The package has already encountered several live-only failure modes that were to
 - YunoHost SSOwat hijacking internal auth subrequests
 - missing packaged asset paths breaking upgrade
 - protected snippet generation/injection drift after upgrade/apply
+- missing live nginx bridge includes for auth endpoint locations
+- subpath location matching drift such as `/webmail` vs `/webmail/`
+- disabled-target cleanup leaving half-rolled-back auth blocks behind
 - existing-install defaults not changing just because package defaults changed
 - first-run MFA enrollment behaving differently from ordinary protected access
 
@@ -44,6 +47,9 @@ This suite focuses on the integration seams and packaging failures we actually e
 - WebAuthn disabled in policy renders to `webauthn.disable: true`
 - enabled managed targets generate protected nginx snippets
 - reinjection applies the managed auth block to the target location
+- reinjection writes/removes per-target bridge include files for auth endpoint snippets
+- trailing-slash-equivalent subpath matching works for injected target locations
+- disabled targets remove both managed auth blocks and sibling bridge includes
 - install/upgrade scripts do not reference missing packaged files
 - required docs/license files are present in the repository
 - logo compatibility asset exists so branding changes do not brick upgrades

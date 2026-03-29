@@ -10,6 +10,7 @@ When the package is removed, it is intended to:
 
 - stop and disable sidecar services
 - remove sidecar-managed nginx auth injection blocks from target configs
+- remove per-target bridge include files such as `mfa-sidecar-*.conf`
 - remove the sidecar-generated portal/managed nginx snippets
 - remove the app install directory and data directory through normal YunoHost lifecycle handling
 - leave downstream apps themselves intact
@@ -63,8 +64,9 @@ After a remove, verify:
 
 1. sidecar services are gone or inactive
 2. sidecar-managed auth blocks are no longer present in target nginx configs
-3. target apps still load as expected without sidecar
-4. no stale sidecar snippets remain in `/etc/mfa-sidecar/nginx/protected/`
+3. no stale `mfa-sidecar-*.conf` bridge includes remain in target nginx `.d/` directories
+4. target apps still load as expected without sidecar
+5. no stale sidecar snippets remain in `/etc/mfa-sidecar/nginx/protected/`
 
 ## Manual recovery mindset
 
