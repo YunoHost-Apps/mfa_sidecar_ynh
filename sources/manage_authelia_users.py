@@ -3,10 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import pty
 import re
-import select
 import shutil
 import subprocess
 import sys
@@ -57,41 +54,16 @@ def validate_username(username: str) -> str:
 
 
 def hash_password(authelia_bin: str, password: str) -> str:
-    master_fd, slave_fd = pty.openpty()
-    try:
-        proc = subprocess.Popen(
-            [authelia_bin, "crypto", "hash", "generate", "argon2", "--no-confirm"],
-            stdin=slave_fd,
-            stdout=slave_fd,
-            stderr=slave_fd,
-            text=True,
-            close_fds=True,
-        )
-    finally:
-        os.close(slave_fd)
-
-    output = []
-    password_sent = False
-    while True:
-        ready, _, _ = select.select([master_fd], [], [], 5)
-        if not ready:
-            if proc.poll() is not None:
-                break
-            continue
-        chunk = os.read(master_fd, 4096).decode(errors="replace")
-        if not chunk:
-            if proc.poll() is not None:
-                break
-            continue
-        output.append(chunk)
-        if ("Enter Password:" in chunk or "Password:" in chunk) and not password_sent:
-            os.write(master_fd, (password + "\n").encode())
-            password_sent = True
-    proc.wait(timeout=10)
-    os.close(master_fd)
+    proc = subprocess.run(
+        [authelia_bin, "crypto", "hash", "generate", "argon2", "--no-confirm", "--password", password],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    output = "\n".join(part for part in [proc.stdout.strip(), proc.stderr.strip()] if part).strip()
     if proc.returncode != 0:
-        raise SystemExit("Authelia hash command failed: " + "".join(output).strip())
-    lines = [line.strip() for line in "".join(output).splitlines() if line.strip()]
+        raise SystemExit("Authelia hash command failed: " + output)
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
     if not lines:
         raise SystemExit("Authelia hash command returned no output")
     for line in reversed(lines):

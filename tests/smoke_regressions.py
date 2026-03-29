@@ -271,10 +271,10 @@ class AdminUiHardeningTests(unittest.TestCase):
         self.assertNotIn("quote_plus(f\"Command ['sudo',", text)
         self.assertNotIn("returned non-zero exit status", text)
 
-    def test_password_hashing_no_longer_uses_password_argv(self):
+    def test_password_hashing_uses_supported_authelia_noninteractive_flag(self):
         text = (SOURCES / 'manage_authelia_users.py').read_text(encoding='utf-8')
-        self.assertIn('pty.openpty()', text)
-        self.assertNotIn('--password", password', text)
+        self.assertIn('"crypto", "hash", "generate", "argon2", "--no-confirm", "--password", password', text)
+        self.assertNotIn('pty.openpty()', text)
 
 
 class ApplyRuntimeHookTests(unittest.TestCase):
