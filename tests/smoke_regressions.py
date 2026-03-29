@@ -418,6 +418,8 @@ class PackagingPathTests(unittest.TestCase):
         self.assertIn('BASH_SOURCE[0]', common)
         self.assertNotIn('script_base="${SCRIPT_DIR:-$(pwd)}"', common)
         self.assertNotRegex(common, r'install -D -m \d+ \.\./')
+        self.assertIn('bridge.unlink(missing_ok=True)', common)
+        self.assertIn("subprocess.run(['python3', injector, 'remove', target], check=False)", common)
 
     def test_expected_docs_and_license_files_exist(self):
         expected = [

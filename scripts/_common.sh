@@ -358,14 +358,23 @@ from pathlib import Path
 
 render_index = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 injector = sys.argv[2]
-seen = set()
+seen_targets = set()
+
 for bucket in ('enabled', 'disabled'):
     for entry in render_index.get(bucket, []):
         target = entry.get('target_conf')
-        if not target or target in seen:
-            continue
-        seen.add(target)
-        subprocess.run(['python3', injector, 'remove', target], check=False)
+        target_id = entry.get('id')
+
+        if target and target not in seen_targets:
+            seen_targets.add(target)
+            subprocess.run(['python3', injector, 'remove', target], check=False)
+
+        if target and target_id:
+            bridge = Path(target).parent / f"mfa-sidecar-{target_id}.conf"
+            try:
+                bridge.unlink(missing_ok=True)
+            except Exception:
+                pass
 PYEOF
 }
 
