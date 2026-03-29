@@ -297,7 +297,17 @@ class InjectorTests(unittest.TestCase):
             domain_dir = base / 'etc/nginx/conf.d/home.domain.tld.d'
             domain_dir.mkdir(parents=True)
             target_conf = domain_dir / 'homebox.conf'
-            target_conf.write_text("location / {\n  proxy_pass http://127.0.0.1:59150/;\n}\n", encoding='utf-8')
+            target_conf.write_text(
+                "location / {\n"
+                "# BEGIN mfa-sidecar managed block\n"
+                " auth_request /authelia-auth-home-domain-tld;\n"
+                " auth_request_set $redirection_url $upstream_http_location;\n"
+                " error_page 401 =302 $redirection_url;\n"
+                "# END mfa-sidecar managed block\n"
+                "  proxy_pass http://127.0.0.1:59150/;\n"
+                "}\n",
+                encoding='utf-8'
+            )
             bridge = domain_dir / 'mfa-sidecar-home-domain-tld.conf'
             bridge.write_text('# stale bridge\n', encoding='utf-8')
             render_index = {
@@ -313,6 +323,9 @@ class InjectorTests(unittest.TestCase):
             idx.write_text(json.dumps(render_index), encoding='utf-8')
             inject.reinject_all(idx)
             self.assertFalse(bridge.exists(), 'expected disabled target bridge include to be removed')
+            text = target_conf.read_text(encoding='utf-8')
+            self.assertNotIn('auth_request /authelia-auth-home-domain-tld;', text)
+            self.assertNotIn('BEGIN mfa-sidecar managed block', text)
 
     def test_bridge_filename_is_deterministic(self):
         self.assertEqual(

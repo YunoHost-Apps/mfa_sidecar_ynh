@@ -241,10 +241,13 @@ def reinject_all(render_index_path: Path, validate_cmd: list[str] | None = None)
             continue
 
     for entry in render_index.get("disabled", []):
+        target_conf = Path(entry["target_conf"])
         try:
+            if target_conf.exists():
+                remove(target_conf)
             remove_bridge_for_entry(entry)
         except Exception as exc:
-            failures.append(f"{entry['id']}: bridge cleanup failed: {exc}")
+            failures.append(f"{entry['id']}: disabled cleanup failed: {exc}")
 
     if failures:
         for failure in failures:
