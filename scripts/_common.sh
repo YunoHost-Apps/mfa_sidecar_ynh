@@ -1,9 +1,19 @@
 #!/bin/bash
 
 _mfa_sidecar_package_root() {
-    local common_path common_dir
+    local common_path common_dir candidate
     common_path="${BASH_SOURCE[0]}"
     common_dir="$(cd -- "$(dirname -- "$common_path")" >/dev/null 2>&1 && pwd)"
+
+    for candidate in \
+        "$common_dir/.." \
+        "$common_dir/../.."; do
+        if [[ -f "$candidate/manifest.toml" && -d "$candidate/sources" ]]; then
+            cd -- "$candidate" >/dev/null 2>&1 && pwd
+            return 0
+        fi
+    done
+
     cd -- "$common_dir/.." >/dev/null 2>&1 && pwd
 }
 
@@ -37,6 +47,8 @@ _mfa_sidecar_resolve_paths() {
 }
 
 _mfa_sidecar_validate_inputs() {
+    local enforce_reserved_first_username="${1:-0}"
+
     if [[ "$path" != "/" ]]; then
         ynh_die "Portal app must be installed at '/' on its own dedicated domain."
     fi
@@ -65,7 +77,7 @@ _mfa_sidecar_validate_inputs() {
         ynh_die "upstream_port must be a valid TCP port."
     fi
 
-    if [[ "${first_username:-}" =~ ^[Aa][Dd][Mm][Ii][Nn]$ ]]; then
+    if [[ "$enforce_reserved_first_username" == "1" ]] && [[ "${first_username:-}" =~ ^[Aa][Dd][Mm][Ii][Nn]$ ]]; then
         ynh_die "first_username 'admin' is not allowed for MFA Sidecar because it commonly collides with legacy/system/YunoHost identity expectations; choose a distinct operator username such as 'mfaadmin'."
     fi
 }

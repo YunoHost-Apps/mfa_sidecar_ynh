@@ -422,6 +422,15 @@ class PackagingPathTests(unittest.TestCase):
         self.assertNotRegex(common, r'install -D -m \d+ \.\./')
         self.assertIn('bridge.unlink(missing_ok=True)', common)
         self.assertIn("subprocess.run(['python3', injector, 'remove', target], check=False)", common)
+        self.assertIn('"$common_dir/../.."', common)
+
+    def test_admin_username_reservation_is_install_only_not_upgrade_blocker(self):
+        install_text = self._shell_text(SCRIPTS / 'install')
+        upgrade_text = self._shell_text(SCRIPTS / 'upgrade')
+        common = self._shell_text(SCRIPTS / '_common.sh')
+        self.assertIn('_mfa_sidecar_validate_inputs 1', install_text)
+        self.assertIn('_mfa_sidecar_validate_inputs 0', upgrade_text)
+        self.assertIn('local enforce_reserved_first_username="${1:-0}"', common)
 
     def test_expected_docs_and_license_files_exist(self):
         expected = [

@@ -5,7 +5,7 @@ source "$APP_SCRIPT_DIR/_common.sh"
 source /usr/share/yunohost/helpers
 
 _mfa_sidecar_resolve_paths
-_mfa_sidecar_validate_inputs
+_mfa_sidecar_validate_inputs 0
 
 #=================================================
 # ENSURE CONFIG MATERIAL EXISTS
