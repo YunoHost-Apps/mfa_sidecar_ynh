@@ -122,6 +122,8 @@ class RenderAuthRequestTests(unittest.TestCase):
         )
         self.assertIn('access_by_lua_block { return; }', conf)
         self.assertIn('proxy_set_header Connection "";', conf)
+        self.assertIn('proxy_set_header Authorization "";', conf)
+        self.assertIn('proxy_set_header Proxy-Authorization "";', conf)
         self.assertIn('proxy_set_header X-Original-Method $request_method;', conf)
         self.assertIn('proxy_set_header X-Forwarded-For $remote_addr;', conf)
         self.assertIn('proxy_set_header X-Forwarded-Host $http_host;', conf)
