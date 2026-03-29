@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/_common.sh"
+APP_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$APP_SCRIPT_DIR/_common.sh"
 source /usr/share/yunohost/helpers
 
 _mfa_sidecar_resolve_paths
@@ -68,7 +68,7 @@ if [[ ! -f "/etc/nginx/conf.d/${domain}.conf" ]]; then
 fi
 
 mkdir -p "/etc/nginx/conf.d/${domain}.d"
-cp /etc/mfa-sidecar/nginx/portal.conf "$SCRIPT_DIR/../conf/nginx.conf"
+cp /etc/mfa-sidecar/nginx/portal.conf "$APP_SCRIPT_DIR/../conf/nginx.conf"
 ynh_config_add_nginx
 _mfa_sidecar_inject_primary_domain_include
 ynh_systemctl --service=nginx --action=reload || true

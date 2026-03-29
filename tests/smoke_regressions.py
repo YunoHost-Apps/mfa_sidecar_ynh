@@ -313,7 +313,11 @@ class PackagingPathTests(unittest.TestCase):
     def test_install_upgrade_restore_and_config_use_script_dir_anchored_repo_paths(self):
         for script in (SCRIPTS / 'install', SCRIPTS / 'upgrade', SCRIPTS / 'restore', SCRIPTS / 'config'):
             text = self._shell_text(script)
-            self.assertIn('SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"', text)
+            if script.name in {'install', 'upgrade', 'config'}:
+                self.assertIn('APP_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"', text)
+                self.assertNotIn('source "$SCRIPT_DIR/_common.sh"', text)
+            else:
+                self.assertIn('SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"', text)
         common = self._shell_text(SCRIPTS / '_common.sh')
         self.assertIn('_mfa_sidecar_pkg_path', common)
         self.assertIn('BASH_SOURCE[0]', common)

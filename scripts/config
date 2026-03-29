@@ -1,6 +1,6 @@
 #!/bin/bash
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/_common.sh"
+APP_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$APP_SCRIPT_DIR/_common.sh"
 source /usr/share/yunohost/helpers
 
 ynh_abort_if_errors
@@ -190,7 +190,7 @@ run__reload_runtime() {
 
     _mfa_sidecar_sync_protected_domain_includes
 
-    cp /etc/mfa-sidecar/nginx/portal.conf "$SCRIPT_DIR/../conf/nginx.conf"
+    cp /etc/mfa-sidecar/nginx/portal.conf "$APP_SCRIPT_DIR/../conf/nginx.conf"
     ynh_config_add_nginx
     ynh_systemctl --service=nginx --action=reload
     ynh_systemctl --service=mfa-sidecar-authelia --action=restart
