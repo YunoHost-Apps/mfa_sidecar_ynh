@@ -52,7 +52,14 @@ For the current rollout we expect:
 
 ### 6. Manual browser test
 
-Use a fresh incognito/private window and verify one protected app:
+Use a fresh incognito/private window and verify at least:
+
+1. one root-mounted protected target (for example HomeBox)
+2. one subpath protected target (for example `/webmail`)
+3. shared session behavior across multiple protected targets
+4. one disable / re-enable loop
+
+Expected flow:
 
 1. request protected target
 2. sidecar intercepts correctly

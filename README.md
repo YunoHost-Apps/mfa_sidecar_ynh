@@ -136,12 +136,12 @@ This is the primary break-glass mechanism.
 
 This package uses the normal YunoHost versioning convention:
 
-- package/app line: `0.3.0`
+- package/app line: `0.4.0`
 - YunoHost revision: `~ynhN`
 
 Example:
 
-- `0.3.0~ynh1`
+- `0.4.0~ynh1`
 
 ## Tone / intent
 

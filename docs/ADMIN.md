@@ -174,6 +174,7 @@ On path-based/root-domain apps especially, verify the real upstream behavior rat
 - keep uncertain targets in Bypass
 - know your break-glass path before you need it
 - document what changed when something is weird
+- do not use `admin` as a sidecar username; use a distinct operator username such as `mfaadmin`
 
 ## Bad operator habits
 

@@ -75,12 +75,17 @@ In other words: this package is intentionally optimizing for reproducible instal
 
 On a real YunoHost box, the following has been demonstrated:
 
+- fresh install works with install dir under `/var/www/mfa_sidecar`
+- sidecar services start and run from the `/var/www` install path
 - protected-target auth interception works
 - SSOwat bypass in the internal auth subrequest location was required and is implemented
 - Authelia 4.39 auth-request header contract was corrected
 - TOTP enrollment flow works
-- subsequent protected access works
+- HomeBox/root-mounted protection works
+- Roundcube `/webmail` subpath protection works
+- shared sidecar session behavior across protected targets works as intended
 - downstream app handoff can still lead to the app's own login, which is now documented
+- disable / re-enable still behaves as expected after the packaging changes
 
 ### Repo-local regression coverage
 
@@ -96,20 +101,23 @@ The repo now includes a smoke/regression suite for the live failures already enc
 
 ## Release status / remaining checks
 
-`0.3.0` is now justified by real-box validation.
+`0.4.0` is now justified by real-box validation.
 
 The release-closing work that mattered most was:
 
-- real-box break-glass behavior with `enforcement_enabled: false`
+- real-box `/var/www` install-dir migration validation
 - live proof that missing nginx auth-endpoint bridge includes were fixed
 - live proof that subpath-mounted targets work after slash-normalized matcher fixes
 - live proof that disable / re-enable no longer strands targets in half-rolled-back nginx state
+- live proof that app Authorization headers must be scrubbed from auth subrequests
+- live proof that `admin` is a poisoned sidecar username on at least one real YunoHost box and must be blocked
+- reduction of nginx reload churn after discovering nchan fragility under clustered reloads
 
 Still worth validating before wider public submission/catalog expectations:
 
-- one or more multi-domain common setups
-- additional real-box uninstall/restore cleanliness checks if practical
-- package_check baseline for the release candidate
+- one or more additional multi-domain common setups
+- calmer/lower-noise package_check run once the local Incus/test rig is less cursed
+- README-generator/catalog-process cleanup if needed by the submission venue
 
 ## Security posture summary
 

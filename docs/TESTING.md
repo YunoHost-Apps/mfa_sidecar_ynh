@@ -15,6 +15,9 @@ The package has already encountered several live-only failure modes that were to
 - disabled-target cleanup leaving half-rolled-back auth blocks behind
 - existing-install defaults not changing just because package defaults changed
 - first-run MFA enrollment behaving differently from ordinary protected access
+- downstream app Authorization headers poisoning auth subrequests
+- lifecycle/upgrade validation and restore lookup regressions after packaging changes
+- excessive nginx reload churn causing operational pain on nchan-backed hosts
 
 The test goal is simple:
 
