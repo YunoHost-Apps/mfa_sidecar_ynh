@@ -81,12 +81,6 @@ These are intentionally not release-gating for the current line.
 
 If the checks above pass, John’s judgment was that public submission would be reasonable.
 
-- Public/forum outreach note: MFA Sidecar should be framed as a **practical MFA perimeter that fits the current YunoHost structure with minimal core intrusion**, not as "native YunoHost admin-panel 2FA solved".
-- Defer forum/GitHub-community posting until the catalog PR has a clear resolution. Once that happens, prepare:
-  - one clean new forum thread,
-  - optionally one short reply in the most relevant older 2FA/admin-panel thread,
-  - careful wording about what the package is and is not.
-
 ## Security review notes
 
 Minor notes from live review (none considered critical blockers at this time):
