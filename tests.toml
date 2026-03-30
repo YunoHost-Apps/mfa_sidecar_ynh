@@ -11,9 +11,9 @@ test_format = 1.0
     args.upstream_scheme = "https"
     args.upstream_host = "127.0.0.1"
     args.upstream_port = 443
-    args.first_username = "admin"
-    args.first_display_name = "Admin"
-    args.first_email = "admin@example.test"
+    args.first_username = "mfaadmin"
+    args.first_display_name = "MFA Admin"
+    args.first_email = "mfaadmin@example.test"
     args.first_password = "YnhStrongPassw0rd!"
 
     exclude = ["install.private", "install.multi", "install.subdir", "change_url"]

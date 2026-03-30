@@ -8,11 +8,11 @@ description.en = "Browser-first MFA perimeter layer for selected YunoHost web ap
 description.fr = "Couche périmétrique MFA orientée navigateur pour des applications web YunoHost sélectionnées"
 
 version = "0.4.0~ynh1"
-maintainers = []
+maintainers = ["wonko6x9"]
 
 [upstream]
 license = "AGPL-3.0-or-later"
-website = "https://mfasidecar.com"
+website = "https://mfasidecar.org"
 code = "https://github.com/wonko6x9/mfa_sidecar_ynh"
 
 [integration]

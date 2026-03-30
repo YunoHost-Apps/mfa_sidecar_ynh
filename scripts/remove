@@ -38,9 +38,9 @@ rm -f /etc/systemd/system/mfa-sidecar-admin.service
 #=================================================
 # REMOVE RUNTIME ARTIFACTS
 #=================================================
-rm -rf /etc/mfa-sidecar
-rm -rf /var/lib/mfa_sidecar
-rm -rf "$install_dir"
+ynh_secure_remove --file="/etc/mfa-sidecar"
+ynh_secure_remove --file="/var/lib/mfa_sidecar"
+ynh_secure_remove --file="$install_dir"
 systemctl daemon-reload || true
 
 #=================================================
