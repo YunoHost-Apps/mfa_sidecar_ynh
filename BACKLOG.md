@@ -34,6 +34,49 @@ High-value checklist from live operator validation:
   - Additional upgrade-style fixtures where helpful
   - Any remaining live-only failures worth encoding once observed
 
+## v2 / post-MVP backlog
+
+These are intentionally not release-gating for the current line.
+
+- [ ] Better identity model.
+  - Cleaner YunoHost identity sync
+  - Better role/group mapping
+  - Less awkward drift between sidecar-local users and platform identity
+
+- [ ] Richer policy model.
+  - Per-target auth/session policy
+  - Group-based access rules
+  - More expressive protection rules than simple host/path protect-or-bypass
+
+- [ ] Better onboarding and MFA enrollment UX.
+  - Clearer first-run flow
+  - Cleaner method choice and messaging
+  - Less confusing first-time enrollment behavior
+
+- [ ] Safer/smarter target management UX.
+  - Better details/expanders
+  - Smarter preview/confidence around discovered targets
+  - Better handling of root/path conflicts and operator decisions
+
+- [ ] Audit trail / event log.
+  - Track important admin actions like protect/bypass, password reset, MFA reset, global disable/enable, clear sessions
+
+- [ ] Better break-glass and recovery ergonomics.
+  - Safer recovery dashboard/UX
+  - Better recovery verification helpers
+  - More obvious explanations of what recovery actions actually do
+
+- [ ] Optional deeper downstream app integrations / real SSO where practical.
+  - Trusted-header / OIDC / app-specific integrations where it actually helps
+
+- [ ] Better multi-host / multi-operator thinking.
+  - More explicit assumptions and defaults for broader/shared deployments
+
+- [ ] Admin and users page polish.
+  - Current pages are useful and usable, but still visually cold/spartan
+  - Improve warmth/readability without compromising clarity
+  - Treat outside contributions/integration code here as welcome if they fit the architecture
+
 ## Notes
 
 If the checks above pass, John’s judgment was that public submission would be reasonable.
