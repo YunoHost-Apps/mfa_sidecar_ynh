@@ -4,6 +4,8 @@ This guide is for the operator.
 
 Your job is not just to click **Protect**. Your job is to understand what the sidecar is protecting, how the recovery path works, and how to avoid creating your own outage.
 
+MFA Sidecar should be administered like infrastructure, not like a toy settings screen. That means small changes, deliberate validation, and a bias toward recovery over bravado.
+
 ## Admin surfaces
 
 ### YunoHost config panel
@@ -46,6 +48,8 @@ Every target is either:
 Bypass is not a failure state.
 
 It is the safe intentional state for anything you have not explicitly validated.
+
+A package like this should make it easy to be cautious on purpose. If every target starts life in Protect, the operator ends up testing in production with a loaded gun.
 
 ## Global enforcement
 

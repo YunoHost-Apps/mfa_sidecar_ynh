@@ -6,14 +6,16 @@
 
 MFA Sidecar is a browser-first MFA perimeter for selected YunoHost web apps.
 
-It gives you:
+It exists for the very practical problem of putting MFA in front of existing web apps **without pretending every app natively understands MFA**.
+
+What it gives you:
 
 - a dedicated authentication portal
 - a sidecar-owned user store
 - an operator control plane for deciding which host/path combinations are **Protect** vs **Bypass**
 - a break-glass model that is explicit and reversible
 
-This package exists for the very practical problem of putting MFA in front of existing web apps **without pretending every app natively understands MFA**.
+This is not trying to be a flashy identity platform. It is trying to be a practical, operable answer to a real self-hosting problem.
 
 ## Start here
 
@@ -97,12 +99,16 @@ This is for higher-level configuration and operational actions:
 
 ## Safety model
 
-This package intentionally leans conservative:
+This package intentionally leans conservative.
 
-- default mindset: **Bypass unless explicitly enabled**
-- root domain and portal domain are danger targets
-- global disable is meant to be easy and documented
-- recovery should be obvious, not clever
+The operating posture is:
+
+- **Bypass unless explicitly enabled**
+- treat the root domain and portal domain as danger targets
+- keep global disable easy and documented
+- make recovery obvious instead of clever
+
+If the operator cannot understand how to back out a bad protection decision under stress, the package is failing its job.
 
 ## Important recovery setting
 

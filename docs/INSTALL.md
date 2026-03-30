@@ -149,6 +149,8 @@ They should install into the package install dir, typically something like:
 9. after sidecar auth succeeds, confirm the downstream app behaves as expected (it may still present its own login)
 10. only then move to more important or broader targets
 
+The package will reward a patient rollout and punish overconfidence. That is not a bug; it is the correct shape for something that sits on the login path.
+
 ## Default MFA method
 
 This package currently defaults to **TOTP/authenticator app** enrollment and leaves WebAuthn disabled by default.
@@ -173,7 +175,9 @@ Do not do these first:
 
 ## Recovery mindset
 
-If something goes wrong, the safest control is usually:
+If something goes wrong, do not improvise a dramatic rescue sequence before trying the documented one.
+
+The safest control is usually:
 
 ```yaml
 access_control:

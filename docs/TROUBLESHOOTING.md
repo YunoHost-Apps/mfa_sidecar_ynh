@@ -14,6 +14,8 @@ When something breaks, decide which layer is broken:
 4. **user account / password / MFA enrollment**
 
 Do not assume every auth problem is a user problem.
+Do not assume every login loop is a cookie problem.
+And do not assume every scary symptom means the whole box is dead.
 
 ## Break-glass recovery
 
@@ -180,3 +182,5 @@ sudo systemctl status mfa-sidecar-admin --no-pager
 The package should be operable by a human under stress.
 
 If you find yourself inventing clever undocumented recovery steps, stop and make the recovery path simpler instead.
+
+The goal is not to look smart in the incident log. The goal is to restore a known-good state without making tomorrow's recovery harder than today's.

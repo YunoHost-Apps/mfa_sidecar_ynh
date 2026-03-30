@@ -86,5 +86,7 @@ Some of the most important MFA Sidecar failures are only trustworthy when valida
 - SSOwat interaction
 - first-run MFA enrollment behavior
 - downstream app handoff behavior
+- host-specific surprises such as nginx module fragility under reload churn
 
 This checklist keeps those checks explicit instead of relying on memory.
+It exists because real infrastructure will always find a way to be more opinionated than the repo test suite.
