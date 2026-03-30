@@ -6,13 +6,13 @@ This file is a paste-ready working packet for submitting MFA Sidecar to the Yuno
 
 ```toml
 [mfa_sidecar]
-category = "small_utilities"
+category = "system_tools"
 state = "working"
 url = "https://github.com/wonko6x9/mfa_sidecar_ynh"
 ```
 
 Notes:
-- `small_utilities` is the least-wrong current catalog category for a perimeter/auth utility.
+- `system_tools` is the better fit for a perimeter/auth integration utility.
 - No antifeatures are proposed at submission time.
 - Do **not** add `level`; YunoHost CI manages that.
 
@@ -91,7 +91,7 @@ Reviewer-facing notes are included in the package repo here:
 - `docs/SECURITY-NOTES.md`
 - `docs/LIVE-BOX-VERIFICATION.md`
 
-Happy to adjust the catalog metadata/category if reviewers think another existing category is a better fit.
+Happy to adjust the catalog metadata if reviewers think another existing category is a better fit, but `system_tools` seems the most honest current choice.
 ```
 
 ## Maintainer checklist
