@@ -82,10 +82,22 @@ These are intentionally not release-gating for the current line.
 If the checks above pass, John’s judgment was that public submission would be reasonable.
 
 - Public/forum outreach note: MFA Sidecar should be framed as a **practical MFA perimeter that fits the current YunoHost structure with minimal core intrusion**, not as "native YunoHost admin-panel 2FA solved".
+- Relevant prior discussions to reference later:
+  - Forum: `2FA for web admin` — https://forum.yunohost.org/t/2fa-for-web-admin/28254
+    - mostly a demand/bump thread; useful as evidence that people still ask for this
+    - core maintainer response was effectively: nothing happens until somebody builds it
+  - Forum: `2FA for the admin panel PLEASE!` — https://forum.yunohost.org/t/2fa-for-the-admin-panel-please/18547
+    - users wanted stronger protection for YunoHost admin/user surfaces
+    - important maintainer point: underlying identity/admin model cleanup mattered first (notably the old `admin` user problem and the need for a real admins-group model)
+    - this aligns with MFA Sidecar's real-box lesson that `admin` is a poisoned/ambiguous username in practice
+  - GitHub issue: `Strong web authentication / 2FA authentication` — https://github.com/YunoHost/issues/issues/238
+    - old discussion drifted toward client certificates / "strong auth" in the abstract
+    - historically interesting, but not a clean practical blueprint for ordinary operators
 - Defer forum/GitHub-community posting until the catalog PR has a clear resolution. Once that happens, prepare:
   - one clean new forum thread,
   - optionally one short reply in the most relevant older 2FA/admin-panel thread,
-  - careful wording about what the package is and is not.
+  - careful wording about what the package is and is not,
+  - emphasis that MFA Sidecar is a practical perimeter solution for selected YunoHost-hosted apps/paths, not a core redesign of YunoHost's own native admin authentication.
 
 ## Security review notes
 
