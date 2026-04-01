@@ -462,6 +462,27 @@ class AdminUiHardeningTests(unittest.TestCase):
         self.assertIn('"crypto", "hash", "generate", "argon2", "--no-confirm", "--password", password', text)
         self.assertNotIn('pty.openpty()', text)
 
+    def test_managed_entry_sort_key_puts_protected_first_then_host_then_path(self):
+        admin_ui = load_module("admin_ui_app_test", SOURCES / "admin_ui_app.py")
+        entries = [
+            {"enabled": False, "host": "b.example.com", "path": "/z"},
+            {"enabled": True, "host": "b.example.com", "path": "/z"},
+            {"enabled": True, "host": "a.example.com", "path": "/b"},
+            {"enabled": True, "host": "a.example.com", "path": "/a"},
+            {"enabled": False, "host": "a.example.com", "path": "/a"},
+        ]
+        ordered = sorted(entries, key=admin_ui.managed_entry_sort_key)
+        self.assertEqual(
+            [(item["enabled"], item["host"], item["path"]) for item in ordered],
+            [
+                (True, "a.example.com", "/a"),
+                (True, "a.example.com", "/b"),
+                (True, "b.example.com", "/z"),
+                (False, "a.example.com", "/a"),
+                (False, "b.example.com", "/z"),
+            ],
+        )
+
 
 class ApplyRuntimeHookTests(unittest.TestCase):
     def test_apply_runtime_hook_renders_stages_and_uses_staged_render_index(self):

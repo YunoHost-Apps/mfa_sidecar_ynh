@@ -53,6 +53,14 @@ def h(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
+def managed_entry_sort_key(entry: dict) -> tuple[int, str, str]:
+    """Sort protected/enabled targets first, then host, then path."""
+    enabled_rank = 0 if bool(entry.get("enabled")) else 1
+    host = str(entry.get("host", "")).lower()
+    path = normalize_path(entry.get("path", "/")).lower()
+    return (enabled_rank, host, path)
+
+
 def validate_username(username: str) -> str:
     username = (username or "").strip()
     if not USERNAME_RE.match(username):
@@ -360,7 +368,7 @@ class AdminApp:
         live_runtime = load_live_runtime_metadata()
         package_version = load_package_version()
         csrf_input = f"<input type='hidden' name='csrf_token' value='{h(csrf_token)}' />"
-        entries = self.policy.list_entries()
+        entries = sorted(self.policy.list_entries(), key=managed_entry_sort_key)
         portal_domain = summary.get('portal_domain', '')
         root_domain = extract_root_domain(portal_domain)
         policy_enforcement_enabled = bool(summary.get('enforcement_enabled', True))
