@@ -185,16 +185,69 @@ def _location_matches(body: str, target_path: str) -> bool:
     return False
 
 
+def _location_match_score(body: str, target_path: str) -> tuple[int, int, str]:
+    """Prefer the outer app-root location over nested/specialized child locations.
+
+    Higher score wins.
+    - exact non-regex prefix/root handlers are preferred
+    - regex child handlers are intentionally deprioritized
+    - canonical root-path family matches like /nextcloud -> /nextcloud/ should still work
+    """
+    body = re.sub(r"\s+#.*$", "", body.strip())
+    tokens = body.split()
+    if not tokens:
+        return (-1000, -1000, body)
+
+    modifier = ""
+    path_token = tokens[-1].strip('"\'')
+    if len(tokens) >= 2 and tokens[0] in {"=", "~", "~*", "^~"}:
+        modifier = tokens[0]
+
+    canonical_target = target_path.rstrip("/") if target_path != "/" else "/"
+    canonical_path = path_token.rstrip("/") if path_token != "/" else "/"
+
+    if canonical_path != canonical_target:
+        return (-1000, -1000, body)
+
+    modifier_rank = {
+        "^~": 40,
+        "": 30,
+        "=": 20,
+        "~": 10,
+        "~*": 10,
+    }.get(modifier, 0)
+
+    trailing_slash_bonus = 5 if target_path != "/" and path_token.endswith("/") else 0
+    regex_penalty = -15 if modifier in {"~", "~*"} else 0
+    length_rank = len(path_token)
+    return (modifier_rank + trailing_slash_bonus + regex_penalty, length_rank, body)
+
+
+def _select_location(locations: list[dict], target_path: str) -> dict:
+    if not locations:
+        raise InjectionError("no candidate locations")
+    scored = sorted(
+        [(_location_match_score(loc["body"], target_path), loc) for loc in locations],
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    best_score, best_loc = scored[0]
+    tied = [loc for score, loc in scored if score == best_score]
+    if len(tied) > 1:
+        raise InjectionError(f"ambiguous location match for path {target_path}")
+    return best_loc
+
+
 def inject_into_location(conf_path: Path, target_path: str, auth_location: str, portal_domain: str) -> None:
     text = conf_path.read_text(encoding="utf-8")
     newline = _newline(text)
     locations = [loc for loc in _find_location_block_ranges(text) if _location_matches(loc["body"], target_path)]
     if not locations:
         raise InjectionError(f"no matching location block for path {target_path} in {conf_path}")
-    if len(locations) > 1:
-        raise InjectionError(f"ambiguous location match for path {target_path} in {conf_path}")
-
-    loc = locations[0]
+    try:
+        loc = _select_location(locations, target_path)
+    except InjectionError as exc:
+        raise InjectionError(f"{exc} in {conf_path}")
     loc_text = text[loc["start"]:loc["close_index"] + 1]
     auth_block = managed_auth_block(auth_location, portal_domain, newline)
 

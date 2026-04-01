@@ -258,6 +258,34 @@ class InjectorTests(unittest.TestCase):
             self.assertIn(f'include {protected};', bridge_text)
             self.assertIn('BEGIN mfa-sidecar bridge include', bridge_text)
 
+    def test_inject_into_location_prefers_outer_nextcloud_root_block_over_nested_locations(self):
+        with tempfile.TemporaryDirectory() as td:
+            conf = Path(td) / 'nextcloud.conf'
+            conf.write_text(
+                """rewrite ^/nextcloud$ /nextcloud/ permanent;
+location ^~ /nextcloud/ {
+  alias /var/www/nextcloud/;
+
+  location = /nextcloud/ {
+    return 302 /nextcloud/remote.php/webdav/$is_args$args;
+  }
+
+  location ~ ^/nextcloud/ {
+    try_files $uri / /nextcloud/index.php$request_uri;
+  }
+}
+""",
+                encoding='utf-8',
+            )
+            inject.inject_into_location(conf, '/nextcloud', '/authelia-auth-wm3v-com-nextcloud', 'auth.domain.tld')
+            text = conf.read_text(encoding='utf-8')
+            self.assertIn('auth_request /authelia-auth-wm3v-com-nextcloud;', text)
+            outer_start = text.index('location ^~ /nextcloud/ {')
+            nested_start = text.index('location = /nextcloud/ {')
+            managed_start = text.index('BEGIN mfa-sidecar managed block')
+            self.assertLess(outer_start, managed_start)
+            self.assertLess(managed_start, nested_start)
+
     def test_inject_into_location_matches_trailing_slash_equivalent_subpath(self):
         with tempfile.TemporaryDirectory() as td:
             conf = Path(td) / 'roundcube.conf'
