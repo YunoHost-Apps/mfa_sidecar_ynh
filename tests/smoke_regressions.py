@@ -302,6 +302,67 @@ location ^~ /nextcloud/ {
             self.assertIn('location /webmail/ {', text)
             self.assertIn('auth_request /authelia-auth-wm3v-com-webmail;', text)
 
+    def test_inject_into_location_prefers_prefix_root_over_exact_child_for_subpath_app(self):
+        with tempfile.TemporaryDirectory() as td:
+            conf = Path(td) / 'app.conf'
+            conf.write_text(
+                """location /foo/ {
+  proxy_pass http://127.0.0.1:9999;
+
+  location = /foo/ {
+    return 302 /foo/login;
+  }
+}
+""",
+                encoding='utf-8',
+            )
+            inject.inject_into_location(conf, '/foo', '/authelia-auth-foo', 'auth.domain.tld')
+            text = conf.read_text(encoding='utf-8')
+            managed_start = text.index('BEGIN mfa-sidecar managed block')
+            exact_child = text.index('location = /foo/ {')
+            self.assertLess(managed_start, exact_child)
+
+    def test_inject_into_location_prefers_outer_prefix_over_regex_child_handlers(self):
+        with tempfile.TemporaryDirectory() as td:
+            conf = Path(td) / 'api.conf'
+            conf.write_text(
+                """location /api/ {
+  proxy_pass http://127.0.0.1:8080;
+
+  location ~ ^/api/ {
+    try_files $uri /index.php?$args;
+  }
+}
+""",
+                encoding='utf-8',
+            )
+            inject.inject_into_location(conf, '/api', '/authelia-auth-api', 'auth.domain.tld')
+            text = conf.read_text(encoding='utf-8')
+            managed_start = text.index('BEGIN mfa-sidecar managed block')
+            regex_child = text.index('location ~ ^/api/ {')
+            self.assertLess(managed_start, regex_child)
+
+    def test_inject_into_location_keeps_root_path_behavior_for_location_slash(self):
+        with tempfile.TemporaryDirectory() as td:
+            conf = Path(td) / 'root.conf'
+            conf.write_text(
+                """location / {
+  proxy_pass http://127.0.0.1:59150/;
+}
+""",
+                encoding='utf-8',
+            )
+            inject.inject_into_location(conf, '/', '/authelia-auth-root', 'auth.domain.tld')
+            text = conf.read_text(encoding='utf-8')
+            self.assertIn('auth_request /authelia-auth-root;', text)
+
+    def test_location_match_score_prefers_app_root_prefix_over_exact_and_regex_children(self):
+        prefix_score = inject._location_match_score('^~ /nextcloud/', '/nextcloud')
+        exact_score = inject._location_match_score('= /nextcloud/', '/nextcloud')
+        regex_score = inject._location_match_score('~ ^/nextcloud/', '/nextcloud')
+        self.assertGreater(prefix_score, exact_score)
+        self.assertGreater(prefix_score, regex_score)
+
     def test_reinject_all_fails_if_any_managed_target_cannot_be_injected(self):
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)

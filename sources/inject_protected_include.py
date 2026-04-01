@@ -189,8 +189,9 @@ def _location_match_score(body: str, target_path: str) -> tuple[int, int, str]:
     """Prefer the outer app-root location over nested/specialized child locations.
 
     Higher score wins.
-    - exact non-regex prefix/root handlers are preferred
+    - canonical app-root prefix handlers are preferred
     - regex child handlers are intentionally deprioritized
+    - exact child matches like /foo/ should lose to the broader app-root anchor for /foo
     - canonical root-path family matches like /nextcloud -> /nextcloud/ should still work
     """
     body = re.sub(r"\s+#.*$", "", body.strip())
@@ -210,17 +211,18 @@ def _location_match_score(body: str, target_path: str) -> tuple[int, int, str]:
         return (-1000, -1000, body)
 
     modifier_rank = {
-        "^~": 40,
-        "": 30,
-        "=": 20,
+        "^~": 50,
+        "": 40,
+        "=": 15,
         "~": 10,
         "~*": 10,
     }.get(modifier, 0)
 
     trailing_slash_bonus = 5 if target_path != "/" and path_token.endswith("/") else 0
     regex_penalty = -15 if modifier in {"~", "~*"} else 0
-    length_rank = len(path_token)
-    return (modifier_rank + trailing_slash_bonus + regex_penalty, length_rank, body)
+    exact_penalty = -10 if modifier == "=" and target_path != "/" else 0
+    length_rank = -len(path_token)
+    return (modifier_rank + trailing_slash_bonus + regex_penalty + exact_penalty, length_rank, body)
 
 
 def _select_location(locations: list[dict], target_path: str) -> dict:
